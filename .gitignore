@@ -11,3 +11,5 @@ mock_server.py
 shot_*.png
 lingxi_config.xml
 sdkinstall.log
+
+patch_body.json
