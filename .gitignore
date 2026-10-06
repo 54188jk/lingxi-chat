@@ -13,3 +13,7 @@ lingxi_config.xml
 sdkinstall.log
 
 patch_body.json
+
+dist/
+rel*.json
+asset*.json
