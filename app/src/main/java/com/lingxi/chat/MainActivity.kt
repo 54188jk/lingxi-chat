@@ -69,11 +69,7 @@ class MainActivity : AppCompatActivity() {
         configStore = ConfigStore(this)
         sessionStore = SessionStore(this)
 
-        adapter = ChatAdapter(session.messages) { msg ->
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("message", msg.content))
-            toast("已复制")
-        }
+        adapter = ChatAdapter(session.messages) { msg -> onMsgLongPress(msg) }
         val lm = LinearLayoutManager(this)
         lm.stackFromEnd = true
         b.rvMessages.layoutManager = lm
@@ -97,6 +93,21 @@ class MainActivity : AppCompatActivity() {
         b.chip1.setOnClickListener(chipListener)
         b.chip2.setOnClickListener(chipListener)
         b.chip3.setOnClickListener(chipListener)
+
+        b.etInput.setOnFocusChangeListener { _, hasFocus ->
+            b.llInputBar.setBackgroundResource(
+                if (hasFocus) R.drawable.bg_input_bar_focused else R.drawable.bg_input_bar
+            )
+        }
+        b.btnSend.setOnTouchListener { v, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN ->
+                    v.animate().scaleX(0.88f).scaleY(0.88f).setDuration(100).start()
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL ->
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(140).start()
+            }
+            false
+        }
 
         b.btnNew.setOnClickListener { newSession() }
         b.btnHistory.setOnClickListener {
@@ -157,13 +168,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun newAdapter() {
-        adapter = ChatAdapter(session.messages) { msg ->
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("message", msg.content))
-            toast("已复制")
-        }
+        adapter = ChatAdapter(session.messages) { msg -> onMsgLongPress(msg) }
         b.rvMessages.adapter = adapter
         adapter.notifyDataSetChanged()
+    }
+
+    private fun onMsgLongPress(msg: ChatMessage) {
+        val idx = session.messages.indexOf(msg)
+        val canDelete = idx >= 0 && (!streaming || idx != adapter.streamingIndex)
+        val items = if (canDelete) arrayOf("复制内容", "删除此消息") else arrayOf("复制内容")
+        android.app.AlertDialog.Builder(this)
+            .setItems(items) { _, which ->
+                when (items[which]) {
+                    "复制内容" -> {
+                        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        cm.setPrimaryClip(ClipData.newPlainText("message", msg.content))
+                        toast("已复制")
+                    }
+                    "删除此消息" -> {
+                        session.messages.removeAt(idx)
+                        adapter.notifyItemRemoved(idx)
+                        sessionStore.save(session)
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun scrollToEndIfNearBottom() {
+        val lm = b.rvMessages.layoutManager as LinearLayoutManager
+        val last = lm.findLastVisibleItemPosition()
+        if (last >= adapter.itemCount - 3) {
+            b.rvMessages.scrollToPosition(adapter.itemCount - 1)
+        }
     }
 
     private fun showAttachOptions() {
@@ -344,7 +381,7 @@ class MainActivity : AppCompatActivity() {
                     lastNotifyTime = now
                     runOnUiThread {
                         adapter.notifyItemChanged(aiIndex)
-                        b.rvMessages.scrollToPosition(aiIndex)
+                        scrollToEndIfNearBottom()
                     }
                 }
             },

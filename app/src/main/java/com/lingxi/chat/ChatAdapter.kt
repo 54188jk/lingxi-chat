@@ -57,8 +57,8 @@ class ChatAdapter(
         } else if (holder is AiHolder) {
             holder.tv.text = when {
                 position == streamingIndex && msg.content.isBlank() -> "思考中…"
-                position == streamingIndex -> msg.content + " ▍"
-                else -> msg.content
+                position == streamingIndex -> android.text.TextUtils.concat(MarkdownRenderer.render(msg.content), " ▍")
+                else -> MarkdownRenderer.render(msg.content)
             }
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
         }

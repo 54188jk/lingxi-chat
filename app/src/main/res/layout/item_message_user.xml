@@ -14,6 +14,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/bg_user_bubble"
+        android:foreground="?attr/selectableItemBackground"
         android:elevation="4dp"
         android:outlineSpotShadowColor="#663D74E0"
         android:paddingStart="14dp"

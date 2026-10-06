@@ -28,6 +28,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/bg_ai_bubble"
+        android:foreground="?attr/selectableItemBackground"
         android:paddingStart="14dp"
         android:paddingEnd="14dp"
         android:paddingTop="10dp"
