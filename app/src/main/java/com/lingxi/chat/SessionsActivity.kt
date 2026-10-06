@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.lingxi.chat.data.SessionStore
 import com.lingxi.chat.databinding.ActivitySessionsBinding
 
-class SessionsActivity : AppCompatActivity() {
+class SessionsActivity : BaseActivity() {
 
     private lateinit var b: ActivitySessionsBinding
     private lateinit var store: SessionStore

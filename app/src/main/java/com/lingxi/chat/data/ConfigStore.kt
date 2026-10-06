@@ -46,11 +46,49 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_SEARCH_ON, false)
         set(v) = sp.edit().putBoolean(KEY_SEARCH_ON, v).apply()
 
+    var themeMode: String
+        get() = sp.getString(KEY_THEME, "dark") ?: "dark"
+        set(v) = sp.edit().putString(KEY_THEME, v).apply()
+
+    var fontScale: Float
+        get() = sp.getFloat(KEY_FONT_SCALE, 1.0f)
+        set(v) = sp.edit().putFloat(KEY_FONT_SCALE, v).apply()
+
+    fun loadRoles(): MutableList<RolePreset> {
+        val customs = mutableListOf<RolePreset>()
+        val raw = sp.getString(KEY_ROLES, "[]") ?: "[]"
+        val arr = JSONArray(raw)
+        for (i in 0 until arr.length()) {
+            customs.add(RolePreset.fromJson(arr.getJSONObject(i)))
+        }
+        return (RolePreset.builtins() + customs).toMutableList()
+    }
+
+    fun saveCustomRoles(all: List<RolePreset>) {
+        val arr = JSONArray()
+        all.filter { !it.builtin }.forEach { arr.put(it.toJson()) }
+        sp.edit().putString(KEY_ROLES, arr.toString()).apply()
+    }
+
+    fun getActiveRole(): RolePreset {
+        val roles = loadRoles()
+        val activeId = sp.getString(KEY_ACTIVE_ROLE, "general")
+        return roles.firstOrNull { it.id == activeId } ?: roles.first()
+    }
+
+    fun setActiveRole(id: String) {
+        sp.edit().putString(KEY_ACTIVE_ROLE, id).apply()
+    }
+
     companion object {
         private const val KEY_MODELS = "models"
         private const val KEY_ACTIVE = "active_model"
         private const val KEY_SEARCH_PROVIDER = "search_provider"
         private const val KEY_SEARCH_KEY = "search_key"
         private const val KEY_SEARCH_ON = "search_on"
+        private const val KEY_THEME = "theme_mode"
+        private const val KEY_FONT_SCALE = "font_scale"
+        private const val KEY_ROLES = "roles"
+        private const val KEY_ACTIVE_ROLE = "active_role"
     }
 }

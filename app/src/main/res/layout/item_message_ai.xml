@@ -40,8 +40,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
-            android:lineSpacingMultiplier="1.4"
-            android:textIsSelectable="true" />
+            android:lineSpacingMultiplier="1.4" />
     </LinearLayout>
 
 </LinearLayout>

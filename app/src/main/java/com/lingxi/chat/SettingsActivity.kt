@@ -9,17 +9,19 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.lingxi.chat.data.ConfigStore
 import com.lingxi.chat.data.ModelConfig
+import com.lingxi.chat.data.RolePreset
 import com.lingxi.chat.databinding.ActivitySettingsBinding
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BaseActivity() {
 
     private lateinit var b: ActivitySettingsBinding
     private lateinit var store: ConfigStore
     private var models = mutableListOf<ModelConfig>()
+    private var roles = mutableListOf<RolePreset>()
 
     private val presets = listOf(
         Preset("自定义", "", "", false),
@@ -39,6 +41,19 @@ class SettingsActivity : AppCompatActivity() {
         "serper" to "Serper（Google 结果）"
     )
 
+    private val themes = listOf(
+        "dark" to "深色",
+        "light" to "浅色",
+        "system" to "跟随系统"
+    )
+
+    private val fontScales = listOf(
+        0.85f to "小",
+        1.0f to "标准",
+        1.15f to "大",
+        1.3f to "特大"
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivitySettingsBinding.inflate(layoutInflater)
@@ -47,7 +62,42 @@ class SettingsActivity : AppCompatActivity() {
         store = ConfigStore(this)
         b.btnBack.setOnClickListener { finish() }
         b.rvModels.layoutManager = LinearLayoutManager(this)
+        b.rvRoles.layoutManager = LinearLayoutManager(this)
         b.btnAddModel.setOnClickListener { editModel(null) }
+        b.btnAddRole.setOnClickListener { editRole(null) }
+
+        b.spTheme.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themes.map { it.second })
+        b.spTheme.setSelection(maxOf(0, themes.indexOfFirst { it.first == store.themeMode }))
+        b.spTheme.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                val mode = themes[pos].first
+                if (mode != store.themeMode) {
+                    store.themeMode = mode
+                    AppCompatDelegate.setDefaultNightMode(
+                        when (mode) {
+                            "light" -> AppCompatDelegate.MODE_NIGHT_NO
+                            "system" -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                            else -> AppCompatDelegate.MODE_NIGHT_YES
+                        }
+                    )
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        b.spFontScale.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fontScales.map { it.second })
+        b.spFontScale.setSelection(maxOf(0, fontScales.indexOfFirst { it.first == store.fontScale }))
+        b.spFontScale.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                val scale = fontScales[pos].first
+                if (scale != store.fontScale) {
+                    store.fontScale = scale
+                    recreate()
+                    toast("字号已调整")
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
 
         val spAdapter = ArrayAdapter(
             this,
@@ -65,6 +115,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         refreshModels()
+        refreshRoles()
     }
 
     private fun refreshModels() {
@@ -75,6 +126,71 @@ class SettingsActivity : AppCompatActivity() {
             onClick = { m -> editModel(m) },
             onLongClick = { m -> showModelActions(m) }
         )
+    }
+
+    private fun refreshRoles() {
+        roles = store.loadRoles()
+        val active = store.getActiveRole()
+        b.rvRoles.adapter = RoleAdapter(
+            roles, active.id,
+            onClick = { r ->
+                store.setActiveRole(r.id)
+                refreshRoles()
+                toast("当前角色：${r.name}")
+            },
+            onLongClick = { r ->
+                if (r.builtin) {
+                    editRole(r)
+                } else {
+                    AlertDialog.Builder(this)
+                        .setTitle(r.name)
+                        .setItems(arrayOf("编辑", "删除")) { _, which ->
+                            if (which == 0) {
+                                editRole(r)
+                            } else {
+                                roles.removeAll { it.id == r.id }
+                                store.saveCustomRoles(roles)
+                                refreshRoles()
+                            }
+                        }
+                        .show()
+                }
+            }
+        )
+    }
+
+    private fun editRole(existing: RolePreset?) {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_role_edit, null)
+        val etName = view.findViewById<EditText>(R.id.etRoleName)
+        val etPrompt = view.findViewById<EditText>(R.id.etRolePrompt)
+        existing?.let {
+            etName.setText(it.name)
+            etPrompt.setText(it.prompt)
+            if (it.builtin) {
+                etName.isEnabled = false
+            }
+        }
+        AlertDialog.Builder(this)
+            .setTitle(if (existing == null) "添加角色" else "编辑角色")
+            .setView(view)
+            .setPositiveButton("保存") { _, _ ->
+                val name = etName.text.toString().trim()
+                val prompt = etPrompt.text.toString().trim()
+                if (name.isBlank() || prompt.isBlank()) {
+                    toast("名称和设定都不能为空")
+                    return@setPositiveButton
+                }
+                if (existing == null) {
+                    roles.add(RolePreset(name = name, prompt = prompt))
+                } else {
+                    existing.name = name
+                    existing.prompt = prompt
+                }
+                store.saveCustomRoles(roles)
+                refreshRoles()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun showModelActions(m: ModelConfig) {

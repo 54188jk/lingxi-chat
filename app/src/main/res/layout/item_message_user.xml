@@ -37,8 +37,7 @@
             android:layout_height="wrap_content"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
-            android:lineSpacingMultiplier="1.35"
-            android:textIsSelectable="true" />
+            android:lineSpacingMultiplier="1.35" />
     </LinearLayout>
 
 </LinearLayout>

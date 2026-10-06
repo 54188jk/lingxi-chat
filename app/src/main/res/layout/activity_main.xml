@@ -17,10 +17,11 @@
         android:paddingBottom="14dp">
 
         <ImageView
+            android:id="@+id/ivLogo"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:src="@drawable/ic_launcher"
-            android:contentDescription="logo" />
+            android:contentDescription="切换角色" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -51,6 +52,14 @@
                 android:maxLines="1"
                 android:ellipsize="end" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnShare"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_share"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="导出分享" />
 
         <ImageButton
             android:id="@+id/btnNew"
@@ -232,6 +241,14 @@
             android:src="@drawable/ic_attach"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="附件" />
+
+        <ImageButton
+            android:id="@+id/btnMic"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_mic"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="语音输入" />
 
         <ToggleButton
             android:id="@+id/btnSearch"

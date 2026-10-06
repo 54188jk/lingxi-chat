@@ -1,5 +1,6 @@
 package com.lingxi.chat
 
+import android.content.Context
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -8,6 +9,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.text.style.TypefaceSpan
+import androidx.core.content.ContextCompat
 
 object MarkdownRenderer {
 
@@ -17,30 +19,29 @@ object MarkdownRenderer {
     private val headerRegex = Regex("(?m)^#{1,3}\\s+(.+)$")
     private val bulletRegex = Regex("(?m)^\\s*[-*]\\s+", RegexOption.MULTILINE)
 
-    private const val CODE_BG = 0xFF0A0D18.toInt()
-    private const val CODE_FG = 0xFF9EC5FF.toInt()
-
-    fun render(raw: String): CharSequence {
+    fun render(context: Context, raw: String): CharSequence {
+        val codeBg = ContextCompat.getColor(context, R.color.code_bg)
+        val codeFg = ContextCompat.getColor(context, R.color.code_fg)
         val sb = SpannableStringBuilder()
         var last = 0
         for (m in codeBlockRegex.findAll(raw)) {
-            appendInline(sb, raw.substring(last, m.range.first))
+            appendInline(sb, raw.substring(last, m.range.first), codeBg, codeFg)
             val code = m.groupValues[1].trim('\n')
             val start = sb.length
             sb.append("  $code  ")
             sb.setSpan(TypefaceSpan("monospace"), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            sb.setSpan(BackgroundColorSpan(CODE_BG), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            sb.setSpan(ForegroundColorSpan(CODE_FG), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.setSpan(BackgroundColorSpan(codeBg), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.setSpan(ForegroundColorSpan(codeFg), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.setSpan(RelativeSizeSpan(0.88f), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.append('\n')
             last = m.range.last + 1
         }
-        appendInline(sb, raw.substring(last))
+        appendInline(sb, raw.substring(last), codeBg, codeFg)
         while (sb.isNotEmpty() && sb.last() == '\n') sb.delete(sb.length - 1, sb.length)
         return sb
     }
 
-    private fun appendInline(sb: SpannableStringBuilder, textIn: String) {
+    private fun appendInline(sb: SpannableStringBuilder, textIn: String, codeBg: Int, codeFg: Int) {
         var segment = textIn.replace(bulletRegex, "  •  ")
         val spans = mutableListOf<Triple<Int, Int, List<Any>>>()
 
@@ -62,8 +63,8 @@ object MarkdownRenderer {
             val content = m.groupValues[1]
             segment = segment.replaceRange(m.range, content)
             spans.add(Triple(m.range.first, m.range.first + content.length,
-                listOf(TypefaceSpan("monospace"), BackgroundColorSpan(CODE_BG),
-                    ForegroundColorSpan(CODE_FG), RelativeSizeSpan(0.9f))))
+                listOf(TypefaceSpan("monospace"), BackgroundColorSpan(codeBg),
+                    ForegroundColorSpan(codeFg), RelativeSizeSpan(0.9f))))
         }
 
         val base = sb.length
