@@ -6,3 +6,8 @@ local.properties
 .idea/
 *.iml
 .cxx/
+
+mock_server.py
+shot_*.png
+lingxi_config.xml
+sdkinstall.log
