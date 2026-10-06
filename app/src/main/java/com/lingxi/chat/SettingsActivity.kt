@@ -35,6 +35,24 @@ class SettingsActivity : BaseActivity() {
         Preset("Kimi 月之暗面", "https://api.moonshot.cn/v1", "moonshot-v1-8k", vision = false)
     )
 
+    // 免费语音服务预设：注册即送免费额度，接口与 OpenAI 的 /audio/transcriptions 兼容
+    private val freeSttPresets = listOf(
+        ModelConfig(
+            name = "免费语音·硅基流动",
+            baseUrl = "https://api.siliconflow.cn/v1",
+            apiKey = "",
+            model = "Qwen/Qwen2.5-7B-Instruct",
+            sttModel = "FunAudioLLM/SenseVoiceSmall"
+        ),
+        ModelConfig(
+            name = "免费语音·Groq",
+            baseUrl = "https://api.groq.com/openai/v1",
+            apiKey = "",
+            model = "llama-3.3-70b-versatile",
+            sttModel = "whisper-large-v3-turbo"
+        )
+    )
+
     private val themes = listOf(
         "dark" to "深色",
         "light" to "浅色",
@@ -59,6 +77,7 @@ class SettingsActivity : BaseActivity() {
         b.rvRoles.layoutManager = LinearLayoutManager(this)
         b.btnAddModel.setOnClickListener { editModel(null) }
         b.btnAddRole.setOnClickListener { editRole(null) }
+        b.btnAddFreeStt.setOnClickListener { pickFreeStt() }
 
         b.spTheme.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themes.map { it.second })
         b.spTheme.setSelection(maxOf(0, themes.indexOfFirst { it.first == store.themeMode }))
@@ -198,7 +217,18 @@ class SettingsActivity : BaseActivity() {
             .show()
     }
 
-    private fun editModel(existing: ModelConfig?) {
+    private fun pickFreeStt() {
+        AlertDialog.Builder(this)
+            .setTitle("选择免费语音服务")
+            .setItems(arrayOf("硅基流动 SiliconFlow（免费额度，中文识别好）", "Groq（免费额度，速度快）")) { _, which ->
+                val p = freeSttPresets[which]
+                editModel(null, p)
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun editModel(existing: ModelConfig?, prefill: ModelConfig? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_model_edit, null)
         val spPreset = view.findViewById<Spinner>(R.id.spPreset)
         val etName = view.findViewById<EditText>(R.id.etName)
@@ -226,7 +256,7 @@ class SettingsActivity : BaseActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        existing?.let {
+        (existing ?: prefill)?.let {
             etName.setText(it.name)
             etBaseUrl.setText(it.baseUrl)
             etApiKey.setText(it.apiKey)

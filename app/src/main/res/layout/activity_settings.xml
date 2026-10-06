@@ -259,5 +259,38 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:text="免费语音识别"
+            android:textColor="@color/accent"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:text="设备自带语音识别时直接用本机能力（不花流量）；不支持的设备可添加下方免费语音服务，注册即送免费额度，粘贴 Key 后聊天页麦克风即可语音输入。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnAddFreeStt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:text="+ 添加免费语音服务"
+            android:textColor="@color/accent"
+            android:backgroundTint="@null"
+            android:background="@drawable/bg_card" />
+
     </LinearLayout>
 </ScrollView>

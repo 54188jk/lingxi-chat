@@ -415,8 +415,9 @@ class MainActivity : BaseActivity() {
 
     private fun startWhisperVoice() {
         val cfg = configStore.getActiveModel()
-        if (cfg == null || cfg.apiKey.isBlank()) {
-            toast("设备无系统语音识别，且未配置模型 API Key，无法使用云端识别")
+        val anyKey = configStore.loadModels().any { it.apiKey.isNotBlank() }
+        if (cfg == null || (!anyKey && cfg.apiKey.isBlank())) {
+            toast("设备无系统语音识别，且未配置任何 API Key。\n请到 设置 → 免费语音识别 添加免费语音服务")
             return
         }
         if (androidx.core.app.ActivityCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
@@ -498,23 +499,43 @@ class MainActivity : BaseActivity() {
         recording = false
         setListening(false)
         val f = recordFile ?: return
-        val cfg = configStore.getActiveModel() ?: return
         toast("正在识别…")
         Thread {
-            val text = try {
-                transcribeAudio(cfg, f)
-            } catch (e: Exception) {
-                null
+            var text: String? = null
+            // 依次尝试：当前模型 → 其余已配置且有 Key 的模型（优先带语音模型的）
+            val candidates = ArrayList<com.lingxi.chat.data.ModelConfig>()
+            configStore.getActiveModel()?.let { candidates.add(it) }
+            configStore.loadModels()
+                .filter { it.apiKey.isNotBlank() && candidates.none { c -> c.id == it.id } }
+                .sortedByDescending { if (it.sttModel.isNotBlank()) 1 else 0 }
+                .forEach { candidates.add(it) }
+            for (cfg in candidates) {
+                try {
+                    text = transcribeAudio(cfg, f)
+                } catch (e: Exception) {
+                    text = null
+                }
+                if (!text.isNullOrBlank()) break
             }
             f.delete()
             runOnUiThread {
                 if (text.isNullOrBlank()) {
-                    toast("识别失败，请检查模型配置是否支持语音接口")
+                    toast("识别失败：已尝试 ${candidates.size} 个模型，均不支持语音接口。可在设置→免费语音识别添加免费服务")
                 } else {
                     appendToInput(text)
                 }
             }
         }.start()
+    }
+
+    private fun resolveSttModel(cfg: com.lingxi.chat.data.ModelConfig): String {
+        if (cfg.sttModel.isNotBlank()) return cfg.sttModel
+        val url = cfg.baseUrl.lowercase()
+        return when {
+            url.contains("siliconflow") -> "FunAudioLLM/SenseVoiceSmall"
+            url.contains("groq") -> "whisper-large-v3-turbo"
+            else -> "whisper-1"
+        }
     }
 
     private fun transcribeAudio(cfg: com.lingxi.chat.data.ModelConfig, audio: File): String? {
@@ -525,7 +546,7 @@ class MainActivity : BaseActivity() {
             .build()
         val body = okhttp3.MultipartBody.Builder()
             .setType(okhttp3.MultipartBody.FORM)
-            .addFormDataPart("model", cfg.sttModel.ifBlank { "whisper-1" })
+            .addFormDataPart("model", resolveSttModel(cfg))
             .addFormDataPart(
                 "file", audio.name,
                 audio.readBytes().toRequestBody("audio/mp4".toMediaType())
