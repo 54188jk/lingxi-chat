@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/bg"
+    android:background="@drawable/bg_app"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -13,8 +13,8 @@
         android:gravity="center_vertical"
         android:paddingStart="8dp"
         android:paddingEnd="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp">
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
 
         <ImageButton
             android:id="@+id/btnBack"
@@ -32,6 +32,11 @@
             android:textSize="17sp"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/bg_divider" />
 
     <TextView
         android:id="@+id/tvEmpty"

@@ -2,12 +2,26 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:gravity="start"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp"
-    android:paddingStart="4dp"
-    android:paddingEnd="24dp">
+    android:orientation="horizontal"
+    android:gravity="top"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="2dp"
+    android:paddingEnd="32dp">
+
+    <FrameLayout
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/bg_ai_avatar"
+        android:layout_marginEnd="8dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_sparkle"
+            android:contentDescription="AI" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -25,7 +39,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
-            android:lineSpacingMultiplier="1.35"
+            android:lineSpacingMultiplier="1.4"
             android:textIsSelectable="true" />
     </LinearLayout>
 

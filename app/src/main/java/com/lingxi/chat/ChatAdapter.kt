@@ -20,6 +20,8 @@ class ChatAdapter(
         private const val TYPE_AI = 2
     }
 
+    var streamingIndex = -1
+
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].role == "user") TYPE_USER else TYPE_AI
     }
@@ -53,7 +55,11 @@ class ChatAdapter(
             }
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
         } else if (holder is AiHolder) {
-            holder.tv.text = msg.content
+            holder.tv.text = when {
+                position == streamingIndex && msg.content.isBlank() -> "思考中…"
+                position == streamingIndex -> msg.content + " ▍"
+                else -> msg.content
+            }
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
         }
     }

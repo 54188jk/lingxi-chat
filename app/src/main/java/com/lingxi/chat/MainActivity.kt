@@ -78,6 +78,25 @@ class MainActivity : AppCompatActivity() {
         lm.stackFromEnd = true
         b.rvMessages.layoutManager = lm
         b.rvMessages.adapter = adapter
+        b.rvMessages.itemAnimator?.apply {
+            addDuration = 180
+            changeDuration = 0
+        }
+        adapter.registerAdapterDataObserver(object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            override fun onChanged() = updateWelcome()
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = updateWelcome()
+        })
+        updateWelcome()
+
+        val chipListener = View.OnClickListener { v ->
+            val t = (v as? android.widget.TextView)?.text?.toString() ?: return@OnClickListener
+            b.etInput.setText(t)
+            b.etInput.setSelection(t.length)
+            b.etInput.requestFocus()
+        }
+        b.chip1.setOnClickListener(chipListener)
+        b.chip2.setOnClickListener(chipListener)
+        b.chip3.setOnClickListener(chipListener)
 
         b.btnNew.setOnClickListener { newSession() }
         b.btnHistory.setOnClickListener {
@@ -312,6 +331,7 @@ class MainActivity : AppCompatActivity() {
         val aiMsg = ChatMessage("assistant", "")
         session.messages.add(aiMsg)
         val aiIndex = session.messages.size - 1
+        adapter.streamingIndex = aiIndex
         adapter.notifyItemInserted(aiIndex)
         b.rvMessages.scrollToPosition(aiIndex)
 
@@ -360,6 +380,13 @@ class MainActivity : AppCompatActivity() {
     private fun setStreaming(on: Boolean) {
         streaming = on
         b.btnSend.setImageResource(if (on) R.drawable.ic_stop else R.drawable.ic_send)
+        if (!on) {
+            adapter.streamingIndex = -1
+        }
+    }
+
+    private fun updateWelcome() {
+        b.llWelcome.visibility = if (session.messages.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun hideKeyboard() {
