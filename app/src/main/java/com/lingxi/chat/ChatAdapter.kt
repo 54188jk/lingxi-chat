@@ -18,9 +18,11 @@ class ChatAdapter(
     companion object {
         private const val TYPE_USER = 1
         private const val TYPE_AI = 2
+        private val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
     }
 
     var streamingIndex = -1
+    var thinkingDots = 0
 
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].role == "user") TYPE_USER else TYPE_AI
@@ -30,16 +32,22 @@ class ChatAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inf = LayoutInflater.from(parent.context)
+        val maxW = (parent.resources.displayMetrics.widthPixels * 0.75f).toInt()
         return if (viewType == TYPE_USER) {
-            UserHolder(inf.inflate(R.layout.item_message_user, parent, false))
+            val h = UserHolder(inf.inflate(R.layout.item_message_user, parent, false))
+            h.tv.maxWidth = maxW
+            h
         } else {
-            AiHolder(inf.inflate(R.layout.item_message_ai, parent, false))
+            val h = AiHolder(inf.inflate(R.layout.item_message_ai, parent, false))
+            h.tv.maxWidth = maxW
+            h
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val msg = messages[position]
         if (holder is UserHolder) {
+            holder.time.text = timeFmt.format(java.util.Date(msg.time))
             holder.tv.text = msg.content.ifBlank { "[图片]" }
             if (msg.imageBase64 != null) {
                 try {
@@ -56,10 +64,11 @@ class ChatAdapter(
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
         } else if (holder is AiHolder) {
             holder.tv.text = when {
-                position == streamingIndex && msg.content.isBlank() -> "思考中…"
+                position == streamingIndex && msg.content.isBlank() -> "思考中" + "·".repeat(thinkingDots)
                 position == streamingIndex -> android.text.TextUtils.concat(MarkdownRenderer.render(holder.tv.context, msg.content), " ▍")
                 else -> MarkdownRenderer.render(holder.tv.context, msg.content)
             }
+            holder.time.text = timeFmt.format(java.util.Date(msg.time))
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
         }
     }
@@ -67,9 +76,11 @@ class ChatAdapter(
     class UserHolder(v: View) : RecyclerView.ViewHolder(v) {
         val tv: TextView = v.findViewById(R.id.tvMsg)
         val iv: ImageView = v.findViewById(R.id.ivMsgImage)
+        val time: TextView = v.findViewById(R.id.tvTime)
     }
 
     class AiHolder(v: View) : RecyclerView.ViewHolder(v) {
         val tv: TextView = v.findViewById(R.id.tvMsg)
+        val time: TextView = v.findViewById(R.id.tvTime)
     }
 }

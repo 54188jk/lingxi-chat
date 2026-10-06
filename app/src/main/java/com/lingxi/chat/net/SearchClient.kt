@@ -5,87 +5,68 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 object SearchClient {
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun search(provider: String, key: String, query: String): String {
-        return when (provider) {
-            "serper" -> serper(key, query)
-            "bocha" -> bocha(key, query)
-            else -> tavily(key, query)
-        }
+    fun search(query: String): String {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val html = fetchHtml("https://html.duckduckgo.com/html/?q=$q")
+            ?: return "未找到相关结果"
+        return parseDdgHtml(html)
     }
 
-    private fun tavily(key: String, query: String): String {
-        val body = JSONObject()
-            .put("api_key", key)
-            .put("query", query)
-            .put("max_results", 5)
-            .toString().toRequestBody("application/json".toMediaType())
-        val req = Request.Builder().url("https://api.tavily.com/search").post(body).build()
-        val resp = http.newCall(req).execute()
-        val json = JSONObject(resp.body?.string() ?: "")
-        if (!resp.isSuccessful) throw Exception("Tavily 搜索失败 HTTP ${resp.code}")
-        val results = json.optJSONArray("results") ?: return "没有找到相关结果"
-        val sb = StringBuilder()
-        for (i in 0 until results.length()) {
-            val r = results.getJSONObject(i)
-            sb.append("${i + 1}. ${r.optString("title")}\n${r.optString("url")}\n${r.optString("content")}\n\n")
-        }
-        return sb.toString().ifBlank { "没有找到相关结果" }
-    }
-
-    private fun serper(key: String, query: String): String {
-        val body = JSONObject()
-            .put("q", query)
-            .put("num", 5)
-            .put("gl", "cn")
-            .put("hl", "zh-cn")
-            .toString().toRequestBody("application/json".toMediaType())
+    private fun fetchHtml(url: String): String? {
         val req = Request.Builder()
-            .url("https://google.serper.dev/search")
-            .header("X-API-KEY", key)
-            .post(body)
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
+            .header("Accept", "text/html,application/xhtml+xml")
+            .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
             .build()
-        val resp = http.newCall(req).execute()
-        val json = JSONObject(resp.body?.string() ?: "")
-        if (!resp.isSuccessful) throw Exception("Serper 搜索失败 HTTP ${resp.code}")
-        val results = json.optJSONArray("organic") ?: return "没有找到相关结果"
-        val sb = StringBuilder()
-        for (i in 0 until minOf(results.length(), 5)) {
-            val r = results.getJSONObject(i)
-            sb.append("${i + 1}. ${r.optString("title")}\n${r.optString("link")}\n${r.optString("snippet")}\n\n")
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) return null
+            return resp.body?.string()
         }
-        return sb.toString().ifBlank { "没有找到相关结果" }
     }
 
-    private fun bocha(key: String, query: String): String {
-        val body = JSONObject()
-            .put("query", query)
-            .put("count", 5)
-            .toString().toRequestBody("application/json".toMediaType())
-        val req = Request.Builder()
-            .url("https://api.bochaai.com/v1/web-search")
-            .header("Authorization", "Bearer $key")
-            .post(body)
-            .build()
-        val resp = http.newCall(req).execute()
-        val json = JSONObject(resp.body?.string() ?: "")
-        if (!resp.isSuccessful) throw Exception("博查搜索失败 HTTP ${resp.code}")
-        val results = json.optJSONObject("data")
-            ?.optJSONObject("webPages")
-            ?.optJSONArray("value") ?: return "没有找到相关结果"
-        val sb = StringBuilder()
-        for (i in 0 until results.length()) {
-            val r = results.getJSONObject(i)
-            sb.append("${i + 1}. ${r.optString("name")}\n${r.optString("url")}\n${r.optString("snippet")}\n\n")
+    private fun parseDdgHtml(html: String): String {
+        val results = mutableListOf<String>()
+        val titleRe = Regex("""<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)</a>""")
+        val snippetRe = Regex("""<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)</a>""")
+        val titles = titleRe.findAll(html).toList()
+        val snippets = snippetRe.findAll(html).toList()
+        for (i in 0 until minOf(titles.size, snippets.size, 5)) {
+            val href = titles[i].groupValues[1]
+            val title = stripHtml(titles[i].groupValues[2])
+            val snippet = stripHtml(snippets[i].groupValues[1])
+            val link = decodeDdgLink(href)
+            results.add("$title\n$link\n$snippet")
         }
-        return sb.toString().ifBlank { "没有找到相关结果" }
+        if (results.isEmpty()) return "未找到相关结果"
+        return results.joinToString("\n\n")
+    }
+
+    private fun decodeDdgLink(href: String): String {
+        if (href.startsWith("//duckduckgo.com/l/?")) {
+            val m = Regex("uddg=([^&]+)").find(href)
+            if (m != null) return java.net.URLDecoder.decode(m.groupValues[1], "UTF-8")
+        }
+        return href
+    }
+
+    private fun stripHtml(raw: String): String {
+        return raw.replace(Regex("<[^>]+>"), "")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&#x27;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .trim()
     }
 }

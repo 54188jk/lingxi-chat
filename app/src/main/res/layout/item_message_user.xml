@@ -40,4 +40,13 @@
             android:lineSpacingMultiplier="1.35" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="4dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="10sp" />
+
 </LinearLayout>

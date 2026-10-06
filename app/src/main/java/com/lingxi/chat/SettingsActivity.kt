@@ -35,12 +35,6 @@ class SettingsActivity : BaseActivity() {
         Preset("Kimi 月之暗面", "https://api.moonshot.cn/v1", "moonshot-v1-8k", vision = false)
     )
 
-    private val searchProviders = listOf(
-        "tavily" to "Tavily（推荐，每月 1000 次免费）",
-        "bocha" to "博查（国内直连）",
-        "serper" to "Serper（Google 结果）"
-    )
-
     private val themes = listOf(
         "dark" to "深色",
         "light" to "浅色",
@@ -97,21 +91,6 @@ class SettingsActivity : BaseActivity() {
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        val spAdapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            searchProviders.map { it.second }
-        )
-        b.spSearchProvider.adapter = spAdapter
-        val curIdx = searchProviders.indexOfFirst { it.first == store.searchProvider }
-        if (curIdx >= 0) b.spSearchProvider.setSelection(curIdx)
-        b.etSearchKey.setText(store.searchKey)
-        b.btnSaveSearch.setOnClickListener {
-            store.searchProvider = searchProviders[b.spSearchProvider.selectedItemPosition].first
-            store.searchKey = b.etSearchKey.text.toString().trim()
-            toast("搜索设置已保存")
         }
 
         refreshModels()

@@ -57,6 +57,23 @@ class MainActivity : BaseActivity() {
     private var listening = false
     private var cameraFile: File? = null
 
+    private val thinkingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var thinkingRunnable: Runnable? = null
+
+    private fun startThinkingTicker(index: Int) {
+        thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        val r = object : Runnable {
+            override fun run() {
+                if (!streaming || session.messages.getOrNull(index)?.content?.isNotBlank() == true) return
+                adapter.thinkingDots = adapter.thinkingDots % 3 + 1
+                adapter.notifyItemChanged(index)
+                thinkingHandler.postDelayed(this, 450)
+            }
+        }
+        thinkingRunnable = r
+        thinkingHandler.postDelayed(r, 450)
+    }
+
     private val openSessions =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
             if (r.resultCode == Activity.RESULT_OK) {
@@ -103,6 +120,14 @@ class MainActivity : BaseActivity() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = updateWelcome()
         })
         updateWelcome()
+        if (b.llWelcome.visibility == View.VISIBLE) {
+            b.llWelcome.alpha = 0f
+            b.llWelcome.translationY = 24f
+            b.llWelcome.animate().alpha(1f).translationY(0f)
+                .setDuration(420).setStartDelay(120)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
 
         val chipListener = View.OnClickListener { v ->
             val t = (v as? android.widget.TextView)?.text?.toString() ?: return@OnClickListener
@@ -141,14 +166,19 @@ class MainActivity : BaseActivity() {
 
         b.btnAttach.setOnClickListener { showAttachOptions() }
         b.btnRemoveImage.setOnClickListener { clearPendingImage() }
+        b.btnRemoveFile.setOnClickListener {
+            pendingFileText = null
+            pendingFileName = null
+            b.llFilePreview.visibility = View.GONE
+        }
         b.btnMic.setOnClickListener { toggleVoiceInput() }
         b.btnSearch.isChecked = configStore.searchEnabled
         b.btnSearch.setOnCheckedChangeListener { _, checked ->
             configStore.searchEnabled = checked
-            if (checked && configStore.searchKey.isBlank()) {
-                toast("还没配置搜索服务，去设置里填一下搜索 API Key")
-            }
+            updateSearchTint()
+            if (checked) toast("联网搜索已开启（DuckDuckGo 免费搜索）")
         }
+        updateSearchTint()
 
         b.btnSend.setOnClickListener {
             if (streaming) client.cancel() else send()
@@ -160,13 +190,20 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         refreshModelLabel()
+        updateSearchTint()
         UpdateUi.resumeInstallIfNeeded(this)
     }
 
     override fun onDestroy() {
         tts?.shutdown()
         speechRecognizer?.destroy()
+        thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
         super.onDestroy()
+    }
+
+    private fun updateSearchTint() {
+        val color = ContextCompat.getColor(this, if (b.btnSearch.isChecked) R.color.accent else R.color.icon_tint)
+        b.btnSearch.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
     }
 
     private fun initTts() {
@@ -453,11 +490,8 @@ class MainActivity : BaseActivity() {
             val text = String(bytes, Charsets.UTF_8).take(20000)
             pendingFileText = text
             pendingFileName = name
-            val cur = b.etInput.text.toString()
-            if (!cur.contains("[文件：$name]")) {
-                b.etInput.setText("[文件：$name]\n$cur")
-                b.etInput.setSelection(b.etInput.text.length)
-            }
+            b.tvFileName.text = name
+            b.llFilePreview.visibility = View.VISIBLE
             toast("已附加文件 $name，发送时会一起提交")
         } catch (e: Exception) {
             toast("只支持文本类文件（txt/md/代码/json 等）")
@@ -504,7 +538,6 @@ class MainActivity : BaseActivity() {
             return
         }
         if (fileText != null && fileName != null) {
-            text = text.replace("[文件：$fileName]", "").trim()
             text = "以下是文件「$fileName」的内容：\n```\n$fileText\n```\n\n$text".trim()
         }
 
@@ -520,9 +553,10 @@ class MainActivity : BaseActivity() {
         clearPendingImage()
         pendingFileText = null
         pendingFileName = null
+        b.llFilePreview.visibility = View.GONE
         hideKeyboard()
 
-        val useSearch = b.btnSearch.isChecked && configStore.searchKey.isNotBlank()
+        val useSearch = b.btnSearch.isChecked
         if (useSearch) {
             setStreaming(true)
             val searchingMsg = ChatMessage("assistant", "正在联网搜索…")
@@ -531,7 +565,7 @@ class MainActivity : BaseActivity() {
             b.rvMessages.scrollToPosition(adapter.itemCount - 1)
             Thread {
                 val result = try {
-                    SearchClient.search(configStore.searchProvider, configStore.searchKey, text.take(200))
+                    SearchClient.search(text.take(200))
                 } catch (e: Exception) {
                     null
                 }
@@ -571,6 +605,7 @@ class MainActivity : BaseActivity() {
         adapter.streamingIndex = aiIndex
         adapter.notifyItemInserted(aiIndex)
         b.rvMessages.scrollToPosition(aiIndex)
+        startThinkingTicker(aiIndex)
 
         client.streamChat(
             cfg, apiMsgs,
