@@ -68,6 +68,15 @@ class MainActivity : BaseActivity() {
     private val thinkingHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var thinkingRunnable: Runnable? = null
 
+    // 顶栏实时时钟：每秒刷新
+    private val clockHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val clockRunnable = object : Runnable {
+        override fun run() {
+            b.tvClock.text = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            clockHandler.postDelayed(this, 1000)
+        }
+    }
+
     private fun startThinkingTicker(index: Int) {
         thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
         val r = object : Runnable {
@@ -200,12 +209,20 @@ class MainActivity : BaseActivity() {
         refreshModelLabel()
         updateSearchTint()
         UpdateUi.resumeInstallIfNeeded(this)
+        clockHandler.removeCallbacks(clockRunnable)
+        clockRunnable.run()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        clockHandler.removeCallbacks(clockRunnable)
     }
 
     override fun onDestroy() {
         tts?.shutdown()
         speechRecognizer?.destroy()
         thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        clockHandler.removeCallbacks(clockRunnable)
         if (recording) {
             try {
                 recorder?.stop()
