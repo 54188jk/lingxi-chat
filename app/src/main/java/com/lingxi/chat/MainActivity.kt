@@ -28,6 +28,8 @@ import com.lingxi.chat.data.SessionStore
 import com.lingxi.chat.databinding.ActivityMainBinding
 import com.lingxi.chat.net.OpenAiClient
 import com.lingxi.chat.net.SearchClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -56,6 +58,12 @@ class MainActivity : BaseActivity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var listening = false
     private var cameraFile: File? = null
+
+    private var recorder: android.media.MediaRecorder? = null
+    private var recordFile: File? = null
+    private var recording = false
+    private var recordDialog: android.app.AlertDialog? = null
+    private var pendingSttConfig: com.lingxi.chat.data.ModelConfig? = null
 
     private val thinkingHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var thinkingRunnable: Runnable? = null
@@ -171,7 +179,7 @@ class MainActivity : BaseActivity() {
             pendingFileName = null
             b.llFilePreview.visibility = View.GONE
         }
-        b.btnMic.setOnClickListener { toggleVoiceInput() }
+        b.btnMic.setOnClickListener { onMicClick() }
         b.btnSearch.isChecked = configStore.searchEnabled
         b.btnSearch.setOnCheckedChangeListener { _, checked ->
             configStore.searchEnabled = checked
@@ -198,6 +206,15 @@ class MainActivity : BaseActivity() {
         tts?.shutdown()
         speechRecognizer?.destroy()
         thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        if (recording) {
+            try {
+                recorder?.stop()
+            } catch (_: Exception) {
+            }
+            recorder?.release()
+            recorder = null
+            recording = false
+        }
         super.onDestroy()
     }
 
@@ -341,16 +358,24 @@ class MainActivity : BaseActivity() {
         tts?.stop()
     }
 
-    private fun toggleVoiceInput() {
+    private fun onMicClick() {
+        if (recording) {
+            stopRecordingAndTranscribe()
+            return
+        }
         if (listening) {
             speechRecognizer?.stopListening()
             setListening(false)
             return
         }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            toast("当前设备不支持语音识别")
-            return
+        if (SpeechRecognizer.isRecognitionAvailable(this)) {
+            startSystemVoice()
+        } else {
+            startWhisperVoice()
         }
+    }
+
+    private fun startSystemVoice() {
         if (speechRecognizer == null) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
@@ -368,12 +393,7 @@ class MainActivity : BaseActivity() {
                 override fun onResults(results: Bundle?) {
                     val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     val text = list?.firstOrNull()
-                    if (!text.isNullOrBlank()) {
-                        val cur = b.etInput.text.toString()
-                        val merged = if (cur.isBlank()) text else "$cur $text"
-                        b.etInput.setText(merged)
-                        b.etInput.setSelection(merged.length)
-                    }
+                    if (!text.isNullOrBlank()) appendToInput(text)
                 }
                 override fun onPartialResults(partialResults: Bundle?) {}
                 override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -393,6 +413,144 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun startWhisperVoice() {
+        val cfg = configStore.getActiveModel()
+        if (cfg == null || cfg.apiKey.isBlank()) {
+            toast("设备无系统语音识别，且未配置模型 API Key，无法使用云端识别")
+            return
+        }
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingSttConfig = cfg
+            androidx.core.app.ActivityCompat.requestPermissions(
+                this, arrayOf(android.Manifest.permission.RECORD_AUDIO), REQ_RECORD_AUDIO
+            )
+            return
+        }
+        beginRecording(cfg)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_RECORD_AUDIO) {
+            val cfg = pendingSttConfig
+            if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED && cfg != null) {
+                beginRecording(cfg)
+            } else {
+                toast("未授予录音权限，无法使用云端语音识别")
+            }
+            pendingSttConfig = null
+        }
+    }
+
+    private fun beginRecording(cfg: com.lingxi.chat.data.ModelConfig) {
+        try {
+            val f = File(cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+            recordFile = f
+            recorder = android.media.MediaRecorder().apply {
+                setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+                setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16000)
+                setAudioEncodingBitRate(64000)
+                setOutputFile(f.absolutePath)
+                prepare()
+                start()
+            }
+            recording = true
+            setListening(true)
+            recordDialog = android.app.AlertDialog.Builder(this)
+                .setTitle("云端语音识别")
+                .setMessage("正在聆听…说完点「完成」")
+                .setPositiveButton("完成") { _, _ -> stopRecordingAndTranscribe() }
+                .setNegativeButton("取消") { _, _ -> cancelRecording() }
+                .setCancelable(false)
+                .show()
+        } catch (e: Exception) {
+            recording = false
+            setListening(false)
+            toast("录音启动失败：${e.message}")
+        }
+    }
+
+    private fun cancelRecording() {
+        try {
+            recorder?.stop()
+        } catch (_: Exception) {
+        }
+        recorder?.release()
+        recorder = null
+        recordFile?.delete()
+        recordFile = null
+        recording = false
+        setListening(false)
+    }
+
+    private fun stopRecordingAndTranscribe() {
+        recordDialog?.dismiss()
+        try {
+            recorder?.stop()
+        } catch (_: Exception) {
+        }
+        recorder?.release()
+        recorder = null
+        recording = false
+        setListening(false)
+        val f = recordFile ?: return
+        val cfg = configStore.getActiveModel() ?: return
+        toast("正在识别…")
+        Thread {
+            val text = try {
+                transcribeAudio(cfg, f)
+            } catch (e: Exception) {
+                null
+            }
+            f.delete()
+            runOnUiThread {
+                if (text.isNullOrBlank()) {
+                    toast("识别失败，请检查模型配置是否支持语音接口")
+                } else {
+                    appendToInput(text)
+                }
+            }
+        }.start()
+    }
+
+    private fun transcribeAudio(cfg: com.lingxi.chat.data.ModelConfig, audio: File): String? {
+        val url = cfg.baseUrl.trimEnd('/') + "/audio/transcriptions"
+        val client = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        val body = okhttp3.MultipartBody.Builder()
+            .setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("model", cfg.sttModel.ifBlank { "whisper-1" })
+            .addFormDataPart(
+                "file", audio.name,
+                audio.readBytes().toRequestBody("audio/mp4".toMediaType())
+            )
+            .build()
+        val req = okhttp3.Request.Builder()
+            .url(url)
+            .header("Authorization", "Bearer ${cfg.apiKey}")
+            .post(body)
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) return null
+            val json = org.json.JSONObject(resp.body?.string() ?: return null)
+            return json.optString("text", "").ifBlank { null }
+        }
+    }
+
+    private fun appendToInput(text: String) {
+        val cur = b.etInput.text.toString()
+        val merged = if (cur.isBlank()) text else "$cur $text"
+        b.etInput.setText(merged)
+        b.etInput.setSelection(merged.length)
+        b.etInput.requestFocus()
+    }
+
     private fun setListening(on: Boolean) {
         listening = on
         val color = ContextCompat.getColor(
@@ -400,6 +558,10 @@ class MainActivity : BaseActivity() {
             if (on) R.color.accent else R.color.icon_tint
         )
         b.btnMic.setColorFilter(color, PorterDuff.Mode.SRC_IN)
+    }
+
+    companion object {
+        private const val REQ_RECORD_AUDIO = 7101
     }
 
     private fun exportSession() {

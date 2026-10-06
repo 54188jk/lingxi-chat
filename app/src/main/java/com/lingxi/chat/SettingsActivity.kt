@@ -205,6 +205,7 @@ class SettingsActivity : BaseActivity() {
         val etBaseUrl = view.findViewById<EditText>(R.id.etBaseUrl)
         val etApiKey = view.findViewById<EditText>(R.id.etApiKey)
         val etModel = view.findViewById<EditText>(R.id.etModel)
+        val etSttModel = view.findViewById<EditText>(R.id.etSttModel)
         val cbVision = view.findViewById<CheckBox>(R.id.cbVision)
 
         spPreset.adapter = ArrayAdapter(
@@ -231,6 +232,7 @@ class SettingsActivity : BaseActivity() {
             etApiKey.setText(it.apiKey)
             etModel.setText(it.model)
             cbVision.isChecked = it.vision
+            etSttModel.setText(it.sttModel)
         }
 
         AlertDialog.Builder(this)
@@ -251,7 +253,8 @@ class SettingsActivity : BaseActivity() {
                         baseUrl = baseUrl,
                         apiKey = key,
                         model = model,
-                        vision = cbVision.isChecked
+                        vision = cbVision.isChecked,
+                        sttModel = etSttModel.text.toString().trim()
                     )
                     models.add(cfg)
                     store.saveModels(models)
@@ -262,6 +265,7 @@ class SettingsActivity : BaseActivity() {
                     existing.apiKey = key
                     existing.model = model
                     existing.vision = cbVision.isChecked
+                    existing.sttModel = etSttModel.text.toString().trim()
                     store.saveModels(models)
                 }
                 refreshModels()

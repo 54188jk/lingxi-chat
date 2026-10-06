@@ -72,4 +72,15 @@
         android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
+    <EditText
+        android:id="@+id/etSttModel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="语音识别模型（可空，默认 whisper-1）"
+        android:textColorHint="@color/text_secondary"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:singleLine="true" />
+
 </LinearLayout>

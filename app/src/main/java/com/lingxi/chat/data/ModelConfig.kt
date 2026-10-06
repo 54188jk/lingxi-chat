@@ -9,7 +9,8 @@ data class ModelConfig(
     var baseUrl: String,
     var apiKey: String,
     var model: String,
-    var vision: Boolean = false
+    var vision: Boolean = false,
+    var sttModel: String = ""
 ) {
     fun toJson(): JSONObject {
         val o = JSONObject()
@@ -19,6 +20,7 @@ data class ModelConfig(
         o.put("apiKey", apiKey)
         o.put("model", model)
         o.put("vision", vision)
+        o.put("sttModel", sttModel)
         return o
     }
 
@@ -29,7 +31,8 @@ data class ModelConfig(
             baseUrl = o.optString("baseUrl", ""),
             apiKey = o.optString("apiKey", ""),
             model = o.optString("model", ""),
-            vision = o.optBoolean("vision", false)
+            vision = o.optBoolean("vision", false),
+            sttModel = o.optString("sttModel", "")
         )
     }
 }

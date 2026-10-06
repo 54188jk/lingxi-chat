@@ -17,3 +17,5 @@ patch_body.json
 dist/
 rel*.json
 asset*.json
+
+*.apk
