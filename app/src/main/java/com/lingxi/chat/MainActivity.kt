@@ -153,6 +153,8 @@ class MainActivity : BaseActivity() {
         b.btnSend.setOnClickListener {
             if (streaming) client.cancel() else send()
         }
+
+        UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
     }
 
     override fun onResume() {

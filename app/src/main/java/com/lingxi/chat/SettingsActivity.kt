@@ -116,6 +116,11 @@ class SettingsActivity : BaseActivity() {
 
         refreshModels()
         refreshRoles()
+
+        b.tvVersion.text = "当前版本 v${BuildConfig.VERSION_NAME}"
+        b.btnCheckUpdate.setOnClickListener {
+            UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = false)
+        }
     }
 
     private fun refreshModels() {
