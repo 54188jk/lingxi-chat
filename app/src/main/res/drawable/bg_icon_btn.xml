@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 顶栏图标按钮：按下时一层淡珊瑚底，给出明确的点击反馈 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/badge_bg">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</ripple>
