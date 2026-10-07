@@ -11,6 +11,21 @@ object UpdateChecker {
     private const val LIST_URL = "https://api.github.com/repos/54188jk/lingxi-chat/releases?per_page=30"
     private const val RELEASES_PAGE = "https://github.com/54188jk/lingxi-chat/releases"
 
+    /**
+     * 版本检查源列表。
+     *
+     * 多个源并行查询，谁先返回就用谁的结果；若都成功，取版本号更高的那个，
+     * 所以「GitHub + Gitee（若公开）/ 加速源」可以共存并自动择优，全程免 Token。
+     * 新增公开源时在这里加一行即可，App 会自动参与测速。
+     */
+    private val checkSources = listOf(
+        CheckSource("GitHub", LATEST_URL),
+        // Gitee 仓一旦改为公开，取消下面这行注释即可自动接入（当前仓是私有的，匿名读不到）
+        // CheckSource("Gitee", "https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases/latest")
+    )
+
+    private class CheckSource(val name: String, val url: String)
+
     data class ReleaseInfo(
         val version: String,
         val notes: String,
@@ -19,7 +34,9 @@ object UpdateChecker {
         val publishedAt: String = "",
         /** 安装包字节数，未知为 0 */
         val sizeBytes: Long = 0L,
-        val pageUrl: String = RELEASES_PAGE
+        val pageUrl: String = RELEASES_PAGE,
+        /** 这个版本信息来自哪个源 */
+        val sourceName: String = "GitHub"
     )
 
     private val http = OkHttpClient.Builder()
@@ -27,38 +44,72 @@ object UpdateChecker {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun fetchLatest(): ReleaseInfo? {
+    /** 并行查询所有源，取有效结果里版本号最高的那个；单个源超时不拖累整体 */
+    fun fetchLatestFast(timeoutMs: Long = 8000): ReleaseInfo? {
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(checkSources.size)
+        val tasks = checkSources.map { src -> pool.submit<ReleaseInfo?> { fetchFrom(src) } }
+        val results = mutableListOf<ReleaseInfo>()
+        try {
+            val deadline = System.currentTimeMillis() + timeoutMs
+            for (t in tasks) {
+                val remain = deadline - System.currentTimeMillis()
+                if (remain <= 0) break
+                try {
+                    t.get(remain, java.util.concurrent.TimeUnit.MILLISECONDS)?.let { results.add(it) }
+                } catch (e: Exception) {
+                    // 该源失败或超时，忽略
+                }
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+        if (results.isEmpty()) return null
+        return results.maxByOrNull { info -> versionValue(info.version) }
+    }
+
+    private fun versionValue(v: String): Long =
+        v.split(".").fold(0L) { acc, s -> acc * 1000 + (s.toIntOrNull() ?: 0) }
+
+    private fun fetchFrom(src: CheckSource): ReleaseInfo? {
         return try {
             val req = Request.Builder()
-                .url(LATEST_URL)
+                .url(src.url)
                 .header("User-Agent", "LingxiChat-Android")
                 .build()
             http.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) return null
-                val json = JSONObject(resp.body?.string() ?: return null)
-                val tag = json.optString("tag_name", "").removePrefix("v")
-                val notes = json.optString("body", "")
-                var url = ""
-                var size = 0L
-                val assets = json.optJSONArray("assets")
-                if (assets != null && assets.length() > 0) {
-                    val asset = assets.getJSONObject(0)
-                    url = asset.optString("browser_download_url", "")
-                    size = asset.optLong("size", 0L)
-                }
-                if (url.isBlank()) url = RELEASES_PAGE
-                if (tag.isBlank()) null
-                else ReleaseInfo(
-                    tag, notes, url,
-                    publishedAt = formatPublished(json.optString("published_at", "")),
-                    sizeBytes = size,
-                    pageUrl = json.optString("html_url", RELEASES_PAGE)
-                )
+                parseRelease(JSONObject(resp.body?.string() ?: return null), src.name)
             }
         } catch (e: Exception) {
             null
         }
     }
+
+    private fun parseRelease(json: JSONObject, sourceName: String): ReleaseInfo? {
+        val tag = json.optString("tag_name", "").removePrefix("v")
+        val parts = tag.split(".")
+        // 只要纯数字版本号，公告/测试之类的 tag 跳过
+        if (tag.isBlank() || parts.isEmpty() || parts.any { it.toIntOrNull() == null }) return null
+        val notes = json.optString("body", "")
+        var url = ""
+        var size = 0L
+        val assets = json.optJSONArray("assets")
+        if (assets != null && assets.length() > 0) {
+            val asset = assets.getJSONObject(0)
+            url = asset.optString("browser_download_url", "")
+            size = asset.optLong("size", 0L)
+        }
+        if (url.isBlank()) url = RELEASES_PAGE
+        return ReleaseInfo(
+            tag, notes, url,
+            publishedAt = formatPublished(json.optString("published_at", "")),
+            sizeBytes = size,
+            pageUrl = json.optString("html_url", RELEASES_PAGE),
+            sourceName = sourceName
+        )
+    }
+
+    fun fetchLatest(): ReleaseInfo? = fetchLatestFast() ?: fetchFrom(CheckSource("GitHub", LATEST_URL))
 
     /** GitHub 返回 ISO 时间，转成本地时区的 yyyy-MM-dd HH:mm:ss */
     private fun formatPublished(iso: String): String {

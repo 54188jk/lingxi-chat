@@ -218,8 +218,6 @@ if (r.resultCode == Activity.RESULT_OK) {
             animateForward()
         }
         b.btnShare.setOnClickListener { exportSession() }
-        b.btnNotice.setOnClickListener { NoticeUi.open(this) }
-        NoticeUi.bindBell(this, b.btnNotice)
         startLogoBreathing()
         b.root.findViewById<android.widget.ImageView>(R.id.ivLogo).setOnClickListener { showRolePicker() }
 
@@ -280,7 +278,6 @@ if (r.resultCode == Activity.RESULT_OK) {
         }
 
         UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
-        NoticeUi.checkOnStart(this)
     }
 
     private fun showEmojiPanel() {

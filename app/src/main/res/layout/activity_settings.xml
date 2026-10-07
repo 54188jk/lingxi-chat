@@ -378,24 +378,9 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/btnNotice"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_white"
-                android:backgroundTint="@null"
-                android:drawableStart="@drawable/ic_notice"
-                android:drawablePadding="6dp"
-                android:gravity="center"
-                android:text="查看公告"
-                android:textColor="#FF000000" />
-
-            <Button
                 android:id="@+id/btnHistoryVersion"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
                 android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
                 android:drawableStart="@drawable/ic_history"
@@ -411,7 +396,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="24dp"
-            android:text="公告与历史版本均从官方公开仓库读取，免费、无需任何 Key。"
+            android:text="历史版本从官方公开仓库读取，免费、无需任何 Key。"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 

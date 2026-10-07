@@ -84,22 +84,6 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
 
-        <FrameLayout
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:background="@drawable/bg_icon_circle"
-            android:padding="9dp">
-
-            <ImageButton
-                android:id="@+id/btnNotice"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@null"
-                android:contentDescription="公告"
-                android:padding="0dp"
-                android:src="@drawable/ic_notice" />
-        </FrameLayout>
-
         <ImageButton
             android:id="@+id/btnHistory"
             android:layout_width="38dp"
