@@ -207,6 +207,22 @@
             android:background="@drawable/bg_card"
             android:padding="16dp">
 
+            <FrameLayout
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:layout_marginEnd="14dp"
+                android:background="@drawable/bg_icon_circle"
+                android:padding="3dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:contentDescription="图标"
+                    android:scaleType="fitCenter"
+                    android:src="@mipmap/ic_launcher" />
+            </FrameLayout>
+
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -368,6 +384,9 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_notice"
+                android:drawablePadding="6dp"
+                android:gravity="center"
                 android:text="查看公告"
                 android:textColor="#FF000000" />
 
@@ -379,6 +398,9 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_history"
+                android:drawablePadding="6dp"
+                android:gravity="center"
                 android:text="历史版本"
                 android:textColor="#FF000000" />
         </LinearLayout>

@@ -84,14 +84,21 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
 
-        <ImageButton
-            android:id="@+id/btnNotice"
+        <FrameLayout
             android:layout_width="38dp"
             android:layout_height="38dp"
-            android:background="@drawable/bg_icon_btn"
-            android:contentDescription="公告"
-            android:padding="9dp"
-            android:src="@drawable/ic_notice" />
+            android:background="@drawable/bg_icon_circle"
+            android:padding="9dp">
+
+            <ImageButton
+                android:id="@+id/btnNotice"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:contentDescription="公告"
+                android:padding="0dp"
+                android:src="@drawable/ic_notice" />
+        </FrameLayout>
 
         <ImageButton
             android:id="@+id/btnHistory"
@@ -390,12 +397,10 @@
             android:id="@+id/btnSend"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:src="@drawable/ic_send"
             android:background="@drawable/bg_send_btn"
+            android:contentDescription="发送"
             android:padding="12dp"
-            android:elevation="6dp"
-            android:outlineSpotShadowColor="#80FB7185"
-            android:contentDescription="发送" />
+            android:src="@drawable/ic_send" />
     </LinearLayout>
 
 </LinearLayout>
