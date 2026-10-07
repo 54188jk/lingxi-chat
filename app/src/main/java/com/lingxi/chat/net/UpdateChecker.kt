@@ -24,10 +24,16 @@ object UpdateChecker {
         CheckSource("GitHub", LATEST_URL, GITHUB)
     )
 
-    /** Gitee 上按约定命名的下载直链（免 Token，国内直连最快，用作下载首选源） */
+    /**
+     * Gitee 上按约定命名的下载直链（免 Token，国内直连最快，用作下载首选源）。
+     *
+     * 注意：正式签名版资产名带 `-release` 后缀（灵犀AI-v1.161-release.apk），
+     * 与 GitHub 上的 lingxi-vX.apk 命名不同，所以这里必须用 Gitee 的命名规则。
+     * 拿不到确切资产名时（Gitee API 没返回）才会退化到按约定拼接。
+     */
     fun giteeDownloadUrl(version: String): String =
         "https://gitee.com/wuzhuf/lingxi-chat/releases/download/v$version/" +
-                java.net.URLEncoder.encode("灵犀AI-v$version.apk", "UTF-8").replace("+", "%20")
+                java.net.URLEncoder.encode("灵犀AI-v$version-release.apk", "UTF-8").replace("+", "%20")
 
     private const val GITHUB = 0
     private const val GITEE = 1

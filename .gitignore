@@ -17,6 +17,12 @@ patch_body.json
 dist/
 rel*.json
 asset*.json
+# 临时接口响应/探测产物，可能含真实 Token，禁止入库
+gitee*.json
+gp*.json
+gpr.json
+att.json
+ts1*.txt
 
 *.apk
 keystore
