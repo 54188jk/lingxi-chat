@@ -81,6 +81,34 @@ object UpdateUi {
 
     private class SlowSourceException : Exception("速度过慢")
 
+    /** 下载完但文件不完整/损坏：直接换下一个源，不给用户装坏包的机会 */
+    private class CorruptedApkException(msg: String) : Exception(msg)
+
+    /**
+     * 校验下载下来的 APK 是否可用。
+     * 三道检查：大小与服务器声明一致、ZIP 能完整读取、里面有 manifest 和 dex。
+     */
+    private fun verifyApk(apk: File, expectedFromServer: Long, releaseSize: Long) {
+        if (!apk.exists() || apk.length() <= 0) throw CorruptedApkException("文件为空")
+        if (expectedFromServer > 0 && apk.length() != expectedFromServer) {
+            throw CorruptedApkException("大小不符（${apk.length()}/$expectedFromServer）")
+        }
+        if (releaseSize > 0 && apk.length() != releaseSize) {
+            throw CorruptedApkException("与发布包大小不符")
+        }
+        try {
+            java.util.zip.ZipFile(apk).use { zip ->
+                val names = zip.entries().toList().map { it.name }
+                if (names.none { it == "AndroidManifest.xml" }) throw CorruptedApkException("缺少 manifest")
+                if (names.none { it.matches(Regex("classes\\d*\\.dex")) }) throw CorruptedApkException("缺少 dex")
+            }
+        } catch (e: CorruptedApkException) {
+            throw e
+        } catch (e: Exception) {
+            throw CorruptedApkException("包结构损坏：${e.message}")
+        }
+    }
+
     private fun mirrorCandidates(url: String): List<Pair<String, String>> {
         val official = "官方源"
         return listOf(
@@ -212,10 +240,16 @@ object UpdateUi {
                     activity.runOnUiThread {
                         status.text = if (idx == 0) "连接${label}…" else "${label}（${idx + 1}/${candidates.size}）…"
                     }
-                    downloadOnce(activity, apk, url, label, bar, percent, speed, status)
+                    val serverSize = downloadOnce(activity, apk, url, label, bar, percent, speed, status)
+                    verifyApk(apk, serverSize, info.sizeBytes)
                     done = true
                 } catch (e: SlowSourceException) {
                     apk.delete()
+                    continue
+                } catch (e: CorruptedApkException) {
+                    apk.delete()
+                    error = "下载的文件不完整（${e.message}），已自动换源重试"
+                    activity.runOnUiThread { status.text = "文件不完整，换源重试…" }
                     continue
                 } catch (e: Exception) {
                     if (downloadCall?.isCanceled() == true) {
@@ -236,7 +270,7 @@ object UpdateUi {
                         apk.delete()
                         onEnd(false, null)
                     }
-                    else -> onEnd(false, "下载失败：${error ?: "所有下载源均不可用"}")
+                    else -> onEnd(false, error ?: "下载失败：所有下载源均不可用")
                 }
             }
         }.start()
@@ -251,10 +285,10 @@ object UpdateUi {
         percent: TextView,
         speed: TextView,
         status: TextView
-    ) {
+    ): Long {
         val call = http.newCall(Request.Builder().url(url).build())
         downloadCall = call
-        call.execute().use { resp ->
+        return call.execute().use { resp ->
             if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
             val total = resp.body?.contentLength() ?: -1L
             val input = resp.body?.byteStream() ?: throw Exception("响应为空")
@@ -299,6 +333,8 @@ object UpdateUi {
             }
             out.flush()
             out.close()
+            // 返回服务端声明的总大小，供上层做完整性校验
+            total
         }
     }
 
