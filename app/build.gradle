@@ -36,8 +36,8 @@ android {
         applicationId "com.lingxi.chat"
         minSdk 24
         targetSdk 35
-        versionCode 29
-        versionName "1.161"
+        versionCode 30
+        versionName "1.162"
         // 所有对外请求都是 HTTPS，不开明文流量（仅 debug 包为方便本地 mock 放开）
     }
 
@@ -76,4 +76,6 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.9.3'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.4'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // 协程：异步层（替换裸Thread/Handler），随 APK 内置，不额外走网络
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
 }

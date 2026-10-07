@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.161**（versionCode 29 · minSdk 24 · targetSdk 35）
+当前版本：**v1.162**（versionCode 30 · minSdk 24 · targetSdk 35）
 
 ## 项目简介
 
@@ -30,8 +30,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.161/lingxi-v1.161.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.161/灵犀AI-v1.161-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.162/lingxi-v1.162.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.162/灵犀AI-v1.162-release.apk |
 
 应用内「设置 → 检查更新」会自动挑最快的源（Gitee 直连优先，GitHub 多镜像兜底）。
 
@@ -39,6 +39,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.162 | 异步层全量协程化：流式对话改为冷流（callbackFlow），「停止生成」即取消收集协程并掐断网络；打字机、光标闪烁、顶栏时钟、思考动画、草稿防抖改用生命周期作用域；联网搜索与语音识别切到 IO 调度器；修复 Gitee 下载直链按约定猜错资产名（正式包名带 -release 后缀）的问题，改为优先使用接口返回的准确地址 |
 | v1.161 | 历史版本列表点整行即可查看该版本完整更新内容（Markdown 渲染、可滚动、可跳转版本页面，弹窗内可直接下载或回退）；更新源把 Gitee 提到首位（检查更新与下载均优先走 Gitee 直连） |
 | v1.160 | 正式发布版改造：启用正式签名并关闭 debuggable；开启 R8 混淆与资源压缩，包体 6.6MB → 2.46MB；关闭明文流量仅允许 HTTPS；新增会话全量备份与恢复（设置 → 数据备份） |
 | v1.159 | 图标去红：桌面图标外圈与自适应图标背景改为中性浅灰描边 + 纯白底；顶栏头像外环同步改为中性描边 |
@@ -81,10 +82,15 @@ gradle assembleDebug
 # 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
 
-技术栈：Kotlin + Android View（ViewBinding）+ OkHttp + org.json，无第三方 UI 框架，最小依赖。仓库里的 Gradle 使用阿里云镜像加速。
+技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json，无第三方 UI 框架，最小依赖。仓库里的 Gradle 使用阿里云镜像加速。
+
+异步约定：界面层用 `lifecycleScope` 承载协程，随 Activity 销毁自动取消，不留后台线程；阻塞网络一律 `Dispatchers.IO`；流式响应走 `callbackFlow` 冷流，收集方取消即中断请求。
 
 ## 自测结果
 
+- v1.162 正式签名校验通过（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩，包体 2.50MB
+- 源码与安装包扫描未发现任何真实凭据（仅剩运行时拼接的 `Bearer` 字面量）
+- MainActivity 已无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`（静态检查计数为 0）
 - 双端发布包 SHA256 校验一致（本地文件 = 线上文件）
 - 完整走通：检查更新 → 多源测速 → 下载（自动换源 + 完整性校验）→ 授权安装 → 安装后版本号正确
 - 微信/QQ 无关功能不涉及；深浅主题、字号缩放、回车发送、表情面板、剪贴板图片均已验证

@@ -28,6 +28,13 @@ import com.lingxi.chat.data.SessionStore
 import com.lingxi.chat.databinding.ActivityMainBinding
 import com.lingxi.chat.net.OpenAiClient
 import com.lingxi.chat.net.SearchClient
+import androidx.lifecycle.LifecycleCoroutineScope
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
@@ -65,31 +72,23 @@ class MainActivity : BaseActivity() {
     private var recordDialog: android.app.AlertDialog? = null
     private var pendingSttConfig: com.lingxi.chat.data.ModelConfig? = null
 
-    private val thinkingHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var thinkingRunnable: Runnable? = null
+    // ============ 协程异步层（替代裸Thread/Handler）============
 
-    // 打字机：把已收到的文本按帧逐步显示，积压越多追得越快
+    /** 生命周期作用域：Activity 销毁时自动取消所有协程，不会泄漏 */
+    private val scope: LifecycleCoroutineScope = lifecycleScope
+
+    /** 「思考中」三点动画 */
+    private var thinkingJob: kotlinx.coroutines.Job? = null
+
+    /** 打字机：把已收到的文本按帧逐步显示，积压越多追得越快 */
     private var revealedLen = 0
-    private var typeRunnable: Runnable? = null
-    private var draftRunnable: Runnable? = null
+    private var typeJob: kotlinx.coroutines.Job? = null
+    private var draftJob: kotlinx.coroutines.Job? = null
+    private var caretJob: kotlinx.coroutines.Job? = null
+    private var clockJob: kotlinx.coroutines.Job? = null
 
     // 流式光标闪烁：▍ 每 500ms 显示/隐藏
     private var caretVisible = true
-    private val caretRunnable = object : Runnable {
-        override fun run() {
-            caretVisible = !caretVisible
-            (adapter?.streamingIndex ?: -1).takeIf { it >= 0 }?.let { idx ->
-                val msg = session.messages.getOrNull(idx) ?: return@let
-                if (msg.content.isNotBlank()) {
-                    adapter?.updateStreamingText(
-                        msg.content.substring(0, minOf(revealedLen, msg.content.length)),
-                        caretVisible
-                    )
-                }
-            }
-            thinkingHandler.postDelayed(this, 500)
-        }
-    }
 
     /** 系统关闭动画时（开发者选项/无障碍）跳过动态效果 */
     private fun animationsEnabled(): Boolean {
@@ -102,27 +101,47 @@ class MainActivity : BaseActivity() {
     // 会话内搜索命中的关键词
     private var highlightKey: String? = null
 
-    // 顶栏实时时钟：每秒刷新
-    private val clockHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val clockRunnable = object : Runnable {
-        override fun run() {
-            b.tvClock.text = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            clockHandler.postDelayed(this, 1000)
+    private fun startThinkingTicker(index: Int) {
+        thinkingJob?.cancel()
+        thinkingJob = scope.launch {
+            while (isActive) {
+                if (!streaming || session.messages.getOrNull(index)?.content?.isNotBlank() == true) return@launch
+                adapter.thinkingDots = adapter.thinkingDots % 3 + 1
+                adapter.notifyItemChanged(index)
+                delay(450)
+            }
         }
     }
 
-    private fun startThinkingTicker(index: Int) {
-        thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
-        val r = object : Runnable {
-            override fun run() {
-                if (!streaming || session.messages.getOrNull(index)?.content?.isNotBlank() == true) return
-                adapter.thinkingDots = adapter.thinkingDots % 3 + 1
-                adapter.notifyItemChanged(index)
-                thinkingHandler.postDelayed(this, 450)
+    /** 光标闪烁：只关心「正在流式输出的那一条」 */
+    private fun startCaretBlink() {
+        caretJob?.cancel()
+        caretJob = scope.launch {
+            while (isActive) {
+                delay(500)
+                caretVisible = !caretVisible
+                val idx = adapter.streamingIndex
+                if (idx < 0) continue
+                val msg = session.messages.getOrNull(idx) ?: continue
+                if (msg.content.isNotBlank()) {
+                    adapter.updateStreamingText(
+                        msg.content.substring(0, minOf(revealedLen, msg.content.length)),
+                        caretVisible
+                    )
+                }
             }
         }
-        thinkingRunnable = r
-        thinkingHandler.postDelayed(r, 450)
+    }
+
+    /** 顶栏时钟：进入前台时启动，离开时自动停 */
+    private fun startClock() {
+        clockJob?.cancel()
+        clockJob = scope.launch {
+            while (isActive) {
+                b.tvClock.text = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                delay(1000)
+            }
+        }
     }
 
     private val openSessions =
@@ -265,11 +284,12 @@ if (r.resultCode == Activity.RESULT_OK) {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
-                draftRunnable?.let { thinkingHandler.removeCallbacks(it) }
+                draftJob?.cancel()
                 val text = s?.toString().orEmpty()
-                val r = Runnable { configStore.draft = text }
-                draftRunnable = r
-                thinkingHandler.postDelayed(r, 600)
+                draftJob = scope.launch {
+                    delay(600)
+                    configStore.draft = text
+                }
             }
         })
         if (configStore.draft.isNotBlank()) {
@@ -345,23 +365,19 @@ if (r.resultCode == Activity.RESULT_OK) {
         refreshModelLabel()
         updateSearchTint()
         UpdateUi.resumeInstallIfNeeded(this)
-        clockHandler.removeCallbacks(clockRunnable)
-        clockRunnable.run()
+        startClock()
     }
 
     override fun onPause() {
         super.onPause()
-        clockHandler.removeCallbacks(clockRunnable)
+        clockJob?.cancel()
     }
 
     override fun onDestroy() {
         tts?.shutdown()
         speechRecognizer?.destroy()
-        thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
-        stopTypewriter()
-        draftRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        // 协程随生命周期自动取消，这里只需释放录音资源
         configStore.draft = b.etInput.text.toString()
-        clockHandler.removeCallbacks(clockRunnable)
         if (recording) {
             try {
                 recorder?.stop()
@@ -577,12 +593,11 @@ if (r.resultCode == Activity.RESULT_OK) {
                 override fun onBeginningOfSpeech() {}
                 override fun onRmsChanged(rmsdB: Float) {}
                 override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() { runOnUiThread { setListening(false) } }
+                // 系统识别回调本身就在主线程，这里直接更新 UI
+                override fun onEndOfSpeech() { setListening(false) }
                 override fun onError(error: Int) {
-                    runOnUiThread {
-                        setListening(false)
-                        toast("语音识别失败（错误码 $error）")
-                    }
+                    setListening(false)
+                    toast("语音识别失败（错误码 $error）")
                 }
                 override fun onResults(results: Bundle?) {
                     val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -694,7 +709,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         setListening(false)
         val f = recordFile ?: return
         toast("正在识别…")
-        Thread {
+        scope.launch {
             var text: String? = null
             // 依次尝试：当前模型 → 其余已配置且有 Key 的模型（优先带语音模型的）
             val candidates = ArrayList<com.lingxi.chat.data.ModelConfig>()
@@ -703,23 +718,23 @@ if (r.resultCode == Activity.RESULT_OK) {
                 .filter { it.apiKey.isNotBlank() && candidates.none { c -> c.id == it.id } }
                 .sortedByDescending { if (it.sttModel.isNotBlank()) 1 else 0 }
                 .forEach { candidates.add(it) }
-            for (cfg in candidates) {
-                try {
-                    text = transcribeAudio(cfg, f)
-                } catch (e: Exception) {
-                    text = null
+            withContext(Dispatchers.IO) {
+                for (cfg in candidates) {
+                    try {
+                        text = transcribeAudio(cfg, f)
+                    } catch (e: Exception) {
+                        text = null
+                    }
+                    if (!text.isNullOrBlank()) break
                 }
-                if (!text.isNullOrBlank()) break
+                f.delete()
             }
-            f.delete()
-            runOnUiThread {
-                if (text.isNullOrBlank()) {
-                    toast("识别失败：已尝试 ${candidates.size} 个模型，均不支持语音接口。可在设置→免费语音识别添加免费服务")
-                } else {
-                    appendToInput(text)
-                }
+            if (text.isNullOrBlank()) {
+                toast("识别失败：已尝试 ${candidates.size} 个模型，均不支持语音接口。可在设置→免费语音识别添加免费服务")
+            } else {
+                appendToInput(text)
             }
-        }.start()
+        }
     }
 
     private fun resolveSttModel(cfg: com.lingxi.chat.data.ModelConfig): String {
@@ -1062,27 +1077,27 @@ if (r.resultCode == Activity.RESULT_OK) {
             session.messages.add(searchingMsg)
             adapter.notifyItemInserted(session.messages.size - 1)
             b.rvMessages.scrollToPosition(adapter.itemCount - 1)
-            Thread {
-                val hits = try {
-                    SearchClient.searchHits(text.take(200))
-                } catch (e: Exception) {
-                    emptyList()
-                }
-                runOnUiThread {
-                    session.messages.remove(searchingMsg)
-                    adapter.notifyDataSetChanged()
-                    if (hits.isEmpty()) {
-                        setStreaming(false)
-                        appendError("联网搜索失败，已转为直接回答")
-                        callApi(null, emptyList())
-                    } else {
-                        callApi(
-                            hits.joinToString("\n\n") { h -> "${h.title}\n${h.url}\n${h.snippet}" },
-                            hits
-                        )
+            scope.launch {
+                val hits = withContext(Dispatchers.IO) {
+                    try {
+                        SearchClient.searchHits(text.take(200))
+                    } catch (e: Exception) {
+                        emptyList()
                     }
                 }
-            }.start()
+                session.messages.remove(searchingMsg)
+                adapter.notifyDataSetChanged()
+                if (hits.isEmpty()) {
+                    setStreaming(false)
+                    appendError("联网搜索失败，已转为直接回答")
+                    callApi(null, emptyList())
+                } else {
+                    callApi(
+                        hits.joinToString("\n\n") { h -> "${h.title}\n${h.url}\n${h.snippet}" },
+                        hits
+                    )
+                }
+            }
         } else {
             callApi(null, emptyList())
         }
@@ -1112,66 +1127,72 @@ if (r.resultCode == Activity.RESULT_OK) {
         revealedLen = 0
         startTypewriter(aiMsg)
 
-        client.streamChat(
-            cfg, apiMsgs,
-            onDelta = { delta ->
-                aiMsg.content += delta
-            },
-            onDone = {
-                runOnUiThread {
-                    stopTypewriter()
-                    adapter.flushStreaming(aiIndex)
-                    sessionStore.save(session)
-                    setStreaming(false)
-                }
-            },
-            onError = { err ->
-                runOnUiThread {
-                    if (aiMsg.content.isBlank()) {
-                        aiMsg.content = "出错了：$err"
-                    } else {
-                        aiMsg.content += "\n\n[中断：$err]"
+        // 收集流式响应：取消本协程即中断网络请求
+        streamJob = scope.launch {
+            client.streamChat(cfg, apiMsgs).collect { ev ->
+                when (ev) {
+                    is com.lingxi.chat.net.OpenAiClient.Event.Delta -> {
+                        if (ev.text.isNotEmpty()) aiMsg.content += ev.text
                     }
-                    stopTypewriter()
-                    adapter.flushStreaming(aiIndex)
-                    sessionStore.save(session)
-                    setStreaming(false)
+
+                    com.lingxi.chat.net.OpenAiClient.Event.Done -> {
+                        stopTypewriter()
+                        adapter.flushStreaming(aiIndex)
+                        sessionStore.save(session)
+                        setStreaming(false)
+                    }
+
+                    is com.lingxi.chat.net.OpenAiClient.Event.Failed -> {
+                        if (aiMsg.content.isBlank()) {
+                            aiMsg.content = "出错了：${ev.message}"
+                        } else {
+                            aiMsg.content += "\n\n[中断：${ev.message}]"
+                        }
+                        stopTypewriter()
+                        adapter.flushStreaming(aiIndex)
+                        sessionStore.save(session)
+                        setStreaming(false)
+                    }
                 }
             }
-        )
+        }
     }
+
+    /** 当前流式请求的收集协程，用于「停止生成」 */
+    private var streamJob: kotlinx.coroutines.Job? = null
 
     /** 打字机：每 24ms 多显示几个字，积压越多追得越快，长回答不至于等太久 */
     private fun startTypewriter(aiMsg: ChatMessage) {
         stopTypewriter()
         caretVisible = true
-        thinkingHandler.postDelayed(caretRunnable, 500)
-        val r = object : Runnable {
-            override fun run() {
-                if (!streaming) return
+        startCaretBlink()
+        typeJob = scope.launch {
+            while (isActive) {
+                if (!streaming) return@launch
                 val full = aiMsg.content
-                if (revealedLen < full.length) {
-                    val backlog = full.length - revealedLen
-                    revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
-                    adapter.updateStreamingText(full.substring(0, revealedLen), caretVisible)
-                    scrollToEndIfNearBottom()
-                    thinkingHandler.postDelayed(this, 24)
-                }
+                if (revealedLen >= full.length) return@launch
+                val backlog = full.length - revealedLen
+                revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
+                adapter.updateStreamingText(full.substring(0, revealedLen), caretVisible)
+                scrollToEndIfNearBottom()
+                delay(24)
             }
         }
-        typeRunnable = r
-        thinkingHandler.post(r)
     }
 
     private fun stopTypewriter() {
-        typeRunnable?.let { thinkingHandler.removeCallbacks(it) }
-        typeRunnable = null
-        thinkingHandler.removeCallbacks(caretRunnable)
+        typeJob?.cancel()
+        typeJob = null
+        caretJob?.cancel()
+        caretJob = null
     }
 
-    /** 点「停止」：掐断网络流，已收到的内容定稿，空气泡直接撤掉 */
+    /** 点「停止」：取消收集协程即掐断网络流，已收到的内容定稿，空气泡直接撤掉 */
     private fun stopGenerating() {
         if (!streaming) return
+        // 取消收集 → callbackFlow 的 awaitClose 触发 → call.cancel()，无需等超时
+        streamJob?.cancel()
+        streamJob = null
         client.cancel()
         stopTypewriter()
         val idx = adapter.streamingIndex

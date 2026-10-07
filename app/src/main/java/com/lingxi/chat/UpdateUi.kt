@@ -109,12 +109,23 @@ object UpdateUi {
         }
     }
 
-    private fun mirrorCandidates(url: String, version: String = ""): List<Pair<String, String>> {
+    /**
+     * 生成下载候选源，按国内实测速度排序。
+     *
+     * @param giteeUrl Gitee 侧的准确资产直链（来自 API）。优先用它，避免按约定拼名猜错；
+     *                 为空时才退化到按版本号拼接。
+     */
+    private fun mirrorCandidates(
+        url: String,
+        version: String = "",
+        giteeUrl: String = ""
+    ): List<Pair<String, String>> {
         // 顺序按国内实测速度排：Gitee 直连最快，其后是 GitHub 加速镜像，最后才是 GitHub 官方源
         val list = mutableListOf<Pair<String, String>>()
-        if (version.isNotBlank()) {
-            list.add(com.lingxi.chat.net.UpdateChecker.giteeDownloadUrl(version) to "Gitee 直连")
+        val direct = giteeUrl.ifBlank {
+            if (version.isNotBlank()) com.lingxi.chat.net.UpdateChecker.giteeDownloadUrl(version) else ""
         }
+        if (direct.isNotBlank()) list.add(direct to "Gitee 直连")
         list.add(("https://ghfast.top/$url") to "加速源 1")
         list.add(("https://gh-proxy.com/$url") to "加速源 2")
         list.add(("https://ghproxy.net/$url") to "加速源 3")
@@ -237,7 +248,12 @@ object UpdateUi {
         Thread {
             var error: String? = null
             var done = false
-            val candidates = mirrorCandidates(info.downloadUrl, info.version)
+            // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链，直接当首选源用
+            val candidates = mirrorCandidates(
+                info.downloadUrl,
+                info.version,
+                giteeUrl = if (info.sourceName == "Gitee") info.downloadUrl else ""
+            )
             for ((idx, pair) in candidates.withIndex()) {
                 if (done) break
                 val (url, label) = pair

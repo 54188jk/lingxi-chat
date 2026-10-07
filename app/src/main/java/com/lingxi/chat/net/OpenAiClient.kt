@@ -2,6 +2,11 @@ package com.lingxi.chat.net
 
 import com.lingxi.chat.data.ChatMessage
 import com.lingxi.chat.data.ModelConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -12,28 +17,40 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+/**
+ * OpenAI 兼容接口客户端。
+ *
+ * 流式对话用冷流（callbackFlow）暴露：收集协程被取消时网络请求自动中断，
+ * 因此「停止生成」只需取消收集方，不再需要手工管理线程与回调。
+ */
 class OpenAiClient {
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     @Volatile
     private var currentCall: Call? = null
 
+    /** 主动中断当前流式请求（用户点「停止生成」） */
     fun cancel() {
         currentCall?.cancel()
     }
 
-    fun streamChat(
-        config: ModelConfig,
-        messages: List<ChatMessage>,
-        onDelta: (String) -> Unit,
-        onDone: () -> Unit,
-        onError: (String) -> Unit
-    ) {
+    /** 流式事件：增量文本 / 正常结束 / 出错 */
+    sealed interface Event {
+        data class Delta(val text: String) : Event
+        data object Done : Event
+        data class Failed(val message: String) : Event
+    }
+
+    /**
+     * 流式对话。返回冷流，取消收集即中断请求。
+     *
+     * @param messages 已构造好的完整消息列表（含 system 提示）
+     */
+    fun streamChat(config: ModelConfig, messages: List<ChatMessage>): Flow<Event> = callbackFlow {
         val body = buildBody(config, messages)
         val url = config.baseUrl.trimEnd('/') + "/chat/completions"
         val req = Request.Builder()
@@ -46,16 +63,17 @@ class OpenAiClient {
         val call = http.newCall(req)
         currentCall = call
 
-        Thread {
+        // 阻塞 IO 放到 IO 调度器；收集端取消会传播到本协程，进而让 call 抛异常退出
+        val job = launch(Dispatchers.IO) {
             try {
                 call.execute().use { resp ->
                     if (!resp.isSuccessful) {
                         val errBody = resp.body?.string()?.take(500) ?: ""
-                        onError("请求失败 HTTP ${resp.code}：${parseErr(errBody)}")
+                        trySend(Event.Failed("请求失败 HTTP ${resp.code}：${parseErr(errBody)}"))
                         return@use
                     }
                     val source = resp.body?.source() ?: run {
-                        onError("响应体为空")
+                        trySend(Event.Failed("响应体为空"))
                         return@use
                     }
                     while (!source.exhausted()) {
@@ -69,18 +87,19 @@ class OpenAiClient {
                                 ?.optJSONObject(0)
                                 ?.optJSONObject("delta")
                                 ?.optString("content", "")
-                            if (!delta.isNullOrEmpty()) onDelta(delta)
+                            if (!delta.isNullOrEmpty()) trySend(Event.Delta(delta))
                         } catch (_: Exception) {
                         }
                     }
-                    onDone()
+                    trySend(Event.Done)
                 }
             } catch (e: IOException) {
-                if (call.isCanceled()) onError("已停止") else onError("网络错误：${e.message}")
+                if (call.isCanceled()) close() else trySend(Event.Failed("网络错误：${e.message}"))
             } catch (e: Exception) {
-                onError("出错：${e.message}")
+                trySend(Event.Failed("出错：${e.message}"))
             }
-        }.start()
+        }
+        awaitClose { job.cancel() }
     }
 
     private fun buildBody(config: ModelConfig, messages: List<ChatMessage>): JSONObject {
