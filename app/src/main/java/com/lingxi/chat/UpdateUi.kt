@@ -302,6 +302,74 @@ object UpdateUi {
         }
     }
 
+    // ---------------- 历史版本 ----------------
+
+    /**
+     * 下载并安装指定版本（历史版本列表用），复用同一套更新页与镜像加速逻辑。
+     * 降级安装系统会拒绝，调用方需先提示用户卸载当前版本。
+     */
+    fun openVersionPage(activity: Activity, info: UpdateChecker.ReleaseInfo, isDowngrade: Boolean) {
+        if (isDowngrade) {
+            android.app.AlertDialog.Builder(activity)
+                .setTitle("这是历史版本 v${info.version}")
+                .setMessage(
+                    "你当前已是更新版本，安装旧版需要先卸载「灵犀AI」，" +
+                            "卸载会一并清空本机的会话记录和模型配置。\n\n" +
+                            "确定要安装 v${info.version} 吗？"
+                )
+                .setPositiveButton("仍然安装") { _, _ -> showDownloadPage(activity, info, "历史版本") }
+                .setNegativeButton("取消", null)
+                .show()
+            return
+        }
+        showDownloadPage(activity, info, "历史版本")
+    }
+
+    private fun showDownloadPage(activity: Activity, info: UpdateChecker.ReleaseInfo, tagText: String) {
+        val view = inflate(activity)
+        val notes = view.findViewById<TextView>(R.id.tvNotes)
+        val meta = view.findViewById<TextView>(R.id.tvMeta)
+        view.findViewById<TextView>(R.id.tvHeadTitle).text = "下载 v${info.version}"
+        view.findViewById<TextView>(R.id.tvHeadVersion).text = "历史版本"
+        view.findViewById<TextView>(R.id.tvTag).text = tagText
+        notes.text = splitNotes(info.notes).first
+        meta.text = buildString {
+            if (info.publishedAt.isNotBlank()) append("发布于 ${info.publishedAt}")
+            if (info.sizeBytes > 0) {
+                if (isNotEmpty()) append(" · ")
+                append("安装包 ${"%.1f".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0)} MB")
+            }
+        }
+        val progressBox = view.findViewById<LinearLayout>(R.id.llProgress)
+        val percent = view.findViewById<TextView>(R.id.tvPercent)
+        val speed = view.findViewById<TextView>(R.id.tvSpeed)
+        val bar = view.findViewById<ProgressBar>(R.id.pbDownload)
+        val status = view.findViewById<TextView>(R.id.tvDownloadStatus)
+
+        val dialog = android.app.AlertDialog.Builder(activity)
+            .setView(view)
+            .setPositiveButton("开始下载", null)
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.show()
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            progressBox.visibility = View.VISIBLE
+            percent.text = "0%"
+            speed.text = "0 KB/s"
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            download(activity, info, bar, percent, speed, status) { ok, msg ->
+                progressBox.visibility = View.GONE
+                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
+                if (ok) {
+                    dialog.dismiss()
+                    installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
+                } else if (msg != null) {
+                    Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     // ---------------- 安装 ----------------
 
     private fun installApk(activity: Activity, apk: File) {

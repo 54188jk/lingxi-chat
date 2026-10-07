@@ -85,6 +85,11 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "回车将直接发送" else "回车改为换行")
         }
 
+        b.btnNotice.setOnClickListener { NoticeUi.open(this) }
+        b.btnHistoryVersion.setOnClickListener {
+            VersionsUi.open(this, BuildConfig.VERSION_NAME)
+        }
+
         b.spTheme.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themes.map { it.second })
         b.spTheme.setSelection(maxOf(0, themes.indexOfFirst { it.first == store.themeMode }))
         b.spTheme.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

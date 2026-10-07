@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 object UpdateChecker {
 
     private const val LATEST_URL = "https://api.github.com/repos/54188jk/lingxi-chat/releases/latest"
+    private const val LIST_URL = "https://api.github.com/repos/54188jk/lingxi-chat/releases?per_page=30"
     private const val RELEASES_PAGE = "https://github.com/54188jk/lingxi-chat/releases"
 
     data class ReleaseInfo(
@@ -81,5 +82,57 @@ object UpdateChecker {
             if (x != y) return x > y
         }
         return false
+    }
+
+    /** 历史版本列表（含最新版，按时间倒序），失败返回空列表 */
+    fun fetchReleases(): List<ReleaseInfo> {
+        return try {
+            val req = Request.Builder()
+                .url(LIST_URL)
+                .header("User-Agent", "LingxiChat-Android")
+                .build()
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return emptyList()
+                val arr = org.json.JSONArray(resp.body?.string() ?: return emptyList())
+                val out = mutableListOf<ReleaseInfo>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    if (o.optBoolean("draft")) continue
+                    val tag = o.optString("tag_name", "").removePrefix("v")
+                    // 只要纯数字版本号，公告/测试之类的 tag 直接跳过
+                    val parts = tag.split(".")
+                    if (parts.isEmpty() || parts.any { it.toIntOrNull() == null }) continue
+                    val version = tag
+                    var url = ""
+                    var size = 0L
+                    o.optJSONArray("assets")?.let { assets ->
+                        for (k in 0 until assets.length()) {
+                            val a = assets.optJSONObject(k) ?: continue
+                            if (a.optString("content_type", "").contains("android") ||
+                                a.optString("name", "").endsWith(".apk")
+                            ) {
+                                url = a.optString("browser_download_url", "")
+                                size = a.optLong("size", 0L)
+                                break
+                            }
+                        }
+                    }
+                    if (url.isBlank()) continue
+                    out.add(
+                        ReleaseInfo(
+                            version = version,
+                            notes = o.optString("body", ""),
+                            downloadUrl = url,
+                            publishedAt = formatPublished(o.optString("published_at", "")),
+                            sizeBytes = size,
+                            pageUrl = o.optString("html_url", RELEASES_PAGE)
+                        )
+                    )
+                }
+                out
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }

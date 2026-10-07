@@ -313,18 +313,67 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
-        <Button
+<Button
             android:id="@+id/btnAddFreeStt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp"
-            android:text="+ 添加免费语音服务"
-            android:textColor="@color/accent"
+            android:background="@drawable/bg_card"
             android:backgroundTint="@null"
-            android:background="@drawable/bg_card" />
+            android:text="+ 添加免费语音服务"
+            android:textColor="@color/accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="20dp"
+            android:text="更多"
+            android:textColor="@color/accent"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnNotice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_card"
+                android:backgroundTint="@null"
+                android:text="查看公告"
+                android:textColor="@color/accent" />
+
+            <Button
+                android:id="@+id/btnHistoryVersion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_card"
+                android:backgroundTint="@null"
+                android:text="历史版本"
+                android:textColor="@color/accent" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="24dp"
+            android:text="公告与历史版本均从官方公开仓库读取，免费、无需任何 Key。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
 
     </LinearLayout>
 </ScrollView>

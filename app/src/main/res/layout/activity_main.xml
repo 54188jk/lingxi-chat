@@ -74,6 +74,14 @@
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/btnNotice"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_notice"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="公告" />
+
+        <ImageButton
             android:id="@+id/btnShare"
             android:layout_width="40dp"
             android:layout_height="40dp"

@@ -190,6 +190,8 @@ if (r.resultCode == Activity.RESULT_OK) {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         b.btnShare.setOnClickListener { exportSession() }
+        b.btnNotice.setOnClickListener { NoticeUi.open(this) }
+        NoticeUi.bindBell(this, b.btnNotice)
         b.root.findViewById<android.widget.ImageView>(R.id.ivLogo).setOnClickListener { showRolePicker() }
 
         b.btnAttach.setOnClickListener { showAttachOptions() }
@@ -248,6 +250,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         }
 
         UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
+        NoticeUi.checkOnStart(this)
     }
 
     private fun showEmojiPanel() {
