@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.lingxi.chat.net.UpdateChecker
@@ -72,20 +73,97 @@ object VersionsUi {
                     append("%.1f MB".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0))
                 }
             }
-            val note = info.notes
-                .lines()
-                .filterNot { it.trim().startsWith("发布时间") || it.trim().startsWith("#") }
-                .joinToString(" ")
-                .replace(Regex("\\s+"), " ")
-                .trim()
+            val note = plainNote(info)
             holder.note.text = if (note.isBlank()) "（无更新说明）" else note
             holder.btn.isEnabled = !isCurrent
             holder.btn.alpha = if (isCurrent) 0.4f else 1f
+
+            val downgrade = !isCurrent && !UpdateChecker.isNewer(info.version, currentVersion)
+            // 点整行看该版本完整更新内容
+            holder.itemView.setOnClickListener {
+                showNotes(activity, info, isCurrent, downgrade)
+            }
+            // 点下载按钮直接进下载页
             holder.btn.setOnClickListener {
-                val downgrade = !UpdateChecker.isNewer(info.version, currentVersion) &&
-                        !isCurrent
+                if (isCurrent) return@setOnClickListener
                 UpdateUi.openVersionPage(activity, info, downgrade)
             }
         }
+    }
+
+    /** 把 Release 说明压成一行摘要 */
+    private fun plainNote(info: UpdateChecker.ReleaseInfo): String =
+        info.notes
+            .lines()
+            .filterNot { it.trim().startsWith("发布时间") || it.trim().startsWith("#") }
+            .joinToString(" ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+    /** 弹窗展示某个版本的完整更新内容 */
+    private fun showNotes(
+        activity: Activity,
+        info: UpdateChecker.ReleaseInfo,
+        isCurrent: Boolean,
+        downgrade: Boolean
+    ) {
+        val view = LayoutInflater.from(activity).inflate(R.layout.dialog_version_notes, null)
+        view.findViewById<TextView>(R.id.tvVersionTitle).text =
+            if (isCurrent) "v${info.version}（当前版本）" else "v${info.version}"
+        view.findViewById<TextView>(R.id.tvVersionMeta).text = buildString {
+            if (info.publishedAt.isNotBlank()) append("发布于 ${info.publishedAt}")
+            if (info.sizeBytes > 0) {
+                if (isNotEmpty()) append(" · ")
+                append("%.1f MB".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0))
+            }
+            if (downgrade) append(" · 历史版本")
+        }
+        val tvNotes = view.findViewById<TextView>(R.id.tvVersionNotes)
+        tvNotes.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+        val body = info.notes
+            .lines()
+            .filterNot { it.trim().startsWith("发布时间") }
+            .joinToString("\n")
+            .trim()
+        tvNotes.text = MarkdownRenderer.render(
+            view.context,
+            body.ifBlank { "（该版本没有留下更新说明）" },
+            onLinkClick = { url ->
+                try {
+                    activity.startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(if (url.startsWith("http")) url else "https://$url")
+                        )
+                    )
+                } catch (e: Exception) {
+                    Toast.makeText(activity, "无法打开链接", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+
+        val tvLink = view.findViewById<TextView>(R.id.tvVersionLink)
+        tvLink.setOnClickListener {
+            try {
+                activity.startActivity(
+                    android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(info.pageUrl)
+                    )
+                )
+            } catch (e: Exception) {
+                Toast.makeText(activity, "无法打开页面", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val builder = android.app.AlertDialog.Builder(activity)
+            .setView(view)
+            .setNegativeButton("关闭", null)
+        if (!isCurrent) {
+            builder.setPositiveButton(if (downgrade) "回退到此版本" else "下载此版本") { _, _ ->
+                UpdateUi.openVersionPage(activity, info, downgrade)
+            }
+        }
+        builder.show()
     }
 }

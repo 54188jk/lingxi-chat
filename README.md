@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.159**（versionCode 27 · minSdk 21 · targetSdk 35）
+当前版本：**v1.161**（versionCode 29 · minSdk 24 · targetSdk 35）
 
 ## 项目简介
 
@@ -30,8 +30,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.159/lingxi-v1.159.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.159/灵犀AI-v1.159.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.161/lingxi-v1.161.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.161/灵犀AI-v1.161-release.apk |
 
 应用内「设置 → 检查更新」会自动挑最快的源（Gitee 直连优先，GitHub 多镜像兜底）。
 
@@ -39,6 +39,8 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.161 | 历史版本列表点整行即可查看该版本完整更新内容（Markdown 渲染、可滚动、可跳转版本页面，弹窗内可直接下载或回退）；更新源把 Gitee 提到首位（检查更新与下载均优先走 Gitee 直连） |
+| v1.160 | 正式发布版改造：启用正式签名并关闭 debuggable；开启 R8 混淆与资源压缩，包体 6.6MB → 2.46MB；关闭明文流量仅允许 HTTPS；新增会话全量备份与恢复（设置 → 数据备份） |
 | v1.159 | 图标去红：桌面图标外圈与自适应图标背景改为中性浅灰描边 + 纯白底；顶栏头像外环同步改为中性描边 |
 | v1.158 | Gitee 仓库改公开并接入：检查更新 GitHub+Gitee 并行测速；下载 6 源自动择优（Gitee 直连实测 ~2MB/s） |
 | v1.157 | 多源测速更新架构；彻底移除公告功能（顶栏铃铛、设置页入口、相关代码与文件） |
