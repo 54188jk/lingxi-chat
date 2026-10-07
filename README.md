@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.164**（versionCode 32 · minSdk 24 · targetSdk 35）
+当前版本：**v1.165**（versionCode 33 · minSdk 24 · targetSdk 35）
 
 ## 项目简介
 
@@ -30,8 +30,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.164/lingxi-v1.164.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.164/灵犀AI-v1.164-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.165/lingxi-v1.165.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.165/灵犀AI-v1.165-release.apk |
 
 应用内「设置 → 检查更新」下载走全源并行竞速，自动取最快源完成安装。
 
@@ -41,6 +41,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.165 | 发布：2026-10-07 20:15:24。下载进度条新增贪吃蛇彩蛋皮肤：蛇头逐格吃掉豆子推进、带轻微蠕动与满格反馈，每次点击下载在「普通进度条 / 贪吃蛇」间随机二选一；系统动画关闭时自动退回普通样式 |
 | v1.164 | 发布：2026-10-07 19:58:19。检查更新改为真正「谁先返回用谁」的并行竞速（不再按顺序阻塞等慢源）；历史版本列表 Gitee/GitHub 双源并行 + 5 分钟本地缓存，打开「检查更新」和「历史版本」页面明显提速 |
 | v1.163 | 发布：2026-10-07 18:58:04。界面全面简约白改造：近白底 + 纯白卡片、用户气泡黑底白字反转、按钮统一黑白反转、设置页分节标题与弹窗圆角重做、全部弹窗改主题感知样式；应用内更新下载改为全源并行竞速——Gitee 直连 + 4 镜像 + 官方源同时开下，第一个完成并通过校验者胜出，任何源卡住 15 秒即被剔除，彻底解决「检测到更新后下载慢甚至不下载」 |
 | v1.162 | 发布：2026-10-07 17:35:50。聊天异步层改用协程：流式对话采用冷流、停止生成会取消网络请求；搜索、语音转写、更新检查和历史版本读取在 IO 调度器运行；定时动画与草稿保存随页面生命周期停止；修复 Gitee 安装包地址及 Android 8 以下的安装兼容性 |
@@ -92,12 +93,12 @@ gradle assembleDebug
 
 ## 自测结果
 
-- v1.164 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩，Android Lint 0 错误
-- v1.164 安装包扫描未发现内置仓库凭据；`Bearer` 是请求头构造所需的字面量
+- v1.165 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩
+- v1.165 安装包扫描未发现内置仓库凭据；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为全源并行竞速：任一源卡住 15 秒即被超时剔除，首个完成源通过大小比对 + ZIP 结构 + manifest/dex 校验后才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
-- v1.164 尚未在设备上安装验证；此前已发布版本的安装流程已完成验证
+- v1.165 尚未在设备上安装验证（贪吃蛇进度条为自绘 View，已通过编译与布局校验，实际观感以真机为准）；此前已发布版本的安装流程已完成验证
 - 完整走通：检查更新 → 多源测速 → 下载（自动换源 + 完整性校验）→ 授权安装 → 安装后版本号正确
 - 微信/QQ 无关功能不涉及；深浅主题、字号缩放、回车发送、表情面板、剪贴板图片均已验证
 - Gitee 公开仓匿名可读（仓库 API、Releases API、APK 直链均 200）

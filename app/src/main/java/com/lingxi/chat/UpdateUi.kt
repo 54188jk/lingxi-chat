@@ -150,6 +150,22 @@ object UpdateUi {
         return list
     }
 
+    /**
+     * 下载进度条二选一（每次点击下载随机）：
+     * 普通横条保持原样，贪吃蛇版由蛇头逐格吃掉豆子推进。
+     * 返回进度设置器（0-100），调用方无需关心选了哪一款。
+     */
+    private fun pickProgressView(view: View): (Int) -> Unit {
+        val normal = view.findViewById<ProgressBar>(R.id.pbDownload)
+        val snake = view.findViewById<SnakeProgressView>(R.id.spSnake)
+        val useSnake = kotlin.random.Random.nextBoolean()
+        normal.visibility = if (useSnake) View.GONE else View.VISIBLE
+        snake.visibility = if (useSnake) View.VISIBLE else View.GONE
+        normal.progress = 0
+        snake.progress = 0
+        return { pct -> if (useSnake) snake.progress = pct else normal.progress = pct }
+    }
+
     private fun inflate(activity: Activity): View =
         LayoutInflater.from(activity).inflate(R.layout.dialog_update, null)
 
@@ -163,7 +179,6 @@ object UpdateUi {
         val progressBox = view.findViewById<LinearLayout>(R.id.llProgress)
         val percent = view.findViewById<TextView>(R.id.tvPercent)
         val speed = view.findViewById<TextView>(R.id.tvSpeed)
-        val bar = view.findViewById<ProgressBar>(R.id.pbDownload)
         val status = view.findViewById<TextView>(R.id.tvDownloadStatus)
 
         header.text = "发现新版本"
@@ -199,8 +214,9 @@ object UpdateUi {
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
+            val setProgress = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
-            download(activity, info, bar, percent, speed, status) { ok, msg ->
+            download(activity, info, setProgress, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
@@ -272,7 +288,7 @@ object UpdateUi {
     private fun download(
         activity: Activity,
         info: UpdateChecker.ReleaseInfo,
-        bar: ProgressBar,
+        setProgress: (Int) -> Unit,
         percent: TextView,
         speed: TextView,
         status: TextView,
@@ -397,7 +413,7 @@ object UpdateUi {
                     } else {
                         if (total > 0) {
                             val pct = (d * 100 / total).toInt().coerceAtMost(if (d >= total) 100 else 99)
-                            bar.progress = pct
+                            setProgress(pct)
                             percent.text = "$pct%"
                             val mb = "%.1f".format(Locale.US, d / 1024.0 / 1024.0)
                             val totalMb = "%.1f".format(Locale.US, total / 1024.0 / 1024.0)
@@ -463,7 +479,6 @@ object UpdateUi {
         val progressBox = view.findViewById<LinearLayout>(R.id.llProgress)
         val percent = view.findViewById<TextView>(R.id.tvPercent)
         val speed = view.findViewById<TextView>(R.id.tvSpeed)
-        val bar = view.findViewById<ProgressBar>(R.id.pbDownload)
         val status = view.findViewById<TextView>(R.id.tvDownloadStatus)
 
         val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
@@ -481,8 +496,9 @@ object UpdateUi {
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
+            val setProgress = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
-            download(activity, info, bar, percent, speed, status) { ok, msg ->
+            download(activity, info, setProgress, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {
