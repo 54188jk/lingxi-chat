@@ -5,17 +5,20 @@ import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 /**
- * 公告：读仓库里的 ANNOUNCEMENT.md（公开仓、免 Token）。
+ * 公告：读仓库里的公告文件（公开仓、免 Token）。
  *
  * 速度优化：
  * 1. 源顺序按国内实测速度排：jsDelivr → ghfast → raw 直连
  * 2. 超时压到 4s 连接 / 6s 读，慢源快速失败换下一个，不干等
  * 3. 带 ETag 条件请求，内容没变服务端直接回 304，秒回
  * 4. 成功内容本地缓存，下次直接读缓存渲染，再后台刷新
+ *
+ * 兼容性：优先读纯文本版 ANNOUNCEMENT.txt（任何客户端都解析得动，
+ * 老版本也不会因为 Markdown 结构变化而显示异常），失败再回退 ANNOUNCEMENT.md。
  */
 object NoticeClient {
 
-    private const val PATH = "54188jk/lingxi-chat/master/ANNOUNCEMENT.md"
+    private const val PATH = "54188jk/lingxi-chat/master/ANNOUNCEMENT"
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(4, TimeUnit.SECONDS)
@@ -77,28 +80,31 @@ object NoticeClient {
         }
     }
 
-    private fun sources(): List<String> = listOf(
-        "https://cdn.jsdelivr.net/gh/$PATH",
-        "https://ghfast.top/https://raw.githubusercontent.com/$PATH",
-        "https://raw.githubusercontent.com/$PATH"
+    private fun sources(ext: String): List<String> = listOf(
+        "https://cdn.jsdelivr.net/gh/$PATH$ext",
+        "https://ghfast.top/https://raw.githubusercontent.com/$PATH$ext",
+        "https://raw.githubusercontent.com/$PATH$ext"
     )
 
-    fun fetch(): Notice? {
-        for (url in sources()) {
+    /** 先纯文本、再 Markdown，保证新旧版本都能读到内容 */
+    fun fetch(): Notice? = fetchFrom(".txt", ::parsePlain) ?: fetchFrom(".md", ::parse)
+
+    private fun fetchFrom(ext: String, parser: (String) -> Notice?): Notice? {
+        for (url in sources(ext)) {
             var notice: Notice? = null
             var etag = ""
             try {
                 http.newCall(
                     Request.Builder().url(url)
                         .header("User-Agent", "LingxiChat-Android")
-                        .apply { if (cacheEtag.isNotBlank()) header("If-None-Match", cacheEtag) }
+                        .apply { if (cacheEtag.isNotBlank() && ext == ".txt") header("If-None-Match", cacheEtag) }
                         .build()
                 ).execute().use { resp ->
                     when {
                         resp.code == 304 -> notice = cached()
                         resp.isSuccessful -> {
-                            notice = parse(resp.body?.string() ?: "")
-                            etag = resp.header("ETag").orEmpty()
+                            notice = parser(resp.body?.string() ?: "")
+                            if (ext == ".txt") etag = resp.header("ETag").orEmpty()
                         }
                     }
                 }
@@ -107,11 +113,33 @@ object NoticeClient {
             }
             val got = notice
             if (got != null) {
-                lastEtag = if (etag.isNotBlank()) etag else cacheEtag
+                if (etag.isNotBlank()) lastEtag = etag
                 return got
             }
         }
         return null
+    }
+
+    /** 解析纯文本版：首行标题，「发布时间：」行取时间，其余为正文 */
+    private fun parsePlain(raw: String): Notice? {
+        val text = raw.replace("﻿", "").trim()
+        if (text.length < 8) return null
+        val lines = text.lines()
+        var title = "公告"
+        var publishedAt = ""
+        val body = mutableListOf<String>()
+        for ((i, line) in lines.withIndex()) {
+            val l = line.trim()
+            when {
+                i == 0 && (l.startsWith("【") || l.startsWith("#")) ->
+                    title = l.removePrefix("#").trim().trim('【', '】').ifBlank { title }
+                l.startsWith("发布时间") -> publishedAt = l.removePrefix("发布时间").trim(':').trim()
+                else -> body.add(line)
+            }
+        }
+        val content = body.joinToString("\n").trim()
+        if (content.isBlank()) return null
+        return Notice(title, publishedAt, content, hash(title, publishedAt, content))
     }
 
     private var lastEtag: String = ""
