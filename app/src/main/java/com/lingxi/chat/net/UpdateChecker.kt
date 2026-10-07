@@ -13,7 +13,12 @@ object UpdateChecker {
     data class ReleaseInfo(
         val version: String,
         val notes: String,
-        val downloadUrl: String
+        val downloadUrl: String,
+        /** 发布时间，形如 2026-10-07 10:30:55（本地时区） */
+        val publishedAt: String = "",
+        /** 安装包字节数，未知为 0 */
+        val sizeBytes: Long = 0L,
+        val pageUrl: String = RELEASES_PAGE
     )
 
     private val http = OkHttpClient.Builder()
@@ -33,15 +38,37 @@ object UpdateChecker {
                 val tag = json.optString("tag_name", "").removePrefix("v")
                 val notes = json.optString("body", "")
                 var url = ""
+                var size = 0L
                 val assets = json.optJSONArray("assets")
                 if (assets != null && assets.length() > 0) {
-                    url = assets.getJSONObject(0).optString("browser_download_url", "")
+                    val asset = assets.getJSONObject(0)
+                    url = asset.optString("browser_download_url", "")
+                    size = asset.optLong("size", 0L)
                 }
                 if (url.isBlank()) url = RELEASES_PAGE
-                if (tag.isBlank()) null else ReleaseInfo(tag, notes, url)
+                if (tag.isBlank()) null
+                else ReleaseInfo(
+                    tag, notes, url,
+                    publishedAt = formatPublished(json.optString("published_at", "")),
+                    sizeBytes = size,
+                    pageUrl = json.optString("html_url", RELEASES_PAGE)
+                )
             }
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /** GitHub 返回 ISO 时间，转成本地时区的 yyyy-MM-dd HH:mm:ss */
+    private fun formatPublished(iso: String): String {
+        if (iso.isBlank()) return ""
+        return try {
+            val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+            parser.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            val date = parser.parse(iso) ?: return ""
+            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(date)
+        } catch (e: Exception) {
+            ""
         }
     }
 

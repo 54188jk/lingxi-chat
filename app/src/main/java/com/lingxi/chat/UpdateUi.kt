@@ -2,9 +2,12 @@ package com.lingxi.chat
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.provider.Settings
 import android.view.LayoutInflater
+import android.view.View
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -16,7 +19,13 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
+import java.util.Locale
 
+/**
+ * 应用内更新：检查 → 展示更新页 → 镜像加速下载 → 授权安装。
+ *
+ * 全程免 Token，检查源是公开的 GitHub releases/latest 接口。
+ */
 object UpdateUi {
 
     private val http = OkHttpClient.Builder()
@@ -29,6 +38,9 @@ object UpdateUi {
     private var downloadCall: Call? = null
     private var pendingApk: File? = null
 
+    private const val PREF_SKIP = "lingxi_update_skip"
+    private const val KEY_SKIP_VERSION = "skip_version"
+
     fun check(activity: Activity, currentVersion: String, silent: Boolean) {
         if (!silent) Toast.makeText(activity, "正在检查更新…", Toast.LENGTH_SHORT).show()
         Thread {
@@ -37,70 +49,170 @@ object UpdateUi {
                 if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                 when {
                     info == null -> {
-                        if (!silent) Toast.makeText(activity, "检查失败，请检查网络后重试", Toast.LENGTH_SHORT).show()
+                        if (!silent) {
+                            Toast.makeText(activity, "检查失败，请检查网络后重试", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     UpdateChecker.isNewer(info.version, currentVersion) -> {
-                        showUpdateDialog(activity, info)
+                        if (isSkipped(activity, info.version) && silent) return@runOnUiThread
+                        showUpdatePage(activity, info, currentVersion)
                     }
                     else -> {
-                        if (!silent) Toast.makeText(activity, "已是最新版本（v$currentVersion）", Toast.LENGTH_SHORT).show()
+                        if (!silent) showUpToDatePage(activity, currentVersion, info.publishedAt)
                     }
                 }
             }
         }.start()
     }
 
-    private fun showUpdateDialog(activity: Activity, info: UpdateChecker.ReleaseInfo) {
-        val notes = info.notes.ifBlank { "修复已知bug" }
-        android.app.AlertDialog.Builder(activity)
-            .setTitle("发现新版本 v${info.version}")
-            .setMessage(notes)
-            .setPositiveButton("下载更新") { _, _ ->
-                startDownload(activity, info)
-            }
-            .setNegativeButton("以后再说", null)
-            .show()
+    // ---------------- 忽略此版本 ----------------
+
+    private fun prefs(activity: Activity): SharedPreferences =
+        activity.getSharedPreferences(PREF_SKIP, Activity.MODE_PRIVATE)
+
+    private fun isSkipped(activity: Activity, version: String): Boolean =
+        prefs(activity).getString(KEY_SKIP_VERSION, "") == version
+
+    private fun skipVersion(activity: Activity, version: String) {
+        prefs(activity).edit().putString(KEY_SKIP_VERSION, version).apply()
     }
+
+    // ---------------- 更新页 ----------------
 
     private class SlowSourceException : Exception("速度过慢")
 
-    private fun mirrorCandidates(url: String): List<String> {
+    private fun mirrorCandidates(url: String): List<Pair<String, String>> {
+        val official = "官方源"
         return listOf(
-            "https://ghfast.top/$url",
-            "https://gh-proxy.com/$url",
-            url
+            ("https://ghfast.top/$url") to "镜像加速 1",
+            ("https://gh-proxy.com/$url") to "镜像加速 2",
+            url to official
         )
     }
 
-    private fun startDownload(activity: Activity, info: UpdateChecker.ReleaseInfo) {
-        val view = LayoutInflater.from(activity).inflate(R.layout.dialog_download, null)
-        val pb = view.findViewById<ProgressBar>(R.id.pbDownload)
-        val tv = view.findViewById<TextView>(R.id.tvDownloadProgress)
-        view.findViewById<TextView>(R.id.tvDownloadTitle).text = "正在下载 v${info.version}"
+    private fun inflate(activity: Activity): View =
+        LayoutInflater.from(activity).inflate(R.layout.dialog_update, null)
+
+    private fun showUpdatePage(activity: Activity, info: UpdateChecker.ReleaseInfo, currentVersion: String) {
+        val view = inflate(activity)
+        val header = view.findViewById<TextView>(R.id.tvHeadTitle)
+        val versionLine = view.findViewById<TextView>(R.id.tvHeadVersion)
+        val tag = view.findViewById<TextView>(R.id.tvTag)
+        val notes = view.findViewById<TextView>(R.id.tvNotes)
+        val meta = view.findViewById<TextView>(R.id.tvMeta)
+        val progressBox = view.findViewById<LinearLayout>(R.id.llProgress)
+        val percent = view.findViewById<TextView>(R.id.tvPercent)
+        val speed = view.findViewById<TextView>(R.id.tvSpeed)
+        val bar = view.findViewById<ProgressBar>(R.id.pbDownload)
+        val status = view.findViewById<TextView>(R.id.tvDownloadStatus)
+
+        header.text = "发现新版本"
+        versionLine.text = "v$currentVersion  →  v${info.version}"
+        tag.text = "建议更新"
+
+        // 更新说明：把「发布时间：xxx」那行摘出来放 meta，其余作为正文
+        val (body, timeLine) = splitNotes(info.notes)
+        notes.text = body
+        meta.text = buildString {
+            if (info.publishedAt.isNotBlank()) append("发布于 ${info.publishedAt}")
+            else if (timeLine != null) append(timeLine)
+            if (info.sizeBytes > 0) {
+                if (isNotEmpty()) append(" · ")
+                append("安装包 ${"%.1f".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0)} MB")
+            }
+            append(" · 官方源 GitHub，自动走镜像加速")
+        }
 
         val dialog = android.app.AlertDialog.Builder(activity)
             .setView(view)
-            .setNegativeButton("取消") { _, _ ->
-                downloadCall?.cancel()
-            }
-            .setCancelable(true)
+            .setPositiveButton("立即更新", null)
+            .setNegativeButton("稍后再说", null)
             .create()
         dialog.show()
 
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (progressBox.visibility == View.VISIBLE) {
+                downloadCall?.cancel()
+                status.text = "已取消下载"
+                return@setOnClickListener
+            }
+            progressBox.visibility = View.VISIBLE
+            percent.text = "0%"
+            speed.text = "0 KB/s"
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            download(activity, info, bar, percent, speed, status) { ok, msg ->
+                progressBox.visibility = View.GONE
+                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
+                if (ok) {
+                    dialog.dismiss()
+                    installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
+                } else if (msg != null) {
+                    Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            android.app.AlertDialog.Builder(activity)
+                .setTitle("忽略这个版本？")
+                .setMessage("将不再提示 v${info.version} 的更新，之后仍可在设置里手动检查。")
+                .setPositiveButton("忽略此版本") { _, _ ->
+                    skipVersion(activity, info.version)
+                    dialog.dismiss()
+                }
+                .setNegativeButton("仅本次不更新", null)
+                .show()
+        }
+    }
+
+    /** 更新说明正文 + 发布时间行 */
+    private fun splitNotes(notes: String): Pair<String, String?> {
+        val lines = notes.lines()
+        val time = lines.firstOrNull { it.trim().startsWith("发布时间") }?.trim()
+        val body = lines.filterNot { it.trim().startsWith("发布时间") }
+            .joinToString("\n")
+            .trim()
+        return (body.ifBlank { "修复已知bug" }) to time
+    }
+
+    private fun showUpToDatePage(activity: Activity, currentVersion: String, publishedAt: String) {
+        val view = inflate(activity)
+        view.findViewById<TextView>(R.id.tvHeadTitle).text = "已是最新版本"
+        view.findViewById<TextView>(R.id.tvHeadVersion).text = "v$currentVersion"
+        view.findViewById<TextView>(R.id.tvTag).text = "无需更新"
+        view.findViewById<TextView>(R.id.tvNotes).text = "当前已是最新，没有新版本可安装。"
+        view.findViewById<TextView>(R.id.tvMeta).text =
+            if (publishedAt.isBlank()) "官方源 GitHub" else "上一版本发布于 $publishedAt"
+        android.app.AlertDialog.Builder(activity)
+            .setView(view)
+            .setPositiveButton("好") { _, _ -> }
+            .show()
+    }
+
+    // ---------------- 下载 ----------------
+
+    private fun download(
+        activity: Activity,
+        info: UpdateChecker.ReleaseInfo,
+        bar: ProgressBar,
+        percent: TextView,
+        speed: TextView,
+        status: TextView,
+        onEnd: (Boolean, String?) -> Unit
+    ) {
         val dir = File(activity.cacheDir, "updates").apply { mkdirs() }
         val apk = File(dir, "lingxi-v${info.version}.apk")
-
         Thread {
             var error: String? = null
             var done = false
             val candidates = mirrorCandidates(info.downloadUrl)
-            for ((idx, url) in candidates.withIndex()) {
+            for ((idx, pair) in candidates.withIndex()) {
                 if (done) break
+                val (url, label) = pair
                 try {
                     activity.runOnUiThread {
-                        tv.text = if (idx == 0) "连接下载源…" else "切换下载源（${idx + 1}/${candidates.size}）…"
+                        status.text = if (idx == 0) "连接${label}…" else "${label}（${idx + 1}/${candidates.size}）…"
                     }
-                    downloadOnce(activity, apk, url, pb, tv)
+                    downloadOnce(activity, apk, url, label, bar, percent, speed, status)
                     done = true
                 } catch (e: SlowSourceException) {
                     apk.delete()
@@ -117,21 +229,29 @@ object UpdateUi {
                 }
             }
             activity.runOnUiThread {
-                dialog.dismiss()
                 if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                 when {
-                    done && apk.exists() -> {
-                        pendingApk = apk
-                        installApk(activity, apk)
+                    done && apk.exists() -> onEnd(true, null)
+                    downloadCall?.isCanceled() == true -> {
+                        apk.delete()
+                        onEnd(false, null)
                     }
-                    downloadCall?.isCanceled() == true -> apk.delete()
-                    else -> Toast.makeText(activity, "下载失败：${error ?: "所有下载源均不可用"}", Toast.LENGTH_SHORT).show()
+                    else -> onEnd(false, "下载失败：${error ?: "所有下载源均不可用"}")
                 }
             }
         }.start()
     }
 
-    private fun downloadOnce(activity: Activity, apk: File, url: String, pb: ProgressBar, tv: TextView) {
+    private fun downloadOnce(
+        activity: Activity,
+        apk: File,
+        url: String,
+        label: String,
+        bar: ProgressBar,
+        percent: TextView,
+        speed: TextView,
+        status: TextView
+    ) {
         val call = http.newCall(Request.Builder().url(url).build())
         downloadCall = call
         call.execute().use { resp ->
@@ -148,22 +268,32 @@ object UpdateUi {
                 out.write(buf, 0, read)
                 downloaded += read
                 val now = System.currentTimeMillis()
-                val elapsed = now - startTime
-                if (elapsed > 8000 && downloaded < 200 * 1024) {
+                val elapsedMs = now - startTime
+                // 起手 8 秒内几乎没动静，判定这个源太慢，换下一个
+                if (elapsedMs > 8000 && downloaded < 200 * 1024) {
                     out.close()
                     throw SlowSourceException()
                 }
                 if (now - lastPost > 200) {
                     lastPost = now
                     val d = downloaded
+                    val seconds = (elapsedMs / 1000).coerceAtLeast(1)
+                    val kbps = d / 1024 / seconds
+                    val remain = if (total > 0 && kbps > 0) (total - d) / 1024 / kbps else -1L
                     activity.runOnUiThread {
+                        val progress: String
                         if (total > 0) {
                             val pct = (d * 100 / total).toInt()
-                            pb.progress = pct
-                            tv.text = "$pct%（${d / 1024} KB / ${total / 1024 / 1024} MB）"
+                            bar.progress = pct
+                            percent.text = "$pct%"
+                            progress = "已下载 ${d / 1024 / 1024} MB / ${total / 1024 / 1024} MB" +
+                                    if (remain > 0) " · 约剩 ${remain}s" else ""
                         } else {
-                            tv.text = "已下载 ${d / 1024} KB"
+                            percent.text = "${d / 1024 / 1024} MB"
+                            progress = "已下载 ${d / 1024} KB（服务器未给总大小）"
                         }
+                        speed.text = "$kbps KB/s"
+                        status.text = "$label · $progress"
                     }
                 }
             }
@@ -172,19 +302,17 @@ object UpdateUi {
         }
     }
 
-    private fun fail(activity: Activity, dialog: android.app.AlertDialog, apk: File, msg: String?) {
-        activity.runOnUiThread {
-            dialog.dismiss()
-            apk.delete()
-            if (msg != null) Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
-        }
-    }
+    // ---------------- 安装 ----------------
 
     private fun installApk(activity: Activity, apk: File) {
+        if (!apk.exists()) {
+            Toast.makeText(activity, "安装包已失效，请重新检查更新", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (!activity.packageManager.canRequestPackageInstalls()) {
             android.app.AlertDialog.Builder(activity)
                 .setTitle("需要安装权限")
-                .setMessage("新版本已下载完成。请在下一页允许「灵犀AI」安装应用，返回后将自动继续安装。")
+                .setMessage("新版本已下载完成（${"%.1f".format(Locale.US, apk.length() / 1024.0 / 1024.0)} MB）。\n\n请在下一页允许「灵犀AI」安装应用，返回后将自动继续安装。")
                 .setPositiveButton("去授权") { _, _ ->
                     try {
                         activity.startActivity(
@@ -219,6 +347,7 @@ object UpdateUi {
         }
     }
 
+    /** 从安装授权页返回时自动续装 */
     fun resumeInstallIfNeeded(activity: Activity) {
         val apk = pendingApk ?: return
         if (apk.exists() && activity.packageManager.canRequestPackageInstalls()) {

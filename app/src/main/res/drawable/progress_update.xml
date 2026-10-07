@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 更新页圆角进度条：底层轨道 + 上层渐变进度 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/code_bg" />
+            <corners android:radius="7dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <gradient
+                    android:angle="0"
+                    android:endColor="#2B50A8"
+                    android:startColor="#6EA8FF" />
+                <corners android:radius="7dp" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>
