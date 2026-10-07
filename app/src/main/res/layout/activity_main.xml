@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -9,109 +10,127 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/surface"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp">
+        android:paddingStart="14dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
 
-        <ImageView
-            android:id="@+id/ivLogo"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:src="@mipmap/ic_avatar"
-            android:contentDescription="切换角色" />
+        <FrameLayout
+            android:id="@+id/flLogo"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_ai_avatar"
+            android:padding="2dp">
+
+            <ImageView
+                android:id="@+id/ivLogo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:contentDescription="切换角色"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/ic_avatar" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="10dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="新会话"
-                android:textColor="@color/text_primary"
-                android:textSize="17sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.02"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:ellipsize="end"
+                android:letterSpacing="0.01"
+                android:maxLines="1"
+                android:text="新会话"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvModel"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="未配置模型"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
-
-                <TextView
-                    android:id="@+id/tvClock"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="--:--:--"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:fontFamily="monospace"
-                    android:letterSpacing="0.04"
-                    android:maxLines="1" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="未配置模型"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvClock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_date_chip"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.03"
+            android:maxLines="1"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="--:--:--"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
 
         <ImageButton
             android:id="@+id/btnNotice"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_notice"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="公告" />
-
-        <ImageButton
-            android:id="@+id/btnShare"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_share"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="导出分享" />
-
-        <ImageButton
-            android:id="@+id/btnNew"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_add"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="新会话" />
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_icon_btn"
+            android:contentDescription="公告"
+            android:padding="9dp"
+            android:src="@drawable/ic_notice" />
 
         <ImageButton
             android:id="@+id/btnHistory"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_history"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="历史会话" />
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_icon_btn"
+            android:contentDescription="历史会话"
+            android:padding="9dp"
+            android:src="@drawable/ic_history" />
 
         <ImageButton
             android:id="@+id/btnSettings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_settings"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="设置" />
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_icon_btn"
+            android:contentDescription="设置"
+            android:padding="9dp"
+            android:src="@drawable/ic_settings" />
+
+        <ImageButton
+            android:id="@+id/btnNew"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_send_btn"
+            android:contentDescription="新会话"
+            android:padding="11dp"
+            android:src="@drawable/ic_send"
+            app:tint="@color/accent" />
+
+        <ImageButton
+            android:id="@+id/btnShare"
+            android:layout_width="34dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="2dp"
+            android:background="@drawable/bg_icon_btn"
+            android:contentDescription="导出分享"
+            android:padding="10dp"
+            android:src="@drawable/ic_share" />
     </LinearLayout>
 
     <View
@@ -128,10 +147,11 @@
             android:id="@+id/rvMessages"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:clipToPadding="false" />
+            android:clipToPadding="false"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="16dp" />
 
         <LinearLayout
             android:id="@+id/llWelcome"
@@ -144,25 +164,26 @@
             android:paddingEnd="32dp">
 
             <ImageView
-                android:layout_width="76dp"
-                android:layout_height="76dp"
-                android:src="@mipmap/ic_avatar"
-                android:contentDescription="logo" />
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:contentDescription="logo"
+                android:src="@mipmap/ic_avatar" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="18dp"
+                android:letterSpacing="0.06"
                 android:text="灵犀AI"
                 android:textColor="@color/text_primary"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.08" />
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
+                android:alpha="0.9"
                 android:text="接入云端大模型 · 随时随地智能对话"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
@@ -170,7 +191,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="28dp"
                 android:orientation="horizontal">
 
                 <TextView

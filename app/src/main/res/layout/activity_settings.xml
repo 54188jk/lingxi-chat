@@ -48,7 +48,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:text="外观"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -144,7 +147,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:text="AI 角色"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -185,7 +191,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="24dp"
             android:text="关于"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -248,7 +257,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:text="模型配置"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -299,7 +311,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:text="免费语音识别"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -331,7 +346,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="20dp"
             android:text="更多"
-            android:textColor="@color/accent"
+            android:drawableStart="@drawable/bg_section_bar"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
