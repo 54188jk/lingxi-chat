@@ -85,7 +85,6 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "回车将直接发送" else "回车改为换行")
         }
 
-        b.btnNotice.setOnClickListener { NoticeUi.open(this) }
         b.btnHistoryVersion.setOnClickListener {
             VersionsUi.open(this, BuildConfig.VERSION_NAME)
         }
