@@ -15,16 +15,23 @@ object UpdateChecker {
      * 版本检查源列表。
      *
      * 多个源并行查询，谁先返回就用谁的结果；若都成功，取版本号更高的那个，
-     * 所以「GitHub + Gitee（若公开）/ 加速源」可以共存并自动择优，全程免 Token。
+     * 所以「GitHub + Gitee」可以共存并自动择优，全程免 Token。
      * 新增公开源时在这里加一行即可，App 会自动参与测速。
      */
     private val checkSources = listOf(
-        CheckSource("GitHub", LATEST_URL),
-        // Gitee 仓一旦改为公开，取消下面这行注释即可自动接入（当前仓是私有的，匿名读不到）
-        // CheckSource("Gitee", "https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases/latest")
+        CheckSource("GitHub", LATEST_URL, GITHUB),
+        CheckSource("Gitee", "https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases/latest", GITEE)
     )
 
-    private class CheckSource(val name: String, val url: String)
+    /** Gitee 上按约定命名的下载直链（免 Token，国内直连最快，用作下载首选源） */
+    fun giteeDownloadUrl(version: String): String =
+        "https://gitee.com/wuzhuf/lingxi-chat/releases/download/v$version/" +
+                java.net.URLEncoder.encode("灵犀AI-v$version.apk", "UTF-8").replace("+", "%20")
+
+    private const val GITHUB = 0
+    private const val GITEE = 1
+
+    private class CheckSource(val name: String, val url: String, val format: Int)
 
     data class ReleaseInfo(
         val version: String,
@@ -78,10 +85,56 @@ object UpdateChecker {
                 .build()
             http.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) return null
-                parseRelease(JSONObject(resp.body?.string() ?: return null), src.name)
+                val json = JSONObject(resp.body?.string() ?: return null)
+                if (src.format == GITEE) parseGiteeRelease(json) else parseRelease(json, src.name)
             }
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * Gitee 的 release JSON 与 GitHub 有两处差异：
+     * 1. 没有 published_at，时间在 created_at（形如 2026-10-07T14:18:33+08:00）
+     * 2. 资产条目里没有 size / content_type，要靠文件名后缀挑出 apk
+     */
+    private fun parseGiteeRelease(json: JSONObject): ReleaseInfo? {
+        val tag = json.optString("tag_name", "").removePrefix("v")
+        val parts = tag.split(".")
+        if (tag.isBlank() || parts.isEmpty() || parts.any { it.toIntOrNull() == null }) return null
+        var url = ""
+        var size = 0L
+        json.optJSONArray("assets")?.let { assets ->
+            for (i in 0 until assets.length()) {
+                val a = assets.optJSONObject(i) ?: continue
+                if (a.optString("name", "").endsWith(".apk")) {
+                    url = a.optString("browser_download_url", "")
+                    size = a.optLong("size", 0L)
+                    break
+                }
+            }
+        }
+        if (url.isBlank()) url = giteeDownloadUrl(tag)
+        return ReleaseInfo(
+            version = tag,
+            notes = json.optString("body", ""),
+            downloadUrl = url,
+            publishedAt = formatCreatedAt(json.optString("created_at", "")),
+            sizeBytes = size,
+            pageUrl = json.optString("html_url", "https://gitee.com/wuzhuf/lingxi-chat/releases"),
+            sourceName = "Gitee"
+        )
+    }
+
+    /** 解析 Gitee 的 created_at（带时区偏移） */
+    private fun formatCreatedAt(raw: String): String {
+        if (raw.isBlank()) return ""
+        return try {
+            val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US)
+            val date = parser.parse(raw) ?: return ""
+            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(date)
+        } catch (e: Exception) {
+            ""
         }
     }
 
@@ -109,7 +162,8 @@ object UpdateChecker {
         )
     }
 
-    fun fetchLatest(): ReleaseInfo? = fetchLatestFast() ?: fetchFrom(CheckSource("GitHub", LATEST_URL))
+    fun fetchLatest(): ReleaseInfo? =
+        fetchLatestFast() ?: fetchFrom(CheckSource("GitHub", LATEST_URL, GITHUB))
 
     /** GitHub 返回 ISO 时间，转成本地时区的 yyyy-MM-dd HH:mm:ss */
     private fun formatPublished(iso: String): String {
