@@ -183,7 +183,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:text="帮我写周报"
-                    android:textColor="@color/accent"
+                    android:textColor="#FF000000"
                     android:textSize="12sp" />
 
                 <TextView
@@ -197,7 +197,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:text="解释一段代码"
-                    android:textColor="@color/accent"
+                    android:textColor="#FF000000"
                     android:textSize="12sp" />
 
                 <TextView
@@ -211,7 +211,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:text="推荐三本科幻小说"
-                    android:textColor="@color/accent"
+                    android:textColor="#FF000000"
                     android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>

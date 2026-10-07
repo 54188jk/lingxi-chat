@@ -175,9 +175,9 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
             android:text="+ 添加自定义角色"
-            android:textColor="@color/accent"
+            android:textColor="#FF000000"
             android:backgroundTint="@null"
-            android:background="@drawable/bg_card" />
+            android:background="@drawable/bg_btn_white" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -227,7 +227,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="检查更新"
-                android:textColor="#FFFFFF"
+                android:textColor="#FF000000"
                 android:backgroundTint="@null"
                 android:background="@drawable/bg_btn_primary" />
         </LinearLayout>
@@ -279,9 +279,9 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
             android:text="+ 添加模型配置"
-            android:textColor="@color/accent"
+            android:textColor="#FF000000"
             android:backgroundTint="@null"
-            android:background="@drawable/bg_card" />
+            android:background="@drawable/bg_btn_white" />
 
         <TextView
             android:layout_width="match_parent"
@@ -320,10 +320,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
-            android:background="@drawable/bg_card"
+            android:background="@drawable/bg_btn_white"
             android:backgroundTint="@null"
             android:text="+ 添加免费语音服务"
-            android:textColor="@color/accent" />
+            android:textColor="#FF000000" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -348,10 +348,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@drawable/bg_card"
+                android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
                 android:text="查看公告"
-                android:textColor="@color/accent" />
+                android:textColor="#FF000000" />
 
             <Button
                 android:id="@+id/btnHistoryVersion"
@@ -359,10 +359,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_card"
+                android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
                 android:text="历史版本"
-                android:textColor="@color/accent" />
+                android:textColor="#FF000000" />
         </LinearLayout>
 
         <TextView

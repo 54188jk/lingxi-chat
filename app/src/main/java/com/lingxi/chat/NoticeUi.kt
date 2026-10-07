@@ -19,9 +19,25 @@ object NoticeUi {
     private const val PREF = "lingxi_notice"
     private const val KEY_HASH = "seen_hash"
     private const val KEY_SHOWN_DAY = "shown_day"
+    private const val KEY_FETCH_AT = "fetch_at"
+    private const val KEY_CACHE = "cache"
+    private const val THROTTLE_MS = 10 * 60 * 1000L
 
     private fun prefs(activity: Activity) =
         activity.getSharedPreferences(PREF, Activity.MODE_PRIVATE)
+
+    private fun cachePrefs(activity: Activity) =
+        activity.getSharedPreferences(KEY_CACHE, Activity.MODE_PRIVATE)
+
+    private fun ensureCache(activity: Activity) {
+        com.lingxi.chat.net.NoticeClient.initCache(cachePrefs(activity))
+    }
+
+    private fun persist(activity: Activity, notice: com.lingxi.chat.net.NoticeClient.Notice) {
+        com.lingxi.chat.net.NoticeClient.saveCache(
+            cachePrefs(activity), notice, com.lingxi.chat.net.NoticeClient.lastEtag()
+        )
+    }
 
     /** 顶栏铃铛红点：有没有没看过的公告 */
     fun hasUnread(activity: Activity): Boolean {
@@ -35,28 +51,51 @@ object NoticeUi {
         p.edit().putString(KEY_HASH, p.getString(KEY_HASH + "_latest", "")).apply()
     }
 
-    /** 启动时静默检查：有新公告就弹一次 */
+    /** 启动时静默检查：先秒开缓存，再后台刷新；有新公告才弹卡片 */
     fun checkOnStart(activity: Activity) {
+        ensureCache(activity)
+        // 缓存里就有未读的新公告 → 立刻弹，不用等网络
+        com.lingxi.chat.net.NoticeClient.cached()?.let { cached ->
+            val p = prefs(activity)
+            if ((p.getString(KEY_HASH, "") ?: "") != cached.hash &&
+                (p.getString(KEY_SHOWN_DAY, "") ?: "") != today()
+            ) {
+                p.edit().putString(KEY_SHOWN_DAY, today()).apply()
+                show(activity, cached, onRead = { markRead(activity) })
+            }
+        }
+        // 10 分钟内已拉过就不再打扰服务端
+        val p = prefs(activity)
+        if (System.currentTimeMillis() - (p.getLong(KEY_FETCH_AT, 0L)) < THROTTLE_MS) return
+
         Thread {
-            val notice = NoticeClient.fetch() ?: return@Thread
+            val result = com.lingxi.chat.net.NoticeClient.load()
             activity.runOnUiThread {
                 if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                val p = prefs(activity)
-                p.edit().putString(KEY_HASH + "_latest", notice.hash).apply()
-                val seen = p.getString(KEY_HASH, "")
-                if (seen == notice.hash) return@runOnUiThread
-                val today = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-                    .format(java.util.Date())
-                if (p.getString(KEY_SHOWN_DAY, "") == today) return@runOnUiThread
-                p.edit().putString(KEY_SHOWN_DAY, today).apply()
-                show(activity, notice, onRead = { markRead(activity) })
+                prefs(activity).edit()
+                    .putLong(KEY_FETCH_AT, System.currentTimeMillis())
+                    .apply()
+                val n = result?.notice ?: return@runOnUiThread
+                if (!result.fromCache) persist(activity, n)
+                prefs(activity).edit().putString(KEY_HASH + "_latest", n.hash).apply()
+                val seen = prefs(activity).getString(KEY_HASH, "") ?: ""
+                if (seen == n.hash) return@runOnUiThread
+                if (result.fromCache) return@runOnUiThread // 缓存那次已经弹过了
+                val sp2 = prefs(activity)
+                if ((sp2.getString(KEY_SHOWN_DAY, "") ?: "") == today()) return@runOnUiThread
+                sp2.edit().putString(KEY_SHOWN_DAY, today()).apply()
+                show(activity, n, onRead = { markRead(activity) })
             }
         }.start()
     }
 
-    /** 铃铛点击：手动查看 */
+    private fun today(): String =
+        java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
+
+    /** 铃铛点击：先秒显缓存，再拉最新 */
     fun open(activity: Activity) {
-        show(activity, null, onRead = { markRead(activity) })
+        ensureCache(activity)
+        show(activity, com.lingxi.chat.net.NoticeClient.cached(), onRead = { markRead(activity) })
     }
 
     private fun show(activity: Activity, preset: NoticeClient.Notice?, onRead: () -> Unit) {
@@ -118,23 +157,16 @@ object NoticeUi {
         dialog.show()
     }
 
-    /** 顶栏铃铛按钮（含未读红点） */
-    fun bindBell(activity: Activity, bell: ImageView) {
-        Thread {
-            val n = NoticeClient.fetch() ?: return@Thread
-            activity.runOnUiThread {
-                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                val p = prefs(activity)
-                p.edit().putString(KEY_HASH + "_latest", n.hash).apply()
-                val unread = p.getString(KEY_HASH, "") != n.hash
-                bell.setColorFilter(
-                    androidx.core.content.ContextCompat.getColor(
-                        activity,
-                        if (unread) R.color.accent else R.color.icon_tint
-                    ),
-                    android.graphics.PorterDuff.Mode.SRC_IN
-                )
-            }
-        }.start()
+    /** 顶栏铃铛：有未读公告染强调色。缓存即可判断，不阻塞、不联网 */
+    fun bindBell(activity: Activity, bell: android.widget.ImageView) {
+        ensureCache(activity)
+        val unread = hasUnread(activity)
+        bell.setColorFilter(
+            androidx.core.content.ContextCompat.getColor(
+                activity,
+                if (unread) R.color.accent else R.color.icon_tint
+            ),
+            android.graphics.PorterDuff.Mode.SRC_IN
+        )
     }
 }
