@@ -19,3 +19,6 @@ rel*.json
 asset*.json
 
 *.apk
+keystore
+*.jks
+*.keystore

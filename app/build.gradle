@@ -1,23 +1,56 @@
+import java.util.Properties
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+}
+
+// 发布签名配置：keystore 与密码只从本机读取，不写进代码、不提交仓库。
+// 凭据文件默认位置：C:/Users/Administrator/.config/opencode/signing/credentials.txt
+// 也可用环境变量覆盖：LINGXI_STORE_FILE / LINGXI_STORE_PASSWORD / LINGXI_KEY_ALIAS / LINGXI_KEY_PASSWORD
+def credFile = new File(
+    System.getenv('LINGXI_CRED_FILE') ?:
+        "${System.getProperty('user.home')}/.config/opencode/signing/credentials.txt"
+)
+def cred = new Properties()
+if (credFile.exists()) {
+    credFile.withInputStream { cred.load(it) }
 }
 
 android {
     namespace 'com.lingxi.chat'
     compileSdk 35
 
+    signingConfigs {
+        release {
+            if (cred['keystore']) {
+                storeFile file(cred['keystore'])
+                storePassword cred['storepass']
+                keyAlias cred['alias']
+                keyPassword cred['keypass']
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.lingxi.chat"
         minSdk 24
         targetSdk 35
-        versionCode 27
-        versionName "1.159"
+        versionCode 28
+        versionName "1.160"
+        // 所有对外请求都是 HTTPS，不开明文流量（仅 debug 包为方便本地 mock 放开）
     }
 
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
+        }
+        release {
+            // 正式包：签名 + R8 混淆压缩，体积更小且不暴露源码
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig cred['keystore'] ? signingConfigs.release : signingConfigs.debug
         }
     }
 
