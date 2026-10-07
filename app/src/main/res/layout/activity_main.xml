@@ -375,6 +375,20 @@
             android:textOn=""
             android:textOff="" />
 
+        <ToggleButton
+            android:id="@+id/btnControl"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_search_toggle"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_control"
+            android:drawablePadding="0dp"
+            android:padding="10dp"
+            android:textOn=""
+            android:textOff=""
+            android:contentDescription="手机操控" />
+
         <ImageButton
             android:id="@+id/btnEmoji"
             android:layout_width="36dp"

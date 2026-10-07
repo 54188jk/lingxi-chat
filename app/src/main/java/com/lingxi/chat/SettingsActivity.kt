@@ -11,10 +11,17 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.lingxi.chat.control.ControlBackend
+import com.lingxi.chat.control.DeviceController
+import com.lingxi.chat.control.ShizukuShell
 import com.lingxi.chat.data.ConfigStore
 import com.lingxi.chat.data.ModelConfig
 import com.lingxi.chat.data.RolePreset
 import com.lingxi.chat.data.SessionStore
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -141,11 +148,163 @@ class SettingsActivity : BaseActivity() {
 
         refreshModels()
         refreshRoles()
+        setupControl()
 
         b.tvVersion.text = "当前版本 v${BuildConfig.VERSION_NAME}"
         b.btnCheckUpdate.setOnClickListener {
             UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = false)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 用户可能刚在系统设置里开了无障碍 / 授权了 Shizuku，回到本页要重新探测
+        refreshControlStatus()
+    }
+
+    // ---------------- 系统操控 ----------------
+
+    private fun setupControl() {
+        val modes = listOf(
+            "前台接管屏幕（会读屏、会点击）" to "front",
+            "后台只发指令（不占屏幕）" to "back"
+        )
+        b.spControlMode.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, modes.map { it.first })
+        b.spControlMode.setSelection(maxOf(0, modes.indexOfFirst { it.second == store.controlMode }))
+        b.tvControlModeHint.text = modeHint(store.controlMode)
+        b.spControlMode.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                val key = modes[pos].second
+                if (key != store.controlMode) {
+                    store.controlMode = key
+                    b.tvControlModeHint.text = modeHint(key)
+                    toast(if (key == "back") "后台模式：不读屏、不点击，只发指令" else "前台模式：读屏并替你操作")
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        val backends = ControlBackend.entries.map { it.label }
+        b.spControlBackend.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, backends)
+        b.spControlBackend.setSelection(
+            maxOf(0, ControlBackend.entries.indexOfFirst { it.key == store.controlBackend })
+        )
+        b.spControlBackend.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                val key = ControlBackend.entries[pos].key
+                if (key != store.controlBackend) {
+                    store.controlBackend = key
+                    refreshControlStatus()
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        b.spControlSteps.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, controlSteps.map { "$it 步" })
+        b.spControlSteps.setSelection(maxOf(0, controlSteps.indexOf(store.controlMaxSteps)))
+        b.spControlSteps.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                store.controlMaxSteps = controlSteps[pos]
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        b.spControlPace.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, paces.map { it.first })
+        b.spControlPace.setSelection(
+            maxOf(0, paces.indexOfFirst { it.second.first == store.controlSettleMs })
+        )
+        b.spControlPace.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                store.controlSettleMs = paces[pos].second.first
+                store.controlThinkMs = paces[pos].second.second
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        b.swControlVision.isChecked = store.controlVision
+        b.swControlVision.setOnCheckedChangeListener { _, checked -> store.controlVision = checked }
+
+        b.swControlPayment.isChecked = store.controlBlockPayments
+        b.swControlPayment.setOnCheckedChangeListener { _, checked ->
+            store.controlBlockPayments = checked
+            toast(if (checked) "支付类按钮将被拦截" else "已放开支付类操作，请自行把关")
+        }
+
+        b.btnOpenAccessibility.setOnClickListener {
+            runCatching {
+                startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                )
+            }.onFailure {
+                toast("跳转失败，请到 系统设置 → 无障碍 → 已下载的服务 里找「灵犀AI」")
+            }
+            toast("在列表里选「灵犀AI」→ 打开开关并允许")
+        }
+
+        b.btnRequestShizuku.setOnClickListener {
+            when {
+                !ShizukuShell.running() ->
+                    toast("Shizuku 没在运行：先用无线调试或 Root 把它启动起来")
+
+                ShizukuShell.authorized() -> toast("Shizuku 已授权，把上方通道选成 Shizuku 即可")
+                else -> {
+                    ShizukuShell.requestAuth()
+                    toast("已发起授权请求，请在 Shizuku 弹窗里点允许")
+                }
+            }
+            refreshControlStatus()
+        }
+
+        b.btnControlTest.setOnClickListener {
+            val controller = DeviceController(this, store)
+            b.tvControlStatus.text = "读屏中…"
+            lifecycleScope.launch {
+                val screen = withContext(Dispatchers.IO) { controller.readScreen() }
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("读屏结果（来源：${screen.source}）")
+                    .setMessage(
+                        screen.render().take(1500).ifBlank { "什么都没读到" } +
+                            "\n\n说明：现在看到的就是本设置页自己的界面，能列出元素即代表通道可用。"
+                    )
+                    .setPositiveButton("好", null)
+                    .show()
+                refreshControlStatus()
+            }
+        }
+
+        refreshControlStatus()
+    }
+
+    private fun refreshControlStatus() {
+        val controller = DeviceController(this, store)
+        val chain = controller.resolve()
+        b.tvControlStatus.text = buildString {
+            append(controller.statusText())
+            append("\n实际会用：")
+            append(if (chain.isEmpty()) "无（请先开启无障碍，或授予 Root / Shizuku）" else chain.joinToString(" → ") { it.label })
+        }
+    }
+
+    private val controlSteps = listOf(6, 10, 14, 20, 30)
+
+    private val paces = listOf(
+        "稳一点（慢，适合动画多的应用）" to (800 to 1200),
+        "标准" to (450 to 700),
+        "快（简单界面够用）" to (250 to 350)
+    )
+
+    private fun modeHint(mode: String): String = if (mode == "back") {
+        "后台模式：灵犀不读屏也不碰屏幕，只能拉起应用、打开链接或搜索、执行只读查询命令，你可以照常用手机。"
+    } else {
+        "前台接管：灵犀读屏并替你看清、点按、输入，期间请尽量不要碰屏幕。"
     }
 
     private fun refreshModels() {

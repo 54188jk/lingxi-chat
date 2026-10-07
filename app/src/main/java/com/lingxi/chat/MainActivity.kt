@@ -30,6 +30,9 @@ import com.lingxi.chat.net.OpenAiClient
 import com.lingxi.chat.net.SearchClient
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
+import com.lingxi.chat.control.AgentBus
+import com.lingxi.chat.control.AgentControl
+import com.lingxi.chat.control.DeviceController
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -62,6 +65,9 @@ class MainActivity : BaseActivity() {
     private var pendingFileText: String? = null
     private var pendingFileName: String? = null
     private var lastNotifyTime = 0L
+
+    /** 操控任务的实时进度消息；服务每推一步就往这里追加一行 */
+    private var agentMsg: ChatMessage? = null
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -261,6 +267,17 @@ if (r.resultCode == Activity.RESULT_OK) {
         }
         updateSearchTint()
 
+        b.btnControl.isChecked = configStore.controlEnabled
+        b.btnControl.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                if (!enableControlMode()) b.btnControl.isChecked = false
+            } else {
+                configStore.controlEnabled = false
+                updateControlTint()
+            }
+        }
+        updateControlTint()
+
         b.btnSend.setOnClickListener { view ->
             view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
             if (streaming) stopGenerating() else send()
@@ -369,13 +386,17 @@ if (r.resultCode == Activity.RESULT_OK) {
         super.onResume()
         refreshModelLabel()
         updateSearchTint()
+        updateControlTint()
         UpdateUi.resumeInstallIfNeeded(this)
         startClock()
+        AgentBus.listener = { line -> onAgentLine(line) }
+        reattachRunningAgent()
     }
 
     override fun onPause() {
         super.onPause()
         clockJob?.cancel()
+        AgentBus.listener = null
     }
 
     override fun onDestroy() {
@@ -417,6 +438,105 @@ if (r.resultCode == Activity.RESULT_OK) {
     private fun updateSearchTint() {
         val color = ContextCompat.getColor(this, if (b.btnSearch.isChecked) R.color.accent else R.color.icon_tint)
         b.btnSearch.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
+    }
+
+    private fun updateControlTint() {
+        val color = ContextCompat.getColor(this, if (b.btnControl.isChecked) R.color.accent else R.color.icon_tint)
+        b.btnControl.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
+    }
+
+    /** 操控开关：先确认有可用通道，再按前台/后台给不同提示 */
+    private fun enableControlMode(): Boolean {
+        val back = configStore.controlMode == "back"
+        if (configStore.getActiveModel() == null) {
+            toast("请先在设置里添加模型配置")
+            startActivity(Intent(this, SettingsActivity::class.java))
+            return false
+        }
+        val controller = DeviceController(this, configStore)
+        if (!back && controller.resolve().isEmpty()) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("还没有可用操控通道")
+                .setMessage(controller.statusText() + "\n\n到 设置 → 系统操控 里开启无障碍（推荐，无需 root）。")
+                .setPositiveButton("去设置") { _, _ ->
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
+                .setNegativeButton("取消", null)
+                .show()
+            return false
+        }
+        configStore.controlEnabled = true
+        updateControlTint()
+        askNotifPermission()
+        toast(if (back) "后台模式：不读屏不点击，发送的文字作为指令任务" else "前台模式：会读屏并替你操作，发送后请暂时不要触屏")
+        return true
+    }
+
+    private fun askNotifPermission() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+        if (androidx.core.app.ActivityCompat.checkSelfPermission(
+                this, android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) return
+        androidx.core.app.ActivityCompat.requestPermissions(
+            this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_POST_NOTIF
+        )
+    }
+
+    /** 发送：把这句话交给操控服务，不再走普通对话 */
+    private fun startControlTask(text: String) {
+        val back = configStore.controlMode == "back"
+        val carried = AgentBus.stepLines.filter { !it.startsWith("已开始") }
+        if (!AgentBus.running && carried.isNotEmpty()) {
+            // 上一条任务的结果没赶上（比如界面刚被销毁），先单独落一条再继续
+            val prev = ChatMessage("assistant", carried.joinToString("\n"))
+            session.messages.add(prev)
+            adapter.notifyItemInserted(session.messages.size - 1)
+        }
+        AgentBus.reset()
+        setStreaming(true)
+        val msg = ChatMessage(
+            "assistant",
+            if (back) "后台任务已下发，不占用你的屏幕…" else "前台任务已开始，请暂时不要触屏…"
+        )
+        agentMsg = msg
+        session.messages.add(msg)
+        adapter.notifyItemInserted(session.messages.size - 1)
+        b.rvMessages.scrollToPosition(adapter.itemCount - 1)
+        AgentControl.launch(this, text)
+    }
+
+    /** 服务推进度过来时追加到同一条气泡；任务结束就定稿 */
+    private fun onAgentLine(line: String) {
+        runOnUiThread {
+            val msg = agentMsg ?: return@runOnUiThread
+            msg.content = if (msg.content.contains(line)) msg.content else msg.content + "\n" + line
+            val idx = session.messages.indexOf(msg)
+            if (idx >= 0) adapter.notifyItemChanged(idx)
+            scrollToEndIfNearBottom()
+            if (!AgentBus.running && line.startsWith("结果：")) finishControl(idx)
+        }
+    }
+
+    private fun finishControl(idx: Int) {
+        agentMsg = null
+        setStreaming(false)
+        if (idx in session.messages.indices && session.messages[idx].content.isBlank()) {
+            session.messages.removeAt(idx)
+            adapter.notifyItemRemoved(idx)
+        }
+        sessionStore.save(session)
+    }
+
+    /** 任务在本页后台时跑的，回到聊天页要把已发生的步骤补回气泡 */
+    private fun reattachRunningAgent() {
+        if (!AgentBus.running || agentMsg != null) return
+        val msg = ChatMessage("assistant", AgentBus.stepLines.joinToString("\n"))
+        agentMsg = msg
+        session.messages.add(msg)
+        adapter.notifyItemInserted(session.messages.size - 1)
+        b.rvMessages.scrollToPosition(adapter.itemCount - 1)
+        setStreaming(true)
     }
 
     private fun initTts() {
@@ -803,6 +923,7 @@ if (r.resultCode == Activity.RESULT_OK) {
 
     companion object {
         private const val REQ_RECORD_AUDIO = 7101
+        private const val REQ_POST_NOTIF = 7102
 
         val EMOJIS = listOf(
             "😀", "😄", "😂", "😊", "🙂", "😉", "😍", "🥰",
@@ -1083,8 +1204,10 @@ if (r.resultCode == Activity.RESULT_OK) {
         hideKeyboard()
         sessionStore.save(session)
 
-        val useSearch = b.btnSearch.isChecked
-        if (useSearch) {
+        val useControl = b.btnControl.isChecked && img == null && fileText == null
+        if (useControl) {
+            startControlTask(text)
+        } else if (b.btnSearch.isChecked) {
             setStreaming(true)
             val searchingMsg = ChatMessage("assistant", "正在联网搜索…")
             session.messages.add(searchingMsg)
@@ -1211,6 +1334,11 @@ if (r.resultCode == Activity.RESULT_OK) {
     /** 点「停止」：取消收集协程即掐断网络流，已收到的内容定稿，空气泡直接撤掉 */
     private fun stopGenerating() {
         if (!streaming) return
+        if (agentMsg != null) {
+            AgentControl.halt(this)
+            toast("已发送急停，当前步骤做完就停下")
+            return
+        }
         // 取消收集 → callbackFlow 的 awaitClose 触发 → call.cancel()，无需等超时
         searchJob?.cancel()
         searchJob = null

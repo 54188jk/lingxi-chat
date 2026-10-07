@@ -27,3 +27,13 @@
 # ---- 保留行号，便于崩溃定位 ----
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+# ---- Shizuku：AIDL 代理 + 隐藏 API 反射，整包保住 ----
+-keep class rikka.shizuku.** { *; }
+-keep interface rikka.shizuku.** { *; }
+-keep class moe.shizuku.** { *; }
+-keep interface moe.shizuku.** { *; }
+-dontwarn moe.shizuku.**
+-dontwarn rikka.shizuku.**
+
+# ---- 无障碍服务：系统按类名绑定，方法由框架回调 ----
+-keep class com.lingxi.chat.control.ControlService { *; }

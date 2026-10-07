@@ -1,3 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">灵犀AI</string>
+    <string name="accessibility_summary">让灵犀AI 替你点按、输入、滑动完成手机上的操作</string>
+    <string name="accessibility_desc">开启后可在聊天里用一句话让灵犀操作其他应用：读取屏幕元素、点按、滑动、输入文字、返回桌面。只在你在「设置 → 系统操控」主动开启并发起任务时生效；不会读取密码框内容，也不会执行支付类操作（默认拦截）。</string>
 </resources>
