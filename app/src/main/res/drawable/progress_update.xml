@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 更新页圆角进度条：底层轨道 + 上层渐变进度 -->
+<!-- 简约风进度条：纯色，无渐变 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <solid android:color="@color/code_bg" />
-            <corners android:radius="7dp" />
+            <corners android:radius="6dp" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <gradient
-                    android:angle="0"
-                    android:endColor="#BE123C"
-                    android:startColor="#FDA4AF" />
-                <corners android:radius="7dp" />
+                <solid android:color="@color/accent" />
+                <corners android:radius="6dp" />
             </shape>
         </clip>
     </item>
