@@ -40,7 +40,7 @@ class SessionsActivity : BaseActivity() {
         }
         b.tvEmpty.text =
             if (all.isEmpty()) "还没有历史会话" else "没有包含「$keyword」的会话"
-        b.tvEmpty.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
+        b.llEmpty.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
         b.tvSearchCount.text = if (keyword.isEmpty()) "" else "${sessions.size}/${all.size}"
         b.rvSessions.adapter = SessionAdapter(
             sessions,
