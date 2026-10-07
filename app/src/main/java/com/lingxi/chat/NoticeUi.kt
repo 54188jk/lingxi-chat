@@ -103,13 +103,13 @@ object NoticeUi {
         val tvTitle = view.findViewById<TextView>(R.id.tvNoticeTitle)
         val tvTime = view.findViewById<TextView>(R.id.tvNoticeTime)
         val tvBody = view.findViewById<TextView>(R.id.tvNoticeBody)
-        val tvLink = view.findViewById<TextView>(R.id.tvNoticeLink)
+        val tvMore = view.findViewById<TextView>(R.id.tvNoticeMore)
+        val scroll = view.findViewById<android.widget.ScrollView>(R.id.svNotice)
+        var full: CharSequence = ""
+        var expanded = false
 
-        fun fill(n: NoticeClient.Notice) {
-            tvTitle.text = n.title
-            tvTime.text = if (n.publishedAt.isNotBlank()) "发布于 ${n.publishedAt}" else "官方公告"
-            tvBody.movementMethod = android.text.method.LinkMovementMethod.getInstance()
-            tvBody.text = MarkdownRenderer.render(
+        fun renderFull(n: NoticeClient.Notice): CharSequence =
+            MarkdownRenderer.render(
                 view.context, n.body,
                 onLinkClick = { url ->
                     try {
@@ -124,6 +124,30 @@ object NoticeUi {
                     }
                 }
             )
+
+        fun fill(n: NoticeClient.Notice) {
+            tvTitle.text = n.title
+            tvTime.text = if (n.publishedAt.isNotBlank()) "发布于 ${n.publishedAt}" else "官方公告"
+            tvBody.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+            full = renderFull(n)
+            expanded = false
+            tvMore.text = "展开完整内容"
+            // 内容长时先折叠，小屏/老设备不会被一屏文字糊住
+            tvBody.text = if (n.body.length > 300) {
+                full.subSequence(0, 300).toString() + "\n…"
+            } else {
+                full
+            }
+            tvMore.visibility = if (n.body.length > 300) View.VISIBLE else View.GONE
+        }
+
+        tvMore.setOnClickListener {
+            expanded = !expanded
+            tvMore.text = if (expanded) "收起" else "展开完整内容"
+            tvBody.text = if (expanded) full else {
+                full.subSequence(0, 300).toString() + "\n…"
+            }
+            if (expanded) scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
         }
 
         val dialog = android.app.AlertDialog.Builder(activity)
@@ -144,8 +168,9 @@ object NoticeUi {
                     if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                     if (n == null) {
                         tvTitle.text = "公告"
-                        tvTime.text = "获取失败"
-                        tvBody.text = "暂时无法获取公告，请稍后再试或检查网络。"
+                        tvTime.text = "暂无公告"
+                        tvBody.text = "官方暂未发布公告内容。"
+                        tvMore.visibility = View.GONE
                     } else {
                         fill(n)
                         prefs(activity).edit().putString(KEY_HASH + "_latest", n.hash).apply()
