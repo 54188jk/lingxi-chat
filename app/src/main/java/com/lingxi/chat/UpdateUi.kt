@@ -109,15 +109,18 @@ object UpdateUi {
         }
     }
 
-    private fun mirrorCandidates(url: String): List<Pair<String, String>> {
-        // 顺序按实测可用性排：加速源慢就自动往后排，最后才走官方源
-        return listOf(
-            ("https://ghfast.top/$url") to "加速源 1",
-            ("https://gh-proxy.com/$url") to "加速源 2",
-            ("https://ghproxy.net/$url") to "加速源 3",
-            ("https://gh.ddlc.top/$url") to "加速源 4",
-            url to "官方源"
-        )
+    private fun mirrorCandidates(url: String, version: String = ""): List<Pair<String, String>> {
+        // 顺序按国内实测速度排：Gitee 直连最快，其后是 GitHub 加速镜像，最后才是 GitHub 官方源
+        val list = mutableListOf<Pair<String, String>>()
+        if (version.isNotBlank()) {
+            list.add(com.lingxi.chat.net.UpdateChecker.giteeDownloadUrl(version) to "Gitee 直连")
+        }
+        list.add(("https://ghfast.top/$url") to "加速源 1")
+        list.add(("https://gh-proxy.com/$url") to "加速源 2")
+        list.add(("https://ghproxy.net/$url") to "加速源 3")
+        list.add(("https://gh.ddlc.top/$url") to "加速源 4")
+        list.add(url to "官方源")
+        return list
     }
 
     private fun inflate(activity: Activity): View =
@@ -234,7 +237,7 @@ object UpdateUi {
         Thread {
             var error: String? = null
             var done = false
-            val candidates = mirrorCandidates(info.downloadUrl)
+            val candidates = mirrorCandidates(info.downloadUrl, info.version)
             for ((idx, pair) in candidates.withIndex()) {
                 if (done) break
                 val (url, label) = pair
