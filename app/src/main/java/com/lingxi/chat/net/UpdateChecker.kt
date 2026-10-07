@@ -3,6 +3,7 @@ package com.lingxi.chat.net
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import java.util.concurrent.ExecutorCompletionService
 import java.util.concurrent.TimeUnit
 
 object UpdateChecker {
@@ -59,23 +60,29 @@ object UpdateChecker {
         .build()
 
     /**
-     * 并行查询所有源：按列表顺序取结果，**排在前面的源先返回就先采用**，
-     * 若它失败或超时再顺延到下一个源；全部成功时取版本号最高的结果。
-     * 这样 Gitee 排在第一位就等于「国内优先」，GitHub 作为兜底，全程免 Token。
+     * 并行查询所有源，用 CompletionService 真正「谁先返回用谁」：
+     * 不再按列表顺序阻塞等待排在前面的源，因此即便 Gitee 排在首位且偶发变慢，
+     * GitHub 一旦先返回也能立即被采用，整体检查耗时取决于最快的那个源。
+     * 收集到的成功结果里取版本号最高的一个返回。
      */
     fun fetchLatestFast(timeoutMs: Long = 8000): ReleaseInfo? {
         val pool = java.util.concurrent.Executors.newFixedThreadPool(checkSources.size)
-        val tasks = checkSources.map { src -> pool.submit<ReleaseInfo?> { fetchFrom(src) } }
+        val completion = java.util.concurrent.ExecutorCompletionService<ReleaseInfo?>(pool)
+        checkSources.forEach { src -> completion.submit { fetchFrom(src) } }
         val results = mutableListOf<ReleaseInfo>()
         try {
             val deadline = System.currentTimeMillis() + timeoutMs
-            for (t in tasks) {
+            repeat(checkSources.size) {
                 val remain = deadline - System.currentTimeMillis()
-                if (remain <= 0) break
+                if (remain <= 0) return@repeat
                 try {
-                    t.get(remain, java.util.concurrent.TimeUnit.MILLISECONDS)?.let { results.add(it) }
+                    // poll 取最先完成的任务，future.get() 此刻不会阻塞；
+                    // 慢源（如偶发变慢的 Gitee）不会再卡住整体
+                    completion.poll(remain, java.util.concurrent.TimeUnit.MILLISECONDS)
+                        ?.get()
+                        ?.let { results.add(it) }
                 } catch (e: Exception) {
-                    // 该源失败或超时，顺延到下一个源
+                    // 该源失败或超时，继续取下一个已完成的源
                 }
             }
         } finally {
@@ -176,6 +183,11 @@ object UpdateChecker {
     fun fetchLatest(): ReleaseInfo? =
         fetchLatestFast() ?: fetchFrom(CheckSource("GitHub", LATEST_URL, GITHUB))
 
+    /** 历史版本列表的内存缓存，5 分钟内复用，避免反复打 GitHub/Gitee */
+    @Volatile
+    private var releasesCache: Pair<Long, List<ReleaseInfo>>? = null
+    private const val RELEASES_CACHE_MS = 5 * 60_000L
+
     /** GitHub 返回 ISO 时间，转成本地时区的 yyyy-MM-dd HH:mm:ss */
     private fun formatPublished(iso: String): String {
         if (iso.isBlank()) return ""
@@ -200,8 +212,96 @@ object UpdateChecker {
         return false
     }
 
-    /** 历史版本列表（含最新版，按时间倒序），失败返回空列表 */
+    /**
+     * 历史版本列表（含最新版），失败返回空列表。
+     *
+     * 旧实现只请求 GitHub 单一源，国内访问 GitHub API 经常要等数秒，
+     * 这是「历史版本页打开慢」的根因。现改为 Gitee / GitHub 并行竞速，
+     * 谁先返回非空结果就用谁；成功结果进内存缓存 5 分钟，避免反复请求。
+     */
     fun fetchReleases(): List<ReleaseInfo> {
+        val cached = releasesCache
+        if (cached != null && System.currentTimeMillis() - cached.first < RELEASES_CACHE_MS) {
+            return cached.second
+        }
+        val list = runCatching {
+            val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
+            try {
+                val completion = java.util.concurrent.ExecutorCompletionService<List<ReleaseInfo>>(pool)
+                completion.submit { fetchReleasesFromGitee() } // Gitee 先提交：国内优先
+                completion.submit { fetchReleasesFromGitHub() }
+                val deadline = System.currentTimeMillis() + 9000
+                repeat(2) {
+                    val remain = deadline - System.currentTimeMillis()
+                    if (remain <= 0) return@repeat
+                    try {
+                        // 取最先完成且非空的结果，慢源不会阻塞快源
+                        completion.poll(remain, java.util.concurrent.TimeUnit.MILLISECONDS)
+                            ?.get()
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.let { return@runCatching it }
+                    } catch (e: Exception) {
+                        // 该源失败，继续取下一个已完成的源
+                    }
+                }
+                emptyList()
+            } finally {
+                pool.shutdownNow()
+            }
+        }.getOrDefault(emptyList())
+        if (list.isNotEmpty()) releasesCache = System.currentTimeMillis() to list
+        return list
+    }
+
+    /** 历史版本：Gitee 源（国内直连，通常最快）。字段与 GitHub 略有差异，单独解析。 */
+    private fun fetchReleasesFromGitee(): List<ReleaseInfo> {
+        return try {
+            val req = Request.Builder()
+                .url("https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases?per_page=30")
+                .header("User-Agent", "LingxiChat-Android")
+                .build()
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return emptyList()
+                val arr = org.json.JSONArray(resp.body?.string() ?: return emptyList())
+                val out = mutableListOf<ReleaseInfo>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val tag = o.optString("tag_name", "").removePrefix("v")
+                    if (tag.split(".").any { it.toIntOrNull() == null }) continue
+                    var url = ""
+                    var size = 0L
+                    o.optJSONArray("assets")?.let { assets ->
+                        for (k in 0 until assets.length()) {
+                            val a = assets.optJSONObject(k) ?: continue
+                            if (a.optString("name", "").endsWith(".apk")) {
+                                url = a.optString("browser_download_url", "")
+                                size = a.optLong("size", 0L)
+                                break
+                            }
+                        }
+                    }
+                    if (url.isBlank()) url = giteeDownloadUrl(tag)
+                    out.add(
+                        ReleaseInfo(
+                            version = tag,
+                            notes = o.optString("body", ""),
+                            downloadUrl = url,
+                            publishedAt = formatCreatedAt(o.optString("created_at", "")),
+                            sizeBytes = size,
+                            pageUrl = o.optString("html_url", "https://gitee.com/wuzhuf/lingxi-chat/releases"),
+                            sourceName = "Gitee"
+                        )
+                    )
+                }
+                out
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /** 历史版本：GitHub 源（兜底）。 */
+    private fun fetchReleasesFromGitHub(): List<ReleaseInfo> {
         return try {
             val req = Request.Builder()
                 .url(LIST_URL)
@@ -215,10 +315,7 @@ object UpdateChecker {
                     val o = arr.optJSONObject(i) ?: continue
                     if (o.optBoolean("draft")) continue
                     val tag = o.optString("tag_name", "").removePrefix("v")
-                    // 只要纯数字版本号，公告/测试之类的 tag 直接跳过
-                    val parts = tag.split(".")
-                    if (parts.isEmpty() || parts.any { it.toIntOrNull() == null }) continue
-                    val version = tag
+                    if (tag.split(".").any { it.toIntOrNull() == null }) continue
                     var url = ""
                     var size = 0L
                     o.optJSONArray("assets")?.let { assets ->
@@ -236,7 +333,7 @@ object UpdateChecker {
                     if (url.isBlank()) continue
                     out.add(
                         ReleaseInfo(
-                            version = version,
+                            version = tag,
                             notes = o.optString("body", ""),
                             downloadUrl = url,
                             publishedAt = formatPublished(o.optString("published_at", "")),
