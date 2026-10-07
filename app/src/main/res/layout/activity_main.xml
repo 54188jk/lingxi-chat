@@ -373,7 +373,7 @@
             android:background="@drawable/bg_send_btn"
             android:padding="12dp"
             android:elevation="6dp"
-            android:outlineSpotShadowColor="#804A80FF"
+            android:outlineSpotShadowColor="#802ED8A3"
             android:contentDescription="发送" />
     </LinearLayout>
 

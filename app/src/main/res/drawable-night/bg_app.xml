@@ -17,9 +17,9 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="190dp"
-                android:startColor="#3D3D74E0"
-                android:centerColor="#1A2B5AA8"
-                android:endColor="#000C0E14" />
+                android:startColor="#3D12B981"
+                android:centerColor="#1A0C8F68"
+                android:endColor="#000B1210" />
         </shape>
     </item>
 
@@ -33,9 +33,9 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="170dp"
-                android:startColor="#336EA8FF"
-                android:centerColor="#142B4A80"
-                android:endColor="#000C0E14" />
+                android:startColor="#3334D399"
+                android:centerColor="#1420A97A"
+                android:endColor="#000B1210" />
         </shape>
     </item>
 
@@ -48,8 +48,8 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="110dp"
-                android:startColor="#1F6EE7F9"
-                android:endColor="#000C0E14" />
+                android:startColor="#1F6EE7B8"
+                android:endColor="#000B1210" />
         </shape>
     </item>
 
