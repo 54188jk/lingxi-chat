@@ -23,17 +23,32 @@ class SessionsActivity : BaseActivity() {
         store = SessionStore(this)
         b.btnBack.setOnClickListener { finish() }
         b.rvSessions.layoutManager = LinearLayoutManager(this)
+        b.etSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) = refresh()
+        })
         refresh()
     }
 
     private fun refresh() {
-        val sessions = store.list()
+        val keyword = b.etSearch.text.toString().trim()
+        val all = store.list()
+        val sessions = if (keyword.isEmpty()) all else all.filter { s ->
+            s.title.contains(keyword, ignoreCase = true) ||
+                    s.messages.any { it.content.contains(keyword, ignoreCase = true) }
+        }
+        b.tvEmpty.text =
+            if (all.isEmpty()) "还没有历史会话" else "没有包含「$keyword」的会话"
         b.tvEmpty.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
+        b.tvSearchCount.text = if (keyword.isEmpty()) "" else "${sessions.size}/${all.size}"
         b.rvSessions.adapter = SessionAdapter(
             sessions,
             onClick = { s ->
                 val data = Intent()
                 data.putExtra("session_id", s.id)
+                // 把搜索词带回去，聊天页把命中处标黄
+                data.putExtra("highlight", b.etSearch.text.toString().trim())
                 setResult(Activity.RESULT_OK, data)
                 finish()
             },

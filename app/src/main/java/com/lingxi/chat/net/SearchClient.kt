@@ -10,16 +10,26 @@ import java.util.concurrent.TimeUnit
 
 object SearchClient {
 
+    /** 一条搜索结果 */
+    data class Hit(val title: String, val url: String, val snippet: String)
+
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun search(query: String): String {
+    /** 取前 [limit] 条结果，空列表表示没搜到 */
+    fun searchHits(query: String, limit: Int = 5): List<Hit> {
         val q = URLEncoder.encode(query, "UTF-8")
-        val html = fetchHtml("https://html.duckduckgo.com/html/?q=$q")
-            ?: return "未找到相关结果"
-        return parseDdgHtml(html)
+        val html = fetchHtml("https://html.duckduckgo.com/html/?q=$q") ?: return emptyList()
+        return parseDdgHtml(html, limit)
+    }
+
+    /** 拼成给模型看的资料文本 */
+    fun search(query: String): String {
+        val hits = searchHits(query)
+        if (hits.isEmpty()) return "未找到相关结果"
+        return hits.joinToString("\n\n") { "${it.title}\n${it.url}\n${it.snippet}" }
     }
 
     private fun fetchHtml(url: String): String? {
@@ -35,21 +45,19 @@ object SearchClient {
         }
     }
 
-    private fun parseDdgHtml(html: String): String {
-        val results = mutableListOf<String>()
+    private fun parseDdgHtml(html: String, limit: Int): List<Hit> {
+        val hits = mutableListOf<Hit>()
         val titleRe = Regex("""<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)</a>""")
         val snippetRe = Regex("""<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)</a>""")
         val titles = titleRe.findAll(html).toList()
         val snippets = snippetRe.findAll(html).toList()
-        for (i in 0 until minOf(titles.size, snippets.size, 5)) {
-            val href = titles[i].groupValues[1]
+        for (i in 0 until minOf(titles.size, snippets.size, limit)) {
+            val link = decodeDdgLink(titles[i].groupValues[1])
+            if (link.isBlank()) continue
             val title = stripHtml(titles[i].groupValues[2])
-            val snippet = stripHtml(snippets[i].groupValues[1])
-            val link = decodeDdgLink(href)
-            results.add("$title\n$link\n$snippet")
+            hits.add(Hit(title.ifBlank { link }, link, stripHtml(snippets[i].groupValues[1])))
         }
-        if (results.isEmpty()) return "未找到相关结果"
-        return results.joinToString("\n\n")
+        return hits
     }
 
     private fun decodeDdgLink(href: String): String {

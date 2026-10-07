@@ -79,6 +79,12 @@ class SettingsActivity : BaseActivity() {
         b.btnAddRole.setOnClickListener { editRole(null) }
         b.btnAddFreeStt.setOnClickListener { pickFreeStt() }
 
+        b.swEnterSend.isChecked = store.enterToSend
+        b.swEnterSend.setOnCheckedChangeListener { _, checked ->
+            store.enterToSend = checked
+            toast(if (checked) "回车将直接发送" else "回车改为换行")
+        }
+
         b.spTheme.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themes.map { it.second })
         b.spTheme.setSelection(maxOf(0, themes.indexOfFirst { it.first == store.themeMode }))
         b.spTheme.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

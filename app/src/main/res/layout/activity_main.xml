@@ -332,6 +332,14 @@
             android:textOn=""
             android:textOff="" />
 
+        <ImageButton
+            android:id="@+id/btnEmoji"
+            android:layout_width="36dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_emoji"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="表情" />
+
         <EditText
             android:id="@+id/etInput"
             android:layout_width="0dp"

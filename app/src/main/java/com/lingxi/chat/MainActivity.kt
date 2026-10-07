@@ -68,6 +68,14 @@ class MainActivity : BaseActivity() {
     private val thinkingHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var thinkingRunnable: Runnable? = null
 
+    // 打字机：把已收到的文本按帧逐步显示，积压越多追得越快
+    private var revealedLen = 0
+    private var typeRunnable: Runnable? = null
+    private var draftRunnable: Runnable? = null
+
+    // 会话内搜索命中的关键词
+    private var highlightKey: String? = null
+
     // 顶栏实时时钟：每秒刷新
     private val clockHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val clockRunnable = object : Runnable {
@@ -93,10 +101,13 @@ class MainActivity : BaseActivity() {
 
     private val openSessions =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-            if (r.resultCode == Activity.RESULT_OK) {
-                r.data?.getStringExtra("session_id")?.let { loadSession(it) }
-            }
+if (r.resultCode == Activity.RESULT_OK) {
+            r.data?.getStringExtra("session_id")?.let { loadSession(it) }
+            highlightKey = r.data?.getStringExtra("highlight")?.takeIf { it.isNotBlank() }
+            adapter.highlight = highlightKey
+            adapter.notifyDataSetChanged()
         }
+    }
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -123,7 +134,7 @@ class MainActivity : BaseActivity() {
 
         initTts()
 
-        adapter = ChatAdapter(session.messages) { msg -> onMsgLongPress(msg) }
+        newAdapter()
         val lm = LinearLayoutManager(this)
         lm.stackFromEnd = true
         b.rvMessages.layoutManager = lm
@@ -198,10 +209,105 @@ class MainActivity : BaseActivity() {
         updateSearchTint()
 
         b.btnSend.setOnClickListener {
-            if (streaming) client.cancel() else send()
+            if (streaming) stopGenerating() else send()
+        }
+
+        // 回车行为：设置里可切「回车发送 / 回车换行」，Shift+回车始终换行
+        b.etInput.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == android.view.KeyEvent.KEYCODE_ENTER &&
+                event.action == android.view.KeyEvent.ACTION_DOWN
+            ) {
+                if (configStore.enterToSend && !event.isShiftPressed) {
+                    send()
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+
+        b.btnEmoji.setOnClickListener { showEmojiPanel() }
+
+        // 草稿：停手 600ms 落盘，切页面/退后台不丢
+        b.etInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                draftRunnable?.let { thinkingHandler.removeCallbacks(it) }
+                val text = s?.toString().orEmpty()
+                val r = Runnable { configStore.draft = text }
+                draftRunnable = r
+                thinkingHandler.postDelayed(r, 600)
+            }
+        })
+        if (configStore.draft.isNotBlank()) {
+            b.etInput.setText(configStore.draft)
+            b.etInput.setSelection(b.etInput.text.length)
         }
 
         UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
+    }
+
+    private fun showEmojiPanel() {
+        val grid = android.widget.GridLayout(this).apply {
+            columnCount = 8
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+        }
+        EMOJIS.forEach { e ->
+            val tv = android.widget.TextView(this).apply {
+                text = e
+                textSize = 22f
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, dp(6), 0, dp(6))
+                setOnClickListener { insertAtCursor(e) }
+            }
+            grid.addView(tv)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("表情")
+            .setView(grid)
+            .setPositiveButton("完成", null)
+            .show()
+    }
+
+    private fun insertAtCursor(s: String) {
+        val editable = b.etInput.text ?: return
+        val start = b.etInput.selectionStart.coerceAtLeast(0)
+        val end = b.etInput.selectionEnd.coerceAtLeast(0)
+        editable.replace(minOf(start, end), maxOf(start, end), s)
+        b.etInput.setSelection(minOf(start, end) + s.length)
+    }
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun pasteImageFromClipboard() {
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = cm.primaryClip ?: return toast("剪贴板是空的")
+            val item = clip.getItemAt(0)
+            item.uri?.let {
+                handleImage(it)
+                toast("已粘贴剪贴板图片")
+                return
+            }
+            val coerced = item.coerceToText(this)
+            if (coerced is android.graphics.drawable.BitmapDrawable) {
+                val bmp = coerced.bitmap
+                val out = ByteArrayOutputStream()
+                bmp.compress(Bitmap.CompressFormat.JPEG, 85, out)
+                pendingImageBase64 = Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+                pendingImageMime = "image/jpeg"
+                b.ivPreview.setImageBitmap(bmp)
+                b.llImagePreview.visibility = View.VISIBLE
+                toast("已粘贴剪贴板图片")
+                return
+            }
+            toast("剪贴板里没有图片")
+        } catch (e: Exception) {
+            toast("读取剪贴板失败：${e.message}")
+        }
     }
 
     override fun onResume() {
@@ -222,6 +328,9 @@ class MainActivity : BaseActivity() {
         tts?.shutdown()
         speechRecognizer?.destroy()
         thinkingRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        stopTypewriter()
+        draftRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        configStore.draft = b.etInput.text.toString()
         clockHandler.removeCallbacks(clockRunnable)
         if (recording) {
             try {
@@ -297,9 +406,27 @@ class MainActivity : BaseActivity() {
     }
 
     private fun newAdapter() {
-        adapter = ChatAdapter(session.messages) { msg -> onMsgLongPress(msg) }
+        adapter = ChatAdapter(
+            session.messages,
+            onLongPress = { msg -> onMsgLongPress(msg) },
+            onCopyCode = { code ->
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("code", code))
+                toast("已复制代码")
+            },
+            onOpenLink = { url -> openUrl(url) }
+        ).apply { highlight = highlightKey }
         b.rvMessages.adapter = adapter
         adapter.notifyDataSetChanged()
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            val safe = if (url.startsWith("http")) url else "https://$url"
+            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(safe)))
+        } catch (e: Exception) {
+            toast("无法打开链接")
+        }
     }
 
     private fun onMsgLongPress(msg: ChatMessage) {
@@ -345,7 +472,8 @@ class MainActivity : BaseActivity() {
         }
         session.messages.removeAt(session.messages.size - 1)
         adapter.notifyItemRemoved(session.messages.size)
-        callApi(null)
+        val keepSources = last.sources.map { SearchClient.Hit(it.title, it.url, "") }
+        callApi(null, keepSources)
     }
 
     private fun editAndResend(idx: Int) {
@@ -600,6 +728,14 @@ class MainActivity : BaseActivity() {
 
     companion object {
         private const val REQ_RECORD_AUDIO = 7101
+
+        val EMOJIS = listOf(
+            "😀", "😄", "😂", "😊", "🙂", "😉", "😍", "🥰",
+            "😎", "🤔", "😐", "😴", "😪", "😭", "😤", "😡",
+            "👍", "👎", "👏", "🙏", "💪", "🤝", "✌️", "👌",
+            "🔥", "✨", "🎉", "💡", "📌", "📎", "✅", "❌",
+            "❤️", "💙", "💚", "💛", "⭐", "🌟", "☕", "🍀"
+        )
     }
 
     private fun exportSession() {
@@ -607,6 +743,35 @@ class MainActivity : BaseActivity() {
             toast("当前会话还没有内容")
             return
         }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("导出 / 分享")
+            .setItems(
+                arrayOf(
+                    "分享为 Markdown 文本",
+                    "导出 .md 文件",
+                    "生成长图（图片）",
+                    "复制全文到剪贴板"
+                )
+            ) { _, which ->
+                when (which) {
+                    0 -> shareText(buildMarkdownExport())
+                    1 -> exportMarkdownFile()
+                    2 -> exportLongImage()
+                    3 -> {
+                        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val sb = StringBuilder()
+                        session.messages.forEach { m ->
+                            sb.append(if (m.role == "user") "我：" else "灵犀AI：").append(m.content).append("\n\n")
+                        }
+                        cm.setPrimaryClip(ClipData.newPlainText("session", sb.toString()))
+                        toast("已复制全文")
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun buildMarkdownExport(): String {
         val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val sb = StringBuilder()
         sb.append("# ${session.title.ifBlank { "灵犀AI 会话" }}\n\n")
@@ -615,17 +780,100 @@ class MainActivity : BaseActivity() {
             val who = if (m.role == "user") "用户" else "灵犀AI"
             sb.append("**$who**：${m.content}\n\n---\n\n")
         }
+        return sb.toString()
+    }
+
+    private fun shareText(text: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, sb.toString())
+            putExtra(Intent.EXTRA_TEXT, text)
             putExtra(Intent.EXTRA_TITLE, session.title.ifBlank { "灵犀AI 会话" })
         }
         startActivity(Intent.createChooser(intent, "导出会话"))
     }
 
+    private fun exportMarkdownFile() {
+        try {
+            val dir = File(getExternalFilesDir(null) ?: filesDir, "exports").apply { mkdirs() }
+            val safe = session.title.ifBlank { "lingxi" }
+                .map { if (it in "\\/:*?\"<>|") '_' else it }
+                .joinToString("")
+                .take(24)
+            val f = File(dir, "$safe-${System.currentTimeMillis()}.md")
+            f.writeText(buildMarkdownExport(), Charsets.UTF_8)
+            val uri = FileProvider.getUriForFile(this, "com.lingxi.chat.fileprovider", f)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/markdown"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "分享 Markdown 文件"))
+        } catch (e: Exception) {
+            toast("导出失败：${e.message}")
+        }
+    }
+
+    /** 整段对话渲染成一张长图：临时搭个 LinearLayout 量高后画到 Bitmap */
+    private fun exportLongImage() {
+        try {
+            val width = (resources.displayMetrics.widthPixels * 0.88f).toInt()
+            val surface = ContextCompat.getColor(this, R.color.surface)
+            val primary = ContextCompat.getColor(this, R.color.text_primary)
+            val secondary = ContextCompat.getColor(this, R.color.text_secondary)
+            val container = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setBackgroundColor(surface)
+                setPadding(dp(18), dp(18), dp(18), dp(18))
+            }
+            container.addView(android.widget.TextView(this).apply {
+                text = session.title.ifBlank { "灵犀AI 会话" }
+                textSize = 17f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextColor(primary)
+            })
+            container.addView(android.widget.TextView(this).apply {
+                text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date()) +
+                        " · 共 ${session.messages.size} 条"
+                textSize = 11f
+                setTextColor(secondary)
+            })
+            session.messages.forEach { m ->
+                container.addView(android.widget.TextView(this).apply {
+                    text = (if (m.role == "user") "我：\n" else "灵犀AI：\n") + m.content
+                    textSize = 13f
+                    setTextColor(primary)
+                    setLineSpacing(dp(3).toFloat(), 1f)
+                    setPadding(0, dp(10), 0, 0)
+                })
+            }
+            container.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            val h = container.measuredHeight.coerceIn(dp(200), 20000)
+            val bmp = Bitmap.createBitmap(width, h, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bmp)
+            canvas.drawColor(surface)
+            container.draw(canvas)
+            val dir = File(cacheDir, "exports").apply { mkdirs() }
+            val f = File(dir, "lingxi-${System.currentTimeMillis()}.png")
+            f.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
+            bmp.recycle()
+            val uri = FileProvider.getUriForFile(this, "com.lingxi.chat.fileprovider", f)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "分享长图"))
+        } catch (e: Exception) {
+            toast("长图生成失败：${e.message}")
+        }
+    }
+
     private fun showAttachOptions() {
         val cfg = configStore.getActiveModel()
-        val items = mutableListOf("发送文本文件（txt/md/代码等）")
+        val items = mutableListOf("发送文本文件（txt/md/代码等）", "从剪贴板粘贴图片")
         if (cfg?.vision == true) {
             items.add(0, "发送图片")
             items.add(1, "拍照提问")
@@ -636,6 +884,7 @@ class MainActivity : BaseActivity() {
                 when (items[which]) {
                     "发送图片" -> pickImage.launch("image/*")
                     "拍照提问" -> launchCamera()
+                    "从剪贴板粘贴图片" -> pasteImageFromClipboard()
                     else -> pickFile.launch("*/*")
                 }
             }
@@ -750,6 +999,7 @@ class MainActivity : BaseActivity() {
         adapter.notifyItemInserted(session.messages.size - 1)
         b.rvMessages.scrollToPosition(adapter.itemCount - 1)
         b.etInput.setText("")
+        configStore.draft = ""
         clearPendingImage()
         pendingFileText = null
         pendingFileName = null
@@ -764,29 +1014,32 @@ class MainActivity : BaseActivity() {
             adapter.notifyItemInserted(session.messages.size - 1)
             b.rvMessages.scrollToPosition(adapter.itemCount - 1)
             Thread {
-                val result = try {
-                    SearchClient.search(text.take(200))
+                val hits = try {
+                    SearchClient.searchHits(text.take(200))
                 } catch (e: Exception) {
-                    null
+                    emptyList()
                 }
                 runOnUiThread {
                     session.messages.remove(searchingMsg)
                     adapter.notifyDataSetChanged()
-                    if (result == null) {
+                    if (hits.isEmpty()) {
                         setStreaming(false)
                         appendError("联网搜索失败，已转为直接回答")
-                        callApi(null)
+                        callApi(null, emptyList())
                     } else {
-                        callApi(result)
+                        callApi(
+                            hits.joinToString("\n\n") { h -> "${h.title}\n${h.url}\n${h.snippet}" },
+                            hits
+                        )
                     }
                 }
             }.start()
         } else {
-            callApi(null)
+            callApi(null, emptyList())
         }
     }
 
-    private fun callApi(searchContext: String?) {
+    private fun callApi(searchContext: String?, sources: List<SearchClient.Hit>) {
         val cfg = configStore.getActiveModel() ?: return
         setStreaming(true)
 
@@ -800,29 +1053,25 @@ class MainActivity : BaseActivity() {
         apiMsgs.addAll(session.messages)
 
         val aiMsg = ChatMessage("assistant", "")
+        aiMsg.sources.addAll(sources.map { ChatMessage.Source(it.title, it.url) })
         session.messages.add(aiMsg)
         val aiIndex = session.messages.size - 1
         adapter.streamingIndex = aiIndex
         adapter.notifyItemInserted(aiIndex)
         b.rvMessages.scrollToPosition(aiIndex)
         startThinkingTicker(aiIndex)
+        revealedLen = 0
+        startTypewriter(aiMsg)
 
         client.streamChat(
             cfg, apiMsgs,
             onDelta = { delta ->
                 aiMsg.content += delta
-                val now = System.currentTimeMillis()
-                if (now - lastNotifyTime > 80) {
-                    lastNotifyTime = now
-                    runOnUiThread {
-                        adapter.notifyItemChanged(aiIndex)
-                        scrollToEndIfNearBottom()
-                    }
-                }
             },
             onDone = {
                 runOnUiThread {
-                    adapter.notifyItemChanged(aiIndex)
+                    stopTypewriter()
+                    adapter.flushStreaming(aiIndex)
                     sessionStore.save(session)
                     setStreaming(false)
                 }
@@ -834,12 +1083,58 @@ class MainActivity : BaseActivity() {
                     } else {
                         aiMsg.content += "\n\n[中断：$err]"
                     }
-                    adapter.notifyItemChanged(aiIndex)
+                    stopTypewriter()
+                    adapter.flushStreaming(aiIndex)
                     sessionStore.save(session)
                     setStreaming(false)
                 }
             }
         )
+    }
+
+    /** 打字机：每 24ms 多显示几个字，积压越多追得越快，长回答不至于等太久 */
+    private fun startTypewriter(aiMsg: ChatMessage) {
+        stopTypewriter()
+        val r = object : Runnable {
+            override fun run() {
+                if (!streaming) return
+                val full = aiMsg.content
+                if (revealedLen < full.length) {
+                    val backlog = full.length - revealedLen
+                    revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
+                    adapter.updateStreamingText(full.substring(0, revealedLen))
+                    scrollToEndIfNearBottom()
+                    thinkingHandler.postDelayed(this, 24)
+                }
+            }
+        }
+        typeRunnable = r
+        thinkingHandler.post(r)
+    }
+
+    private fun stopTypewriter() {
+        typeRunnable?.let { thinkingHandler.removeCallbacks(it) }
+        typeRunnable = null
+    }
+
+    /** 点「停止」：掐断网络流，已收到的内容定稿，空气泡直接撤掉 */
+    private fun stopGenerating() {
+        if (!streaming) return
+        client.cancel()
+        stopTypewriter()
+        val idx = adapter.streamingIndex
+        if (idx in session.messages.indices) {
+            val m = session.messages[idx]
+            if (m.role == "assistant" && m.content.isBlank()) {
+                session.messages.removeAt(idx)
+                adapter.notifyItemRemoved(idx)
+            } else {
+                adapter.flushStreaming(idx)
+            }
+            sessionStore.save(session)
+        }
+        setStreaming(false)
+        toast("已停止生成")
     }
 
     private fun appendError(text: String) {

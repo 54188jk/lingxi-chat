@@ -2,56 +2,89 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="top"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:paddingStart="2dp"
-    android:paddingEnd="32dp">
+    android:orientation="vertical">
 
-    <FrameLayout
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:background="@drawable/bg_ai_avatar"
-        android:layout_marginEnd="8dp">
-
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_sparkle"
-            android:contentDescription="AI" />
-    </FrameLayout>
+    <!-- 跨天分隔：只在与上一条消息不在同一天时显示 -->
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="2dp"
+        android:background="@drawable/bg_date_chip"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="10sp"
+        android:visibility="gone" />
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/bg_ai_bubble"
-        android:foreground="?attr/selectableItemBackground"
-        android:elevation="2dp"
-        android:outlineSpotShadowColor="#406EA8FF"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:orientation="horizontal"
+        android:gravity="top"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
+        android:paddingStart="2dp"
+        android:paddingEnd="32dp">
 
-        <TextView
-            android:id="@+id/tvMsg"
+        <FrameLayout
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bg_ai_avatar"
+            android:layout_marginEnd="8dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_sparkle"
+                android:contentDescription="AI" />
+        </FrameLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="15sp"
-            android:lineSpacingMultiplier="1.4" />
-    </LinearLayout>
+            android:orientation="vertical"
+            android:background="@drawable/bg_ai_bubble"
+            android:foreground="?attr/selectableItemBackground"
+            android:elevation="2dp"
+            android:outlineSpotShadowColor="#406EA8FF"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
 
-    <TextView
-        android:id="@+id/tvTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="38dp"
-        android:layout_marginTop="2dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="10sp" />
+            <TextView
+                android:id="@+id/tvMsg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:lineSpacingMultiplier="1.45" />
+
+            <!-- 联网搜索的参考来源，代码动态填充 -->
+            <LinearLayout
+                android:id="@+id/llSources"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="38dp"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+
+    </LinearLayout>
 
 </LinearLayout>

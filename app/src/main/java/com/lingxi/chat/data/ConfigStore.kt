@@ -54,6 +54,16 @@ class ConfigStore(context: Context) {
         get() = sp.getFloat(KEY_FONT_SCALE, 1.0f)
         set(v) = sp.edit().putFloat(KEY_FONT_SCALE, v).apply()
 
+    /** 软键盘回车是发送还是换行，默认发送 */
+    var enterToSend: Boolean
+        get() = sp.getBoolean(KEY_ENTER_SEND, true)
+        set(v) = sp.edit().putBoolean(KEY_ENTER_SEND, v).apply()
+
+    /** 输入框草稿：切页面/退后台不丢，发送后清空 */
+    var draft: String
+        get() = sp.getString(KEY_DRAFT, "") ?: ""
+        set(v) = sp.edit().putString(KEY_DRAFT, v).apply()
+
     fun loadRoles(): MutableList<RolePreset> {
         val customs = mutableListOf<RolePreset>()
         val raw = sp.getString(KEY_ROLES, "[]") ?: "[]"
@@ -90,5 +100,7 @@ class ConfigStore(context: Context) {
         private const val KEY_FONT_SCALE = "font_scale"
         private const val KEY_ROLES = "roles"
         private const val KEY_ACTIVE_ROLE = "active_role"
+        private const val KEY_ENTER_SEND = "enter_to_send"
+        private const val KEY_DRAFT = "input_draft"
     }
 }
