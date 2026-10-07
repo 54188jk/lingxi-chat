@@ -19,8 +19,9 @@ object UpdateChecker {
      * 新增公开源时在这里加一行即可，App 会自动参与测速。
      */
     private val checkSources = listOf(
-        CheckSource("GitHub", LATEST_URL, GITHUB),
-        CheckSource("Gitee", "https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases/latest", GITEE)
+        // Gitee 排第一：国内直连，通常最先返回且速度最快
+        CheckSource("Gitee", "https://gitee.com/api/v5/repos/wuzhuf/lingxi-chat/releases/latest", GITEE),
+        CheckSource("GitHub", LATEST_URL, GITHUB)
     )
 
     /** Gitee 上按约定命名的下载直链（免 Token，国内直连最快，用作下载首选源） */
@@ -51,7 +52,11 @@ object UpdateChecker {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    /** 并行查询所有源，取有效结果里版本号最高的那个；单个源超时不拖累整体 */
+    /**
+     * 并行查询所有源：按列表顺序取结果，**排在前面的源先返回就先采用**，
+     * 若它失败或超时再顺延到下一个源；全部成功时取版本号最高的结果。
+     * 这样 Gitee 排在第一位就等于「国内优先」，GitHub 作为兜底，全程免 Token。
+     */
     fun fetchLatestFast(timeoutMs: Long = 8000): ReleaseInfo? {
         val pool = java.util.concurrent.Executors.newFixedThreadPool(checkSources.size)
         val tasks = checkSources.map { src -> pool.submit<ReleaseInfo?> { fetchFrom(src) } }
@@ -64,7 +69,7 @@ object UpdateChecker {
                 try {
                     t.get(remain, java.util.concurrent.TimeUnit.MILLISECONDS)?.let { results.add(it) }
                 } catch (e: Exception) {
-                    // 该源失败或超时，忽略
+                    // 该源失败或超时，顺延到下一个源
                 }
             }
         } finally {

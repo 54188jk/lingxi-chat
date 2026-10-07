@@ -2,9 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
     android:background="@drawable/bg_card"
+    android:foreground="?attr/selectableItemBackground"
     android:gravity="center_vertical"
-    android:layout_marginBottom="8dp"
     android:orientation="horizontal"
     android:padding="12dp">
 
@@ -16,7 +17,7 @@
 
         <TextView
             android:id="@+id/tvVerName"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:text="v1.0.0"
@@ -26,7 +27,7 @@
 
         <TextView
             android:id="@+id/tvVerMeta"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
             android:text="2026-01-01 00:00:00 · 6.2 MB"
@@ -43,6 +44,14 @@
             android:text="更新说明"
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="查看该版本更新内容 ›"
+            android:textColor="@color/accent"
+            android:textSize="11sp" />
     </LinearLayout>
 
     <Button
@@ -50,7 +59,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:background="@drawable/bg_btn_primary"
+        android:background="@drawable/bg_btn_white"
         android:backgroundTint="@null"
         android:text="下载"
         android:textColor="#FF000000"
