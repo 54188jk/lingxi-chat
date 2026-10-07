@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.158**（versionCode 26 · minSdk 21 · targetSdk 35）
+当前版本：**v1.159**（versionCode 27 · minSdk 21 · targetSdk 35）
 
 ## 项目简介
 
@@ -30,16 +30,16 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.158/lingxi-v1.158.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.158/灵犀AI-v1.158.apk |
-| CNB | https://cnb.cool/tuui.rrj/lingxi-chat |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.159/lingxi-v1.159.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.159/灵犀AI-v1.159.apk |
 
-应用内「设置 → 检查更新」会自动挑最快的源。
+应用内「设置 → 检查更新」会自动挑最快的源（Gitee 直连优先，GitHub 多镜像兜底）。
 
 ## 版本更新历史
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.159 | 图标去红：桌面图标外圈与自适应图标背景改为中性浅灰描边 + 纯白底；顶栏头像外环同步改为中性描边 |
 | v1.158 | Gitee 仓库改公开并接入：检查更新 GitHub+Gitee 并行测速；下载 6 源自动择优（Gitee 直连实测 ~2MB/s） |
 | v1.157 | 多源测速更新架构；彻底移除公告功能（顶栏铃铛、设置页入口、相关代码与文件） |
 | v1.156 | 公告兼容性升级（纯文本公告优先、超长折叠、缺省提示「暂无公告」） |

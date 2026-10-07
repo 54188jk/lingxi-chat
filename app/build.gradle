@@ -11,8 +11,8 @@ android {
         applicationId "com.lingxi.chat"
         minSdk 24
         targetSdk 35
-        versionCode 26
-        versionName "1.158"
+        versionCode 27
+        versionName "1.159"
     }
 
     buildTypes {
