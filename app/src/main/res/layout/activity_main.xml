@@ -18,9 +18,9 @@
 
         <ImageView
             android:id="@+id/ivLogo"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:src="@drawable/ic_launcher"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:src="@mipmap/ic_avatar"
             android:contentDescription="切换角色" />
 
         <LinearLayout
@@ -146,7 +146,7 @@
             <ImageView
                 android:layout_width="76dp"
                 android:layout_height="76dp"
-                android:src="@drawable/ic_launcher"
+                android:src="@mipmap/ic_avatar"
                 android:contentDescription="logo" />
 
             <TextView
@@ -373,7 +373,7 @@
             android:background="@drawable/bg_send_btn"
             android:padding="12dp"
             android:elevation="6dp"
-            android:outlineSpotShadowColor="#802ED8A3"
+            android:outlineSpotShadowColor="#80FB7185"
             android:contentDescription="发送" />
     </LinearLayout>
 

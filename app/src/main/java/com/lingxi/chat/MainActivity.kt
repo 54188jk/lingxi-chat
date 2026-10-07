@@ -73,6 +73,32 @@ class MainActivity : BaseActivity() {
     private var typeRunnable: Runnable? = null
     private var draftRunnable: Runnable? = null
 
+    // 流式光标闪烁：▍ 每 500ms 显示/隐藏
+    private var caretVisible = true
+    private val caretRunnable = object : Runnable {
+        override fun run() {
+            caretVisible = !caretVisible
+            (adapter?.streamingIndex ?: -1).takeIf { it >= 0 }?.let { idx ->
+                val msg = session.messages.getOrNull(idx) ?: return@let
+                if (msg.content.isNotBlank()) {
+                    adapter?.updateStreamingText(
+                        msg.content.substring(0, minOf(revealedLen, msg.content.length)),
+                        caretVisible
+                    )
+                }
+            }
+            thinkingHandler.postDelayed(this, 500)
+        }
+    }
+
+    /** 系统关闭动画时（开发者选项/无障碍）跳过动态效果 */
+    private fun animationsEnabled(): Boolean {
+        val scale = android.provider.Settings.Global.getFloat(
+            contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        )
+        return scale > 0.01f
+    }
+
     // 会话内搜索命中的关键词
     private var highlightKey: String? = null
 
@@ -185,13 +211,16 @@ if (r.resultCode == Activity.RESULT_OK) {
         b.btnNew.setOnClickListener { newSession() }
         b.btnHistory.setOnClickListener {
             openSessions.launch(Intent(this, SessionsActivity::class.java))
+            animateForward()
         }
         b.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+            animateForward()
         }
         b.btnShare.setOnClickListener { exportSession() }
         b.btnNotice.setOnClickListener { NoticeUi.open(this) }
         NoticeUi.bindBell(this, b.btnNotice)
+        startLogoBreathing()
         b.root.findViewById<android.widget.ImageView>(R.id.ivLogo).setOnClickListener { showRolePicker() }
 
         b.btnAttach.setOnClickListener { showAttachOptions() }
@@ -210,7 +239,8 @@ if (r.resultCode == Activity.RESULT_OK) {
         }
         updateSearchTint()
 
-        b.btnSend.setOnClickListener {
+        b.btnSend.setOnClickListener { view ->
+            view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
             if (streaming) stopGenerating() else send()
         }
 
@@ -345,6 +375,25 @@ if (r.resultCode == Activity.RESULT_OK) {
             recording = false
         }
         super.onDestroy()
+    }
+
+    private fun animateForward() {
+        if (!animationsEnabled()) return
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left)
+    }
+
+    /** 顶栏头像缓慢呼吸，提示「点我切换角色」 */
+    private fun startLogoBreathing() {
+        if (!animationsEnabled()) return
+        b.ivLogo.animate().cancel()
+        b.ivLogo.animate()
+            .scaleX(1.06f).scaleY(1.06f)
+            .setDuration(1400)
+            .setStartDelay(600)
+            .withEndAction {
+                b.ivLogo.animate().scaleX(1f).scaleY(1f).setDuration(1400).start()
+            }
+            .start()
     }
 
     private fun updateSearchTint() {
@@ -1098,6 +1147,8 @@ if (r.resultCode == Activity.RESULT_OK) {
     /** 打字机：每 24ms 多显示几个字，积压越多追得越快，长回答不至于等太久 */
     private fun startTypewriter(aiMsg: ChatMessage) {
         stopTypewriter()
+        caretVisible = true
+        thinkingHandler.postDelayed(caretRunnable, 500)
         val r = object : Runnable {
             override fun run() {
                 if (!streaming) return
@@ -1105,7 +1156,7 @@ if (r.resultCode == Activity.RESULT_OK) {
                 if (revealedLen < full.length) {
                     val backlog = full.length - revealedLen
                     revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
-                    adapter.updateStreamingText(full.substring(0, revealedLen))
+                    adapter.updateStreamingText(full.substring(0, revealedLen), caretVisible)
                     scrollToEndIfNearBottom()
                     thinkingHandler.postDelayed(this, 24)
                 }
@@ -1118,6 +1169,7 @@ if (r.resultCode == Activity.RESULT_OK) {
     private fun stopTypewriter() {
         typeRunnable?.let { thinkingHandler.removeCallbacks(it) }
         typeRunnable = null
+        thinkingHandler.removeCallbacks(caretRunnable)
     }
 
     /** 点「停止」：掐断网络流，已收到的内容定稿，空气泡直接撤掉 */

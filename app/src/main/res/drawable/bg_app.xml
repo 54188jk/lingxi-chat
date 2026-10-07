@@ -17,7 +17,7 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="190dp"
-                android:startColor="#1F0E9E6E"
+                android:startColor="#1FF43F5E"
                 android:endColor="#00F3F7F5" />
         </shape>
     </item>
@@ -32,7 +32,7 @@
             <gradient
                 android:type="radial"
                 android:gradientRadius="170dp"
-                android:startColor="#1A0E9E6E"
+                android:startColor="#1AF43F5E"
                 android:endColor="#00F3F7F5" />
         </shape>
     </item>

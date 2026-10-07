@@ -52,7 +52,7 @@
             android:background="@drawable/bg_ai_bubble"
             android:foreground="?attr/selectableItemBackground"
             android:elevation="2dp"
-            android:outlineSpotShadowColor="#406EE7B8"
+            android:outlineSpotShadowColor="#40FDA4AF"
             android:paddingStart="14dp"
             android:paddingEnd="14dp"
             android:paddingTop="10dp"

@@ -32,7 +32,7 @@
         android:background="@drawable/bg_user_bubble"
         android:foreground="?attr/selectableItemBackground"
         android:elevation="4dp"
-        android:outlineSpotShadowColor="#6612B981"
+        android:outlineSpotShadowColor="#66F2566B"
         android:paddingStart="14dp"
         android:paddingEnd="14dp"
         android:paddingTop="10dp"

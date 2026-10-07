@@ -84,6 +84,7 @@ class ChatAdapter(
                 holder.iv.visibility = View.GONE
             }
             holder.itemView.setOnLongClickListener { onLongPress(msg); true }
+            holder.itemView.startPopIn()
             return
         }
 
@@ -97,6 +98,7 @@ class ChatAdapter(
             bindSources(b, msg)
             b.tvMsg.setOnLongClickListener { onLongPress(msg); true }
             b.root.setOnLongClickListener { onLongPress(msg); true }
+            b.root.startPopIn()
             if (position == streamingIndex) streamHolder = holder
         }
     }
@@ -120,8 +122,8 @@ class ChatAdapter(
         }
     }
 
-    /** 打字机：直接改当前可见气泡的文本，不触发重新绑定 */
-    fun updateStreamingText(displayText: String) {
+    /** 打字机：直接改当前可见气泡的文本，不触发重新绑定。[caret] 控制流式光标显隐 */
+    fun updateStreamingText(displayText: String, caret: Boolean = true) {
         val h = streamHolder ?: return
         try {
             val rendered = MarkdownRenderer.render(
@@ -130,7 +132,8 @@ class ChatAdapter(
                 onCodeClick = { onCopyCode(it) },
                 onLinkClick = { onOpenLink(it) }
             )
-            h.binding.tvMsg.text = android.text.TextUtils.concat(rendered, " ▍")
+            h.binding.tvMsg.text =
+                if (caret) android.text.TextUtils.concat(rendered, " ▍") else rendered
         } catch (_: Exception) {
         }
     }
@@ -167,6 +170,19 @@ class ChatAdapter(
         hint.setTextColor(secondary)
         box.addView(hint, 0)
         box.visibility = View.VISIBLE
+    }
+
+    /** 新消息上浮淡入；系统关掉动画时直接跳过 */
+    private fun View.startPopIn() {
+        val scale = android.provider.Settings.Global.getFloat(
+            context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        )
+        if (scale <= 0.01f) return
+        alpha = 0f
+        translationY = 12f * resources.displayMetrics.density
+        animate().alpha(1f).translationY(0f).setDuration(220)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
     }
 
     private fun sameDay(t1: Long, t2: Long): Boolean {
