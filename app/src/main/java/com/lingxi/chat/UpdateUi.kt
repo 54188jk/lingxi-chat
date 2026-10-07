@@ -19,11 +19,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.Locale
 
 /**
@@ -33,14 +39,23 @@ import java.util.Locale
  */
 object UpdateUi {
 
+    // 下载专用：连接 10 秒、读 15 秒——任何源卡住会被立刻判死并由其他源顶上
     private val http = OkHttpClient.Builder()
-        .connectTimeout(12, TimeUnit.SECONDS)
-        .readTimeout(180, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
 
-    private var downloadCall: Call? = null
+    /** 一个下载候选源的状态：实时字节数、服务端声明总大小、失败原因 */
+    private class RaceSource(val url: String, val label: String) {
+        val downloaded = AtomicLong(0)
+        @Volatile var total: Long = -1
+        @Volatile var failed: String? = null
+    }
+
+    private val activeCalls = java.util.Collections.synchronizedList(mutableListOf<Call>())
+    private val downloadCancelled = AtomicBoolean(false)
     private var pendingApk: File? = null
 
     private const val PREF_SKIP = "lingxi_update_skip"
@@ -83,9 +98,6 @@ object UpdateUi {
 
     // ---------------- 更新页 ----------------
 
-    private class SlowSourceException : Exception("速度过慢")
-
-    /** 下载完但文件不完整/损坏：直接换下一个源，不给用户装坏包的机会 */
     private class CorruptedApkException(msg: String) : Exception(msg)
 
     /**
@@ -168,29 +180,29 @@ object UpdateUi {
                 if (isNotEmpty()) append(" · ")
                 append("安装包 ${"%.1f".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0)} MB")
             }
-            append(" · 官方源 GitHub，自动走镜像加速")
+            append(" · 多源并行下载，自动取最快")
         }
 
-        val dialog = android.app.AlertDialog.Builder(activity)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setPositiveButton("立即更新", null)
             .setNegativeButton("稍后再说", null)
             .create()
         dialog.show()
 
-        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             if (progressBox.visibility == View.VISIBLE) {
-                downloadCall?.cancel()
-                status.text = "已取消下载"
+                cancelDownload()
+                status.text = "正在取消下载…"
                 return@setOnClickListener
             }
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
             download(activity, info, bar, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
-                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
                     dialog.dismiss()
                     installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
@@ -199,8 +211,8 @@ object UpdateUi {
                 }
             }
         }
-        dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            android.app.AlertDialog.Builder(activity)
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(activity)
                 .setTitle("忽略这个版本？")
                 .setMessage("将不再提示 v${info.version} 的更新，之后仍可在设置里手动检查。")
                 .setPositiveButton("忽略此版本") { _, _ ->
@@ -230,7 +242,7 @@ object UpdateUi {
         view.findViewById<TextView>(R.id.tvNotes).text = "当前已是最新，没有新版本可安装。"
         view.findViewById<TextView>(R.id.tvMeta).text =
             if (publishedAt.isBlank()) "官方源 GitHub" else "上一版本发布于 $publishedAt"
-        android.app.AlertDialog.Builder(activity)
+        androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setPositiveButton("好") { _, _ -> }
             .show()
@@ -238,6 +250,25 @@ object UpdateUi {
 
     // ---------------- 下载 ----------------
 
+    private fun cancelDownload() {
+        downloadCancelled.set(true)
+        val snapshot = synchronized(activeCalls) { activeCalls.toList() }
+        snapshot.forEach { it.cancel() }
+    }
+
+    private fun briefError(e: Exception): String = when (e) {
+        is java.net.SocketTimeoutException -> "连接或传输超时"
+        is javax.net.ssl.SSLException -> "连接安全校验失败"
+        else -> e.message?.take(40) ?: e.javaClass.simpleName
+    }
+
+    /**
+     * 全源并行竞速下载：
+     * 1. 所有候选源（Gitee 直连 + 4 个加速镜像 + 官方源）同时发起，不再串行等待慢源
+     * 2. 任意源卡住 15 秒即被 OkHttp 超时判死，其余源不受影响
+     * 3. 第一个下载完成并通过完整性校验的源立即胜出，其余源全部取消
+     * 4. 进度、速度、剩余时间实时展示当前最快源
+     */
     private fun download(
         activity: Activity,
         info: UpdateChecker.ReleaseInfo,
@@ -249,125 +280,146 @@ object UpdateUi {
     ) {
         val dir = File(activity.cacheDir, "updates").apply { mkdirs() }
         val apk = File(dir, "lingxi-v${info.version}.apk")
-        Thread {
-            var error: String? = null
-            var done = false
-            // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链，直接当首选源用
-            val githubUrl = if (info.sourceName == "Gitee") {
-                "https://github.com/54188jk/lingxi-chat/releases/download/v${info.version}/lingxi-v${info.version}.apk"
-            } else info.downloadUrl
-            val candidates = mirrorCandidates(
-                githubUrl,
-                info.version,
-                giteeUrl = if (info.sourceName == "Gitee") info.downloadUrl else ""
-            )
-            for ((idx, pair) in candidates.withIndex()) {
-                if (done) break
-                val (url, label) = pair
-                try {
-                    activity.runOnUiThread {
-                        if (idx == 0) status.text = "连接$label…"
-                        else status.text = "$label（${idx + 1}/${candidates.size}）…"
-                    }
-                    val serverSize = downloadOnce(activity, apk, url, label, bar, percent, speed, status)
-                    verifyApk(apk, serverSize, info.sizeBytes)
-                    done = true
-                } catch (e: CorruptedApkException) {
-                    apk.delete()
-                    error = "下载的文件不完整（${e.message}），已自动换源重试"
-                    activity.runOnUiThread { status.text = "文件不完整，换源重试…" }
-                    continue
-                } catch (e: SlowSourceException) {
-                    apk.delete()
-                    activity.runOnUiThread { status.text = "$label 速度过慢，换下一个源…" }
-                    continue
-                } catch (e: Exception) {
-                    if (downloadCall?.isCanceled() == true) {
-                        error = null
-                        done = true
-                    } else {
-                        error = e.message
-                        apk.delete()
-                        continue
-                    }
-                }
-            }
+        apk.delete()
+        // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链；GitHub 官方链接按版本号可拼出
+        val githubUrl = if (info.sourceName == "Gitee") {
+            "https://github.com/54188jk/lingxi-chat/releases/download/v${info.version}/lingxi-v${info.version}.apk"
+        } else info.downloadUrl
+        val candidates = mirrorCandidates(
+            githubUrl,
+            info.version,
+            giteeUrl = if (info.sourceName == "Gitee") info.downloadUrl else ""
+        ).distinctBy { it.first }.map { RaceSource(it.first, it.second) }
+
+        downloadCancelled.set(false)
+        synchronized(activeCalls) { activeCalls.clear() }
+        val finished = AtomicBoolean(false)
+        val winnerTaken = AtomicBoolean(false)
+        val remaining = AtomicInteger(candidates.size)
+        val errors = java.util.concurrent.ConcurrentLinkedQueue<String>()
+
+        fun finishOnce(ok: Boolean, err: String?) {
+            if (!finished.compareAndSet(false, true)) return
+            cancelRunningCalls()
             activity.runOnUiThread {
-                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                when {
-                    done && apk.exists() -> onEnd(true, null)
-                    downloadCall?.isCanceled() == true -> {
-                        apk.delete()
-                        onEnd(false, null)
+                if (!activity.isFinishing && !activity.isDestroyed) onEnd(ok, err)
+            }
+        }
+
+        fun onSourceSettled(src: RaceSource) {
+            src.failed?.let { errors.add("${src.label}：$it") }
+            if (remaining.decrementAndGet() == 0 && !winnerTaken.get()) {
+                val err = if (downloadCancelled.get()) null
+                else "下载失败：" + (errors.toList().take(3).joinToString("；").ifBlank { "所有下载源均不可用" })
+                finishOnce(false, err)
+            }
+        }
+
+        fun startSource(idx: Int, src: RaceSource) {
+            val part = File(dir, "${apk.name}.part$idx")
+            part.delete()
+            val call = http.newCall(
+                Request.Builder().url(src.url)
+                    .header("User-Agent", "LingxiChat-Android")
+                    .build()
+            )
+            synchronized(activeCalls) { if (!finished.get()) activeCalls.add(call) }
+            call.enqueue(object : Callback {
+                override fun onFailure(c: Call, e: IOException) {
+                    part.delete()
+                    if (!downloadCancelled.get() && !c.isCanceled()) src.failed = briefError(e)
+                    onSourceSettled(src)
+                }
+
+                override fun onResponse(c: Call, resp: Response) {
+                    try {
+                        resp.use { r ->
+                            if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
+                            src.total = r.body?.contentLength() ?: -1L
+                            val input = r.body?.byteStream() ?: throw IOException("响应为空")
+                            FileOutputStream(part).use { out ->
+                                val buf = ByteArray(64 * 1024)
+                                var n: Int
+                                while (input.read(buf).also { n = it } != -1) {
+                                    out.write(buf, 0, n)
+                                    src.downloaded.addAndGet(n.toLong())
+                                }
+                            }
+                        }
+                        verifyApk(part, src.total.coerceAtLeast(0L), info.sizeBytes)
+                        if (winnerTaken.compareAndSet(false, true)) {
+                            if (apk.exists()) apk.delete()
+                            if (!part.renameTo(apk)) {
+                                winnerTaken.set(false)
+                                src.failed = "文件保存失败"
+                            }
+                        } else {
+                            part.delete()
+                        }
+                    } catch (e: CorruptedApkException) {
+                        part.delete()
+                        src.failed = "文件不完整（${e.message}）"
+                    } catch (e: Exception) {
+                        part.delete()
+                        if (!downloadCancelled.get() && !c.isCanceled()) src.failed = briefError(e)
                     }
-                    else -> onEnd(false, error ?: "下载失败：所有下载源均不可用")
+                    if (winnerTaken.get() && src.failed == null) finishOnce(true, null)
+                    else onSourceSettled(src)
+                }
+            })
+        }
+
+        candidates.forEachIndexed(::startSource)
+
+        // UI 监视线程：每 250ms 汇报当前最快源的进度
+        Thread {
+            val declaredTotal = info.sizeBytes
+            var lastBytes = 0L
+            var lastTime = System.currentTimeMillis()
+            var shownKbps = 0L
+            while (!finished.get() && !activity.isFinishing && !activity.isDestroyed) {
+                Thread.sleep(250)
+                if (finished.get()) break
+                val running = candidates.filter { it.failed == null }
+                val leader = running.maxByOrNull { it.downloaded.get() } ?: break
+                val d = leader.downloaded.get()
+                val now = System.currentTimeMillis()
+                val dt = (now - lastTime).coerceAtLeast(1L)
+                val inst = (d - lastBytes) * 1000 / dt
+                lastBytes = d
+                lastTime = now
+                if (inst > 0) shownKbps = inst
+                val total = if (leader.total > 0) leader.total else declaredTotal
+                activity.runOnUiThread {
+                    if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
+                    if (d == 0L) {
+                        status.text = "正在并行连接 ${candidates.size} 个下载源…"
+                    } else {
+                        if (total > 0) {
+                            val pct = (d * 100 / total).toInt().coerceAtMost(if (d >= total) 100 else 99)
+                            bar.progress = pct
+                            percent.text = "$pct%"
+                            val mb = "%.1f".format(Locale.US, d / 1024.0 / 1024.0)
+                            val totalMb = "%.1f".format(Locale.US, total / 1024.0 / 1024.0)
+                            val kbps = shownKbps / 1024
+                            val remain = if (kbps > 0) ((total - d) / 1024 / kbps) else -1L
+                            status.text = if (d >= total) "${leader.label} · 下载完成，正在校验…"
+                            else "${leader.label} · ${mb}/$totalMb MB" +
+                                    (if (remain in 0..600) " · 约剩 ${remain}s" else "")
+                        } else {
+                            percent.text = "${d / 1024 / 1024} MB"
+                            status.text = "${leader.label} · 已下载 ${d / 1024} KB（服务器未给总大小）"
+                        }
+                        speed.text = "${shownKbps / 1024} KB/s"
+                    }
                 }
             }
         }.start()
     }
 
-    private fun downloadOnce(
-        activity: Activity,
-        apk: File,
-        url: String,
-        label: String,
-        bar: ProgressBar,
-        percent: TextView,
-        speed: TextView,
-        status: TextView
-    ): Long {
-        val call = http.newCall(Request.Builder().url(url).build())
-        downloadCall = call
-        return call.execute().use { resp ->
-            if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
-            val total = resp.body?.contentLength() ?: -1L
-            val input = resp.body?.byteStream() ?: throw Exception("响应为空")
-            val out = FileOutputStream(apk)
-            val buf = ByteArray(64 * 1024)
-            var read: Int
-            var downloaded = 0L
-            var lastPost = 0L
-            val startTime = System.currentTimeMillis()
-            while (input.read(buf).also { read = it } != -1) {
-                out.write(buf, 0, read)
-                downloaded += read
-                val now = System.currentTimeMillis()
-                val elapsedMs = now - startTime
-                // 只有「真卡住」才换源：超过 20 秒且平均速度低于 8KB/s。
-                // 手机网络加速源起速本来就慢，早期版本 8 秒/200KB 的判定会误杀可用源。
-                val avgSpeed = if (elapsedMs > 0) downloaded / (elapsedMs / 1000) else Long.MAX_VALUE
-                if (elapsedMs > 20000 && avgSpeed < 8 * 1024) {
-                    out.close()
-                    throw SlowSourceException()
-                }
-                if (now - lastPost > 200) {
-                    lastPost = now
-                    val d = downloaded
-                    val seconds = (elapsedMs / 1000).coerceAtLeast(1)
-                    val kbps = d / 1024 / seconds
-                    val remain = if (total > 0 && kbps > 0) (total - d) / 1024 / kbps else -1L
-                    activity.runOnUiThread {
-                        val progress: String
-                        if (total > 0) {
-                            val pct = (d * 100 / total).toInt()
-                            bar.progress = pct
-                            percent.text = "$pct%"
-                            progress = "已下载 ${d / 1024 / 1024} MB / ${total / 1024 / 1024} MB" +
-                                    if (remain > 0) " · 约剩 ${remain}s" else ""
-                        } else {
-                            percent.text = "${d / 1024 / 1024} MB"
-                            progress = "已下载 ${d / 1024} KB（服务器未给总大小）"
-                        }
-                        speed.text = "$kbps KB/s"
-                        status.text = "$label · $progress"
-                    }
-                }
-            }
-            out.flush()
-            out.close()
-            // 返回服务端声明的总大小，供上层做完整性校验
-            total
-        }
+    private fun cancelRunningCalls() {
+        val snapshot = synchronized(activeCalls) { activeCalls.toList() }
+        snapshot.forEach { it.cancel() }
     }
 
     // ---------------- 历史版本 ----------------
@@ -378,7 +430,7 @@ object UpdateUi {
      */
     fun openVersionPage(activity: Activity, info: UpdateChecker.ReleaseInfo, isDowngrade: Boolean) {
         if (isDowngrade) {
-            android.app.AlertDialog.Builder(activity)
+            androidx.appcompat.app.AlertDialog.Builder(activity)
                 .setTitle("这是历史版本 v${info.version}")
                 .setMessage(
                     "你当前已是更新版本，安装旧版需要先卸载「灵犀AI」，" +
@@ -414,20 +466,25 @@ object UpdateUi {
         val bar = view.findViewById<ProgressBar>(R.id.pbDownload)
         val status = view.findViewById<TextView>(R.id.tvDownloadStatus)
 
-        val dialog = android.app.AlertDialog.Builder(activity)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setPositiveButton("开始下载", null)
             .setNegativeButton("取消", null)
             .create()
         dialog.show()
-        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (progressBox.visibility == View.VISIBLE) {
+                cancelDownload()
+                status.text = "正在取消下载…"
+                return@setOnClickListener
+            }
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
             download(activity, info, bar, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
-                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {
                     dialog.dismiss()
                     installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
@@ -435,6 +492,9 @@ object UpdateUi {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            if (progressBox.visibility == View.VISIBLE) cancelDownload()
         }
     }
 
@@ -448,7 +508,7 @@ object UpdateUi {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
             !activity.packageManager.canRequestPackageInstalls()
         ) {
-            android.app.AlertDialog.Builder(activity)
+            androidx.appcompat.app.AlertDialog.Builder(activity)
                 .setTitle("需要安装权限")
                 .setMessage("新版本已下载完成（${"%.1f".format(Locale.US, apk.length() / 1024.0 / 1024.0)} MB）。\n\n请在下一页允许「灵犀AI」安装应用，返回后将自动继续安装。")
                 .setPositiveButton("去授权") { _, _ ->

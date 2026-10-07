@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 分割线：均匀发丝线，去掉彩色渐隐 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient
-        android:startColor="#00FB7185"
-        android:centerColor="@color/divider"
-        android:endColor="#00FB7185" />
+    <solid android:color="@color/divider" />
     <size android:height="1dp" />
 </shape>

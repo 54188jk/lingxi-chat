@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 更新弹窗头部：纯面板底 -->
+<!-- 弹窗统一：圆角 22dp 面板底 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/surface" />
+    <solid android:color="@color/dialog_bg" />
+    <corners android:radius="22dp" />
 </shape>

@@ -27,7 +27,7 @@ object VersionsUi {
         val list = view.findViewById<RecyclerView>(R.id.rvVersions)
         list.layoutManager = LinearLayoutManager(activity)
 
-        val dialog = android.app.AlertDialog.Builder(activity)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setNegativeButton("关闭", null)
             .create()
@@ -161,7 +161,7 @@ object VersionsUi {
             }
         }
 
-        val builder = android.app.AlertDialog.Builder(activity)
+        val builder = androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setNegativeButton("关闭", null)
         if (!isCurrent) {

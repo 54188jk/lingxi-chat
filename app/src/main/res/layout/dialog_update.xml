@@ -77,6 +77,11 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@drawable/bg_divider" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -90,9 +95,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:letterSpacing="0.1"
                 android:text="本次更新"
-                android:textColor="@color/accent"
-                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -100,7 +106,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:background="@drawable/bg_card"
+                android:background="@drawable/bg_note_card"
                 android:lineSpacingMultiplier="1.4"
                 android:padding="14dp"
                 android:text="修复已知bug"
@@ -138,7 +144,7 @@
                         android:layout_weight="1"
                         android:fontFamily="monospace"
                         android:text="0%"
-                        android:textColor="@color/accent"
+                        android:textColor="@color/text_primary"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 

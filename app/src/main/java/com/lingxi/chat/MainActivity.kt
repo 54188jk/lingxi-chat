@@ -72,7 +72,7 @@ class MainActivity : BaseActivity() {
     private var recorder: android.media.MediaRecorder? = null
     private var recordFile: File? = null
     private var recording = false
-    private var recordDialog: android.app.AlertDialog? = null
+    private var recordDialog: androidx.appcompat.app.AlertDialog? = null
     private var pendingSttConfig: com.lingxi.chat.data.ModelConfig? = null
 
     // ============ 协程异步层（替代裸Thread/Handler）============
@@ -320,7 +320,7 @@ if (r.resultCode == Activity.RESULT_OK) {
             }
             grid.addView(tv)
         }
-        android.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("表情")
             .setView(grid)
             .setPositiveButton("完成", null)
@@ -434,7 +434,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         b.tvModel.text = if (cfg != null) {
             "${cfg.name} · ${cfg.model} · ${role.name}"
         } else {
-            "点右上角齿轮，先添加模型配置 · ${role.name}"
+            "未配置模型 · 去设置添加"
         }
     }
 
@@ -446,7 +446,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         val roles = configStore.loadRoles()
         val active = configStore.getActiveRole()
         val names = roles.map { if (it.id == active.id) "✓ ${it.name}" else it.name }.toTypedArray()
-        android.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("选择 AI 角色")
             .setItems(names) { _, which ->
                 configStore.setActiveRole(roles[which].id)
@@ -511,7 +511,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         val canDelete = idx >= 0 && (!streaming || idx != adapter.streamingIndex)
         if (canDelete) items.add("删除此消息")
 
-        android.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setItems(items.toTypedArray()) { _, which ->
                 when (items[which]) {
                     "复制内容" -> {
@@ -675,7 +675,7 @@ if (r.resultCode == Activity.RESULT_OK) {
             }
             recording = true
             setListening(true)
-            recordDialog = android.app.AlertDialog.Builder(this)
+            recordDialog = androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("云端语音识别")
                 .setMessage("正在聆听…说完点「完成」")
                 .setPositiveButton("完成") { _, _ -> stopRecordingAndTranscribe() }
@@ -818,7 +818,7 @@ if (r.resultCode == Activity.RESULT_OK) {
             toast("当前会话还没有内容")
             return
         }
-        android.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("导出 / 分享")
             .setItems(
                 arrayOf(
@@ -953,7 +953,7 @@ if (r.resultCode == Activity.RESULT_OK) {
             items.add(0, "发送图片")
             items.add(1, "拍照提问")
         }
-        android.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("添加附件")
             .setItems(items.toTypedArray()) { _, which ->
                 when (items[which]) {

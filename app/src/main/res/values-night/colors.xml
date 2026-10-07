@@ -1,11 +1,13 @@
 <resources>
-    <color name="bg">#FF0F0F11</color>
-    <color name="surface">#FF17171A</color>
-    <color name="card_ai">#FF17171A</color>
+    <!-- 简约白色风的深色对应：近黑底 + 深灰卡片 + 白字，用户气泡反转为白底黑字 -->
+    <color name="bg">#FF0C0C0E</color>
+    <color name="surface">#FF151517</color>
+    <color name="card_ai">#FF151517</color>
     <color name="card_stroke">#1AFFFFFF</color>
-    <color name="input_bg">#FF17171A</color>
-    <color name="chip_bg">#FF17171A</color>
-    <color name="chip_stroke">#1AFFFFFF</color>
+    <color name="input_bg">#FF151517</color>
+    <color name="chip_bg">#FF151517</color>
+    <color name="chip_stroke">#26FFFFFF</color>
+    <color name="chip_active_bg">#26FB7185</color>
     <color name="badge_bg">#26FB7185</color>
     <color name="divider">#1AFFFFFF</color>
     <color name="code_bg">#FF1E1E21</color>
@@ -14,10 +16,15 @@
     <color name="accent_deep">#FFF43F5E</color>
     <color name="text_primary">#FFF4F4F5</color>
     <color name="text_secondary">#FFA1A1AA</color>
-    <color name="user_bubble_start">#FF241417</color>
-    <color name="user_bubble_end">#FF241417</color>
+    <color name="user_bubble_start">#FFFFFFFF</color>
+    <color name="user_bubble_end">#FFFFFFFF</color>
+    <color name="user_bubble_fg">#FF18181B</color>
+    <color name="btn_solid">#FFFFFFFF</color>
+    <color name="btn_solid_fg">#FF18181B</color>
+    <color name="btn_solid_ripple">#26000000</color>
+    <color name="btn_outline_fg">#FFF4F4F5</color>
     <color name="icon_tint">#FFA1A1AA</color>
-    <color name="dialog_bg">#FF17171A</color>
+    <color name="dialog_bg">#FF151517</color>
     <color name="hl_bg">#4DFFB300</color>
     <color name="hl_fg">#FFFFD54F</color>
 </resources>

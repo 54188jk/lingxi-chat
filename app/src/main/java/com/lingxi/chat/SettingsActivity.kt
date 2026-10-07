@@ -358,7 +358,7 @@ class SettingsActivity : BaseActivity() {
         try {
             val raw = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
                 ?: return@registerForActivityResult toast("读取文件失败")
-            android.app.AlertDialog.Builder(this)
+            androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("恢复会话")
                 .setMessage("选择恢复方式：\n\n· 合并：保留现有会话，同 id 的被覆盖（推荐）\n· 覆盖：先清空本机全部会话再导入")
                 .setPositiveButton("合并") { _, _ -> doRestore(raw, true) }

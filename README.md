@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.162**（versionCode 30 · minSdk 24 · targetSdk 35）
+当前版本：**v1.163**（versionCode 31 · minSdk 24 · targetSdk 35）
 
 ## 项目简介
 
@@ -21,7 +21,7 @@
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
-- **应用内更新**：检查更新多源并行测速（GitHub + Gitee），下载 6 源自动择优（Gitee 直连 → GitHub 加速镜像 → 官方源），下载后自动做完整性校验，损坏文件绝不安装
+- **应用内更新**：检查更新多源并行测速（GitHub + Gitee），下载为全源并行竞速——Gitee 直连、4 个加速镜像、GitHub 官方源同时开下，第一个下完并通过完整性校验的源立即胜出、其余自动取消；任何源卡住 15 秒即判死换源，损坏文件绝不安装
 - **历史版本回退**：可下载任意历史版本；降级安装前会明确提示卸载风险
 - **深浅双主题 + 字号缩放**，全部设置项可导出/导入备份
 - **动画**：新消息上浮淡入、流式光标闪烁、头像呼吸、页面滑动转场、发送触觉反馈（尊重系统「关闭动画」设置）
@@ -30,15 +30,16 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.162/lingxi-v1.162.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.162/灵犀AI-v1.162-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.163/lingxi-v1.163.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.163/灵犀AI-v1.163-release.apk |
 
-应用内「设置 → 检查更新」会自动挑最快的源（Gitee 直连优先，GitHub 多镜像兜底）。
+应用内「设置 → 检查更新」下载走全源并行竞速，自动取最快源完成安装。
 
 ## 版本更新历史
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.163 | 发布：2026-10-07 18:58:04。界面全面简约白改造：近白底 + 纯白卡片、用户气泡黑底白字反转、按钮统一黑白反转、设置页分节标题与弹窗圆角重做、全部弹窗改主题感知样式；应用内更新下载改为全源并行竞速——Gitee 直连 + 4 镜像 + 官方源同时开下，第一个完成并通过校验者胜出，任何源卡住 15 秒即被剔除，彻底解决「检测到更新后下载慢甚至不下载」 |
 | v1.162 | 发布：2026-10-07 17:35:50。聊天异步层改用协程：流式对话采用冷流、停止生成会取消网络请求；搜索、语音转写、更新检查和历史版本读取在 IO 调度器运行；定时动画与草稿保存随页面生命周期停止；修复 Gitee 安装包地址及 Android 8 以下的安装兼容性 |
 | v1.161 | 历史版本列表点整行即可查看该版本完整更新内容（Markdown 渲染、可滚动、可跳转版本页面，弹窗内可直接下载或回退）；更新源把 Gitee 提到首位（检查更新与下载均优先走 Gitee 直连） |
 | v1.160 | 正式发布版改造：启用正式签名并关闭 debuggable；开启 R8 混淆与资源压缩，包体 6.6MB → 2.46MB；关闭明文流量仅允许 HTTPS；新增会话全量备份与恢复（设置 → 数据备份） |
@@ -88,10 +89,11 @@ gradle assembleDebug
 
 ## 自测结果
 
-- v1.162 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩
-- v1.162 安装包扫描未发现内置仓库凭据；`Bearer` 是请求头构造所需的字面量
-- MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`；release 编译和 Android Lint 通过
-- v1.162 尚未在设备上安装验证；此前已发布版本的安装流程已完成验证
+- v1.163 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩，Android Lint 0 错误
+- v1.163 安装包扫描未发现内置仓库凭据；`Bearer` 是请求头构造所需的字面量
+- 更新下载已重构为全源并行竞速：任一源卡住 15 秒即被超时剔除，首个完成源通过大小比对 + ZIP 结构 + manifest/dex 校验后才交给安装
+- MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
+- v1.163 尚未在设备上安装验证；此前已发布版本的安装流程已完成验证
 - 完整走通：检查更新 → 多源测速 → 下载（自动换源 + 完整性校验）→ 授权安装 → 安装后版本号正确
 - 微信/QQ 无关功能不涉及；深浅主题、字号缩放、回车发送、表情面板、剪贴板图片均已验证
 - Gitee 公开仓匿名可读（仓库 API、Releases API、APK 直链均 200）

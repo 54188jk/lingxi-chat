@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 简约风进度条：纯色，无渐变 -->
+<!-- 进度条：中性实心，不用主色抢视觉 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <solid android:color="@color/code_bg" />
-            <corners android:radius="6dp" />
+            <corners android:radius="5dp" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <solid android:color="@color/accent" />
-                <corners android:radius="6dp" />
+                <solid android:color="@color/btn_solid" />
+                <corners android:radius="5dp" />
             </shape>
         </clip>
     </item>

@@ -3,22 +3,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_app"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- 顶栏 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
+            android:background="@color/surface"
             android:paddingStart="8dp"
             android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp">
 
             <ImageButton
                 android:id="@+id/btnBack"
@@ -31,6 +34,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
                 android:text="设置"
                 android:textColor="@color/text_primary"
                 android:textSize="17sp"
@@ -42,69 +46,75 @@
             android:layout_height="1dp"
             android:background="@drawable/bg_divider" />
 
+        <!-- ============ 外观 ============ -->
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="外观"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            style="@style/SettingsSection"
+            android:text="外观" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_margin="16dp"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:background="@drawable/bg_card"
             android:padding="16dp">
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="主题"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <Spinner
-                    android:id="@+id/spTheme"
-                    android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="主题"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <Spinner
+                        android:id="@+id/spTheme"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:padding="10dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:padding="10dp" />
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="字号"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <Spinner
+                        android:id="@+id/spFontScale"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:padding="10dp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="字号"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <Spinner
-                    android:id="@+id/spFontScale"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:padding="10dp" />
-            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/bg_divider" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -141,96 +151,46 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- ============ 模型配置 ============ -->
         <TextView
-            android:layout_width="wrap_content"
+            style="@style/SettingsSection"
+            android:text="模型配置" />
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="兼容 OpenAI 格式的服务都能接入（DeepSeek、OpenAI、通义、智谱等），点配置可编辑，长按设为默认或删除。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvModels"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:nestedScrollingEnabled="false" />
+
+        <Button
+            android:id="@+id/btnAddModel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
-            android:text="AI 角色"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:text="+ 添加模型配置"
+            android:textColor="@color/btn_outline_fg"
+            android:textAllCaps="false"
+            android:backgroundTint="@null"
+            android:background="@drawable/bg_btn_white" />
 
-<TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="20dp"
-            android:text="数据备份"
-            android:textColor="@color/accent"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
+        <!-- ============ AI 角色 ============ -->
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="4dp"
-            android:text="换手机、重装或更新签名后，可先备份全部会话再恢复，避免聊天记录丢失。备份文件仅保存在你选择的位置。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnBackupSessions"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_white"
-                android:backgroundTint="@null"
-                android:drawableStart="@drawable/ic_share"
-                android:drawablePadding="6dp"
-                android:gravity="center"
-                android:text="备份全部会话"
-                android:textColor="#FF000000" />
-
-            <Button
-                android:id="@+id/btnRestoreSessions"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_white"
-                android:backgroundTint="@null"
-                android:drawableStart="@drawable/ic_history"
-                android:drawablePadding="6dp"
-                android:gravity="center"
-                android:text="从文件恢复"
-                android:textColor="#FF000000" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvSessionBackupInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="24dp"
-            android:text="当前本机共 0 个会话"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="4dp"
-            android:text="历史版本从官方公开仓库读取，免费、无需任何 Key。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
+            style="@style/SettingsSection"
+            android:text="AI 角色" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvRoles"
@@ -249,29 +209,143 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
             android:text="+ 添加自定义角色"
-            android:textColor="#FF000000"
+            android:textColor="@color/btn_outline_fg"
+            android:textAllCaps="false"
             android:backgroundTint="@null"
             android:background="@drawable/bg_btn_white" />
 
+        <!-- ============ 免费语音识别 ============ -->
         <TextView
-            android:layout_width="wrap_content"
+            style="@style/SettingsSection"
+            android:text="免费语音识别" />
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
-            android:text="关于"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="设备自带语音识别时直接用本机能力（不花流量）；不支持的设备可添加下方免费语音服务，注册即送免费额度，粘贴 Key 后聊天页麦克风即可语音输入。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnAddFreeStt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="+ 添加免费语音服务"
+            android:textColor="@color/btn_outline_fg"
+            android:textAllCaps="false"
+            android:backgroundTint="@null"
+            android:background="@drawable/bg_btn_white" />
+
+        <!-- ============ 数据备份 ============ -->
+        <TextView
+            style="@style/SettingsSection"
+            android:text="数据备份" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="换手机、重装或更新签名后，可先备份全部会话再恢复，避免聊天记录丢失。备份文件仅保存在你选择的位置。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnBackupSessions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_white"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_share"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:text="备份全部会话"
+                android:textColor="@color/btn_outline_fg"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btnRestoreSessions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_white"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_history"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:text="从文件恢复"
+                android:textColor="@color/btn_outline_fg"
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSessionBackupInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="6dp"
+            android:text="当前本机共 0 个会话"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <!-- ============ 更多 ============ -->
+        <TextView
+            style="@style/SettingsSection"
+            android:text="更多" />
+
+        <Button
+            android:id="@+id/btnHistoryVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_btn_white"
+            android:backgroundTint="@null"
+            android:drawableStart="@drawable/ic_history"
+            android:drawablePadding="6dp"
+            android:gravity="center"
+            android:text="历史版本"
+            android:textColor="@color/btn_outline_fg"
+            android:textAllCaps="false" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="6dp"
+            android:text="历史版本从官方公开仓库读取，免费、无需任何 Key。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <!-- ============ 关于 ============ -->
+        <TextView
+            style="@style/SettingsSection"
+            android:text="关于" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_margin="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:background="@drawable/bg_card"
             android:padding="16dp">
 
@@ -320,7 +394,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="检查更新"
-                android:textColor="#FF000000"
+                android:textColor="@color/btn_solid_fg"
+                android:textAllCaps="false"
                 android:backgroundTint="@null"
                 android:background="@drawable/bg_btn_primary" />
         </LinearLayout>
@@ -330,141 +405,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="24dp"
-            android:text="API Key 等所有配置仅保存在本机，不会上传。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:text="模型配置"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="4dp"
-            android:text="兼容 OpenAI 格式的服务都能接入（DeepSeek、OpenAI、通义、智谱等），点配置可编辑，长按设为默认或删除。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvModels"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginTop="8dp"
-            android:nestedScrollingEnabled="false" />
-
-        <Button
-            android:id="@+id/btnAddModel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"
-            android:text="+ 添加模型配置"
-            android:textColor="#FF000000"
-            android:backgroundTint="@null"
-            android:background="@drawable/bg_btn_white" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="4dp"
-            android:text="联网搜索已内置（DuckDuckGo），免费、无需任何配置。在聊天页点亮搜索图标即可让 AI 结合最新网络结果回答。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="免费语音识别"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="4dp"
-            android:text="设备自带语音识别时直接用本机能力（不花流量）；不支持的设备可添加下方免费语音服务，注册即送免费额度，粘贴 Key 后聊天页麦克风即可语音输入。"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-<Button
-            android:id="@+id/btnAddFreeStt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_btn_white"
-            android:backgroundTint="@null"
-            android:text="+ 添加免费语音服务"
-            android:textColor="#FF000000" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="20dp"
-            android:text="更多"
-            android:drawableStart="@drawable/bg_section_bar"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnHistoryVersion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_btn_white"
-                android:backgroundTint="@null"
-                android:drawableStart="@drawable/ic_history"
-                android:drawablePadding="6dp"
-                android:gravity="center"
-                android:text="历史版本"
-                android:textColor="#FF000000" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="24dp"
-            android:text="历史版本从官方公开仓库读取，免费、无需任何 Key。"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="28dp"
+            android:text="联网搜索已内置（DuckDuckGo），免费、无需任何配置。API Key 等所有配置仅保存在本机，不会上传。"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 

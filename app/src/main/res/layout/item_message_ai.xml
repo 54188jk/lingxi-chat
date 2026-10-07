@@ -53,8 +53,8 @@
             android:foreground="?attr/selectableItemBackground"
             android:paddingStart="14dp"
             android:paddingEnd="14dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp">
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp">
 
             <TextView
                 android:id="@+id/tvMsg"

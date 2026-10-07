@@ -1,12 +1,14 @@
 <resources>
-    <color name="bg">#FFFAFAFA</color>
+    <!-- 简约白色风：近白底 + 纯白卡片 + 近黑文字，玫红仅作小面积点缀 -->
+    <color name="bg">#FFF6F6F7</color>
     <color name="surface">#FFFFFFFF</color>
     <color name="card_ai">#FFFFFFFF</color>
     <color name="card_stroke">#14000000</color>
     <color name="input_bg">#FFFFFFFF</color>
     <color name="chip_bg">#FFFFFFFF</color>
-    <color name="chip_stroke">#14000000</color>
-    <color name="badge_bg">#14F43F5E</color>
+    <color name="chip_stroke">#1A000000</color>
+    <color name="chip_active_bg">#14E11D48</color>
+    <color name="badge_bg">#14E11D48</color>
     <color name="divider">#14000000</color>
     <color name="code_bg">#FFF4F4F5</color>
     <color name="code_fg">#FF18181B</color>
@@ -14,9 +16,17 @@
     <color name="accent_deep">#FFBE123C</color>
     <color name="text_primary">#FF18181B</color>
     <color name="text_secondary">#FF71717A</color>
-    <color name="user_bubble_start">#FFFFF1F2</color>
-    <color name="user_bubble_end">#FFFFF1F2</color>
-    <color name="icon_tint">#FF71717A</color>
+    <!-- 用户气泡：近黑底白字（黑白极简对比） -->
+    <color name="user_bubble_start">#FF18181B</color>
+    <color name="user_bubble_end">#FF18181B</color>
+    <color name="user_bubble_fg">#FFFFFFFF</color>
+    <!-- 实心按钮（发送键等）：黑底白符号 -->
+    <color name="btn_solid">#FF18181B</color>
+    <color name="btn_solid_fg">#FFFFFFFF</color>
+    <color name="btn_solid_ripple">#26FFFFFF</color>
+    <!-- 描边按钮：白底细描边黑字 -->
+    <color name="btn_outline_fg">#FF18181B</color>
+    <color name="icon_tint">#FF52525B</color>
     <color name="dialog_bg">#FFFFFFFF</color>
     <color name="hl_bg">#66FFB300</color>
     <color name="hl_fg">#FF7A4B00</color>

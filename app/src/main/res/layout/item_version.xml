@@ -62,7 +62,8 @@
         android:background="@drawable/bg_btn_white"
         android:backgroundTint="@null"
         android:text="下载"
-        android:textColor="#FF000000"
+        android:textColor="@color/btn_outline_fg"
+        android:textAllCaps="false"
         android:textSize="12sp" />
 
 </LinearLayout>

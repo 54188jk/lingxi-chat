@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 图标底：白圆牌（浅色模式下白，深色模式下由 tint 覆盖为深色） -->
+<!-- 图标白圆牌 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <solid android:color="@color/surface" />
