@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
-当前版本：**v1.162**（versionCode 30 · minSdk 24 · targetSdk 35）
+已发布版本：**v1.161**；本地待发布构建：**v1.162**（versionCode 30 · minSdk 24 · targetSdk 35）
 
 ## 项目简介
 
@@ -30,8 +30,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.162/lingxi-v1.162.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.162/灵犀AI-v1.162-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.161/lingxi-v1.161.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.161/灵犀AI-v1.161-release.apk |
 
 应用内「设置 → 检查更新」会自动挑最快的源（Gitee 直连优先，GitHub 多镜像兜底）。
 
@@ -39,7 +39,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
-| v1.162 | 异步层全量协程化：流式对话改为冷流（callbackFlow），「停止生成」即取消收集协程并掐断网络；打字机、光标闪烁、顶栏时钟、思考动画、草稿防抖改用生命周期作用域；联网搜索与语音识别切到 IO 调度器；修复 Gitee 下载直链按约定猜错资产名（正式包名带 -release 后缀）的问题，改为优先使用接口返回的准确地址 |
+| v1.162（待发布） | 聊天异步层改用协程：流式对话采用冷流、停止生成会取消网络请求；搜索、语音转写、更新检查和历史版本读取在 IO 调度器运行；定时动画与草稿保存随页面生命周期停止；修复 Gitee 安装包地址及 Android 8 以下的安装兼容性 |
 | v1.161 | 历史版本列表点整行即可查看该版本完整更新内容（Markdown 渲染、可滚动、可跳转版本页面，弹窗内可直接下载或回退）；更新源把 Gitee 提到首位（检查更新与下载均优先走 Gitee 直连） |
 | v1.160 | 正式发布版改造：启用正式签名并关闭 debuggable；开启 R8 混淆与资源压缩，包体 6.6MB → 2.46MB；关闭明文流量仅允许 HTTPS；新增会话全量备份与恢复（设置 → 数据备份） |
 | v1.159 | 图标去红：桌面图标外圈与自适应图标背景改为中性浅灰描边 + 纯白底；顶栏头像外环同步改为中性描边 |
@@ -68,7 +68,7 @@
 ## 隐私说明
 
 - 模型 API Key 等**全部配置只保存在手机本地**（SharedPreferences），不写入代码、不随安装包分发、不上传任何服务器
-- 应用内**不含任何 Token**：检查更新、公告、历史版本均走公开仓库接口匿名访问
+- 应用内**不含仓库 Token**：检查更新和历史版本均走公开仓库接口匿名访问
 - 联网搜索走 DuckDuckGo 公开页面，不需要 Key
 - 应用不收集、不上传任何用户数据，无广告、无统计 SDK
 - 安装包下载完成后自动做完整性校验（大小比对 + ZIP 结构 + manifest/dex 检查），损坏文件不会交给系统安装
@@ -84,14 +84,14 @@ gradle assembleDebug
 
 技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json，无第三方 UI 框架，最小依赖。仓库里的 Gradle 使用阿里云镜像加速。
 
-异步约定：界面层用 `lifecycleScope` 承载协程，随 Activity 销毁自动取消，不留后台线程；阻塞网络一律 `Dispatchers.IO`；流式响应走 `callbackFlow` 冷流，收集方取消即中断请求。
+聊天界面异步约定：`lifecycleScope` 管理搜索、语音转写和定时任务；相关阻塞网络请求运行于 `Dispatchers.IO`；流式对话通过 `callbackFlow` 返回，取消收集即中断请求。其他模块仍保留原有异步实现。
 
 ## 自测结果
 
-- v1.162 正式签名校验通过（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩，包体 2.50MB
-- 源码与安装包扫描未发现任何真实凭据（仅剩运行时拼接的 `Bearer` 字面量）
-- MainActivity 已无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`（静态检查计数为 0）
-- 双端发布包 SHA256 校验一致（本地文件 = 线上文件）
+- v1.162 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启 R8 与资源压缩
+- v1.162 安装包扫描未发现内置仓库凭据；`Bearer` 是请求头构造所需的字面量
+- MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`；release 编译和 Android Lint 通过
+- v1.162 尚未在设备上安装验证；此前已发布版本的安装流程已完成验证
 - 完整走通：检查更新 → 多源测速 → 下载（自动换源 + 完整性校验）→ 授权安装 → 安装后版本号正确
 - 微信/QQ 无关功能不涉及；深浅主题、字号缩放、回车发送、表情面板、剪贴板图片均已验证
 - Gitee 公开仓匿名可读（仓库 API、Releases API、APK 直链均 200）

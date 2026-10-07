@@ -12,7 +12,12 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.lingxi.chat.net.UpdateChecker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -43,26 +48,25 @@ object UpdateUi {
 
     fun check(activity: Activity, currentVersion: String, silent: Boolean) {
         if (!silent) Toast.makeText(activity, "正在检查更新…", Toast.LENGTH_SHORT).show()
-        Thread {
-            val info = UpdateChecker.fetchLatest()
-            activity.runOnUiThread {
-                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                when {
-                    info == null -> {
-                        if (!silent) {
-                            Toast.makeText(activity, "检查失败，请检查网络后重试", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    UpdateChecker.isNewer(info.version, currentVersion) -> {
-                        if (isSkipped(activity, info.version) && silent) return@runOnUiThread
-                        showUpdatePage(activity, info, currentVersion)
-                    }
-                    else -> {
-                        if (!silent) showUpToDatePage(activity, currentVersion, info.publishedAt)
+        val owner = activity as? LifecycleOwner ?: return
+        owner.lifecycleScope.launch {
+            val info = withContext(Dispatchers.IO) { UpdateChecker.fetchLatest() }
+            if (activity.isFinishing || activity.isDestroyed) return@launch
+            when {
+                info == null -> {
+                    if (!silent) {
+                        Toast.makeText(activity, "检查失败，请检查网络后重试", Toast.LENGTH_SHORT).show()
                     }
                 }
+                UpdateChecker.isNewer(info.version, currentVersion) -> {
+                    if (isSkipped(activity, info.version) && silent) return@launch
+                    showUpdatePage(activity, info, currentVersion)
+                }
+                else -> {
+                    if (!silent) showUpToDatePage(activity, currentVersion, info.publishedAt)
+                }
             }
-        }.start()
+        }
     }
 
     // ---------------- 忽略此版本 ----------------
@@ -249,8 +253,11 @@ object UpdateUi {
             var error: String? = null
             var done = false
             // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链，直接当首选源用
+            val githubUrl = if (info.sourceName == "Gitee") {
+                "https://github.com/54188jk/lingxi-chat/releases/download/v${info.version}/lingxi-v${info.version}.apk"
+            } else info.downloadUrl
             val candidates = mirrorCandidates(
-                info.downloadUrl,
+                githubUrl,
                 info.version,
                 giteeUrl = if (info.sourceName == "Gitee") info.downloadUrl else ""
             )
@@ -438,12 +445,15 @@ object UpdateUi {
             Toast.makeText(activity, "安装包已失效，请重新检查更新", Toast.LENGTH_SHORT).show()
             return
         }
-        if (!activity.packageManager.canRequestPackageInstalls()) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
+            !activity.packageManager.canRequestPackageInstalls()
+        ) {
             android.app.AlertDialog.Builder(activity)
                 .setTitle("需要安装权限")
                 .setMessage("新版本已下载完成（${"%.1f".format(Locale.US, apk.length() / 1024.0 / 1024.0)} MB）。\n\n请在下一页允许「灵犀AI」安装应用，返回后将自动继续安装。")
                 .setPositiveButton("去授权") { _, _ ->
                     try {
+                        pendingApk = apk
                         activity.startActivity(
                             Intent(
                                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -451,6 +461,7 @@ object UpdateUi {
                             )
                         )
                     } catch (e: Exception) {
+                        pendingApk = null
                         Toast.makeText(activity, "请在系统设置中允许安装未知应用", Toast.LENGTH_LONG).show()
                     }
                 }
@@ -479,7 +490,8 @@ object UpdateUi {
     /** 从安装授权页返回时自动续装 */
     fun resumeInstallIfNeeded(activity: Activity) {
         val apk = pendingApk ?: return
-        if (apk.exists() && activity.packageManager.canRequestPackageInstalls()) {
+        if (apk.exists() && (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O ||
+                    activity.packageManager.canRequestPackageInstalls())) {
             launchInstaller(activity, apk)
         }
     }

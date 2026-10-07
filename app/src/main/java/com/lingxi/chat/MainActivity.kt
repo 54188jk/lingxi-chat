@@ -30,10 +30,13 @@ import com.lingxi.chat.net.OpenAiClient
 import com.lingxi.chat.net.SearchClient
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -86,6 +89,8 @@ class MainActivity : BaseActivity() {
     private var draftJob: kotlinx.coroutines.Job? = null
     private var caretJob: kotlinx.coroutines.Job? = null
     private var clockJob: kotlinx.coroutines.Job? = null
+    private var searchJob: kotlinx.coroutines.Job? = null
+    private var searchingMessage: ChatMessage? = null
 
     // 流式光标闪烁：▍ 每 500ms 显示/隐藏
     private var caretVisible = true
@@ -452,7 +457,7 @@ if (r.resultCode == Activity.RESULT_OK) {
     }
 
     private fun newSession() {
-        if (streaming) client.cancel()
+        if (streaming) stopGenerating()
         stopSpeaking()
         session = Session()
         newAdapter()
@@ -462,7 +467,7 @@ if (r.resultCode == Activity.RESULT_OK) {
 
     private fun loadSession(id: String) {
         val s = sessionStore.load(id) ?: return
-        if (streaming) client.cancel()
+        if (streaming) stopGenerating()
         stopSpeaking()
         session = s
         newAdapter()
@@ -719,15 +724,21 @@ if (r.resultCode == Activity.RESULT_OK) {
                 .sortedByDescending { if (it.sttModel.isNotBlank()) 1 else 0 }
                 .forEach { candidates.add(it) }
             withContext(Dispatchers.IO) {
-                for (cfg in candidates) {
-                    try {
-                        text = transcribeAudio(cfg, f)
-                    } catch (e: Exception) {
-                        text = null
+                try {
+                    for (cfg in candidates) {
+                        ensureActive()
+                        try {
+                            text = transcribeAudio(cfg, f)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            text = null
+                        }
+                        if (!text.isNullOrBlank()) break
                     }
-                    if (!text.isNullOrBlank()) break
+                } finally {
+                    f.delete()
                 }
-                f.delete()
             }
             if (text.isNullOrBlank()) {
                 toast("识别失败：已尝试 ${candidates.size} 个模型，均不支持语音接口。可在设置→免费语音识别添加免费服务")
@@ -1029,6 +1040,7 @@ if (r.resultCode == Activity.RESULT_OK) {
     }
 
     private fun send() {
+        if (streaming) return
         var text = b.etInput.text.toString().trim()
         val img = pendingImageBase64
         val fileText = pendingFileText
@@ -1069,6 +1081,7 @@ if (r.resultCode == Activity.RESULT_OK) {
         pendingFileName = null
         b.llFilePreview.visibility = View.GONE
         hideKeyboard()
+        sessionStore.save(session)
 
         val useSearch = b.btnSearch.isChecked
         if (useSearch) {
@@ -1077,14 +1090,19 @@ if (r.resultCode == Activity.RESULT_OK) {
             session.messages.add(searchingMsg)
             adapter.notifyItemInserted(session.messages.size - 1)
             b.rvMessages.scrollToPosition(adapter.itemCount - 1)
-            scope.launch {
+            searchingMessage = searchingMsg
+            searchJob = scope.launch {
                 val hits = withContext(Dispatchers.IO) {
                     try {
                         SearchClient.searchHits(text.take(200))
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         emptyList()
                     }
                 }
+                searchJob = null
+                searchingMessage = null
                 session.messages.remove(searchingMsg)
                 adapter.notifyDataSetChanged()
                 if (hits.isEmpty()) {
@@ -1129,7 +1147,9 @@ if (r.resultCode == Activity.RESULT_OK) {
 
         // 收集流式响应：取消本协程即中断网络请求
         streamJob = scope.launch {
-            client.streamChat(cfg, apiMsgs).collect { ev ->
+            client.streamChat(cfg, apiMsgs)
+                .catch { emit(OpenAiClient.Event.Failed("出错：${it.message ?: "请求失败"}")) }
+                .collect { ev ->
                 when (ev) {
                     is com.lingxi.chat.net.OpenAiClient.Event.Delta -> {
                         if (ev.text.isNotEmpty()) aiMsg.content += ev.text
@@ -1170,11 +1190,12 @@ if (r.resultCode == Activity.RESULT_OK) {
             while (isActive) {
                 if (!streaming) return@launch
                 val full = aiMsg.content
-                if (revealedLen >= full.length) return@launch
-                val backlog = full.length - revealedLen
-                revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
-                adapter.updateStreamingText(full.substring(0, revealedLen), caretVisible)
-                scrollToEndIfNearBottom()
+                if (revealedLen < full.length) {
+                    val backlog = full.length - revealedLen
+                    revealedLen = minOf(full.length, revealedLen + maxOf(2, backlog / 8))
+                    adapter.updateStreamingText(full.substring(0, revealedLen), caretVisible)
+                    scrollToEndIfNearBottom()
+                }
                 delay(24)
             }
         }
@@ -1191,9 +1212,20 @@ if (r.resultCode == Activity.RESULT_OK) {
     private fun stopGenerating() {
         if (!streaming) return
         // 取消收集 → callbackFlow 的 awaitClose 触发 → call.cancel()，无需等超时
+        searchJob?.cancel()
+        searchJob = null
+        searchingMessage?.let { msg ->
+            val searchIndex = session.messages.indexOfFirst { it === msg }
+            if (searchIndex >= 0) {
+                session.messages.removeAt(searchIndex)
+                adapter.notifyItemRemoved(searchIndex)
+                sessionStore.save(session)
+            }
+        }
+        searchingMessage = null
         streamJob?.cancel()
+        if (streamJob != null) client.cancel()
         streamJob = null
-        client.cancel()
         stopTypewriter()
         val idx = adapter.streamingIndex
         if (idx in session.messages.indices) {
@@ -1221,6 +1253,8 @@ if (r.resultCode == Activity.RESULT_OK) {
         streaming = on
         b.btnSend.setImageResource(if (on) R.drawable.ic_stop else R.drawable.ic_send)
         if (!on) {
+            thinkingJob?.cancel()
+            thinkingJob = null
             adapter.streamingIndex = -1
         }
     }
