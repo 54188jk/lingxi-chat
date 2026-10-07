@@ -29,8 +29,8 @@ import java.util.Locale
 object UpdateUi {
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(180, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
@@ -110,11 +110,13 @@ object UpdateUi {
     }
 
     private fun mirrorCandidates(url: String): List<Pair<String, String>> {
-        val official = "官方源"
+        // 顺序按实测可用性排：加速源慢就自动往后排，最后才走官方源
         return listOf(
-            ("https://ghfast.top/$url") to "镜像加速 1",
-            ("https://gh-proxy.com/$url") to "镜像加速 2",
-            url to official
+            ("https://ghfast.top/$url") to "加速源 1",
+            ("https://gh-proxy.com/$url") to "加速源 2",
+            ("https://ghproxy.net/$url") to "加速源 3",
+            ("https://gh.ddlc.top/$url") to "加速源 4",
+            url to "官方源"
         )
     }
 
@@ -238,18 +240,20 @@ object UpdateUi {
                 val (url, label) = pair
                 try {
                     activity.runOnUiThread {
-                        status.text = if (idx == 0) "连接${label}…" else "${label}（${idx + 1}/${candidates.size}）…"
+                        if (idx == 0) status.text = "连接$label…"
+                        else status.text = "$label（${idx + 1}/${candidates.size}）…"
                     }
                     val serverSize = downloadOnce(activity, apk, url, label, bar, percent, speed, status)
                     verifyApk(apk, serverSize, info.sizeBytes)
                     done = true
-                } catch (e: SlowSourceException) {
-                    apk.delete()
-                    continue
                 } catch (e: CorruptedApkException) {
                     apk.delete()
                     error = "下载的文件不完整（${e.message}），已自动换源重试"
                     activity.runOnUiThread { status.text = "文件不完整，换源重试…" }
+                    continue
+                } catch (e: SlowSourceException) {
+                    apk.delete()
+                    activity.runOnUiThread { status.text = "$label 速度过慢，换下一个源…" }
                     continue
                 } catch (e: Exception) {
                     if (downloadCall?.isCanceled() == true) {
@@ -303,8 +307,10 @@ object UpdateUi {
                 downloaded += read
                 val now = System.currentTimeMillis()
                 val elapsedMs = now - startTime
-                // 起手 8 秒内几乎没动静，判定这个源太慢，换下一个
-                if (elapsedMs > 8000 && downloaded < 200 * 1024) {
+                // 只有「真卡住」才换源：超过 20 秒且平均速度低于 8KB/s。
+                // 手机网络加速源起速本来就慢，早期版本 8 秒/200KB 的判定会误杀可用源。
+                val avgSpeed = if (elapsedMs > 0) downloaded / (elapsedMs / 1000) else Long.MAX_VALUE
+                if (elapsedMs > 20000 && avgSpeed < 8 * 1024) {
                     out.close()
                     throw SlowSourceException()
                 }
