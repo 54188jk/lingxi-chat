@@ -14,6 +14,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.lingxi.chat.data.ConfigStore
 import com.lingxi.chat.data.ModelConfig
 import com.lingxi.chat.data.RolePreset
+import com.lingxi.chat.data.SessionStore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.lingxi.chat.databinding.ActivitySettingsBinding
 
 class SettingsActivity : BaseActivity() {
@@ -88,6 +92,19 @@ class SettingsActivity : BaseActivity() {
         b.btnHistoryVersion.setOnClickListener {
             VersionsUi.open(this, BuildConfig.VERSION_NAME)
         }
+
+        b.btnBackupSessions.setOnClickListener {
+            val n = sessionStore.count()
+            if (n == 0) {
+                toast("当前没有会话可备份")
+            } else {
+                createBackupDoc.launch("lingxi-sessions-${System.currentTimeMillis()}.json")
+            }
+        }
+        b.btnRestoreSessions.setOnClickListener {
+            openBackupDoc.launch(arrayOf("application/json", "text/plain", "*/*"))
+        }
+        refreshBackupInfo()
 
         b.spTheme.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, themes.map { it.second })
         b.spTheme.setSelection(maxOf(0, themes.indexOfFirst { it.first == store.themeMode }))
@@ -315,6 +332,61 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
+
+    // ---------------- 会话备份 / 恢复 ----------------
+
+    private val sessionStore by lazy { SessionStore(this) }
+
+    private val createBackupDoc = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val text = sessionStore.exportAll()
+            contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+            val n = sessionStore.count()
+            toast("已备份 $n 个会话")
+        } catch (e: Exception) {
+            toast("备份失败：${e.message}")
+        }
+    }
+
+    private val openBackupDoc = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val raw = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                ?: return@registerForActivityResult toast("读取文件失败")
+            android.app.AlertDialog.Builder(this)
+                .setTitle("恢复会话")
+                .setMessage("选择恢复方式：\n\n· 合并：保留现有会话，同 id 的被覆盖（推荐）\n· 覆盖：先清空本机全部会话再导入")
+                .setPositiveButton("合并") { _, _ -> doRestore(raw, true) }
+                .setNeutralButton("覆盖") { _, _ -> doRestore(raw, false) }
+                .setNegativeButton("取消", null)
+                .show()
+        } catch (e: Exception) {
+            toast("读取失败：${e.message}")
+        }
+    }
+
+    private fun doRestore(raw: String, merge: Boolean) {
+        try {
+            val n = sessionStore.importAll(raw, merge)
+            refreshBackupInfo()
+            toast("已恢复 $n 个会话")
+        } catch (e: Exception) {
+            toast("恢复失败：文件格式不正确")
+        }
+    }
+
+    private fun refreshBackupInfo() {
+        val n = sessionStore.count()
+        val latest = sessionStore.list().firstOrNull()
+        b.tvSessionBackupInfo.text = if (n == 0) "当前本机共 0 个会话" else {
+            "当前本机共 $n 个会话" + (latest?.let { "，最近更新 ${SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(it.updatedAt))}" } ?: "")
+        }
+    }
 
     data class Preset(val name: String, val baseUrl: String, val model: String, val vision: Boolean)
 }

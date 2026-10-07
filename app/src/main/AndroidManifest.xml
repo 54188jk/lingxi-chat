@@ -8,11 +8,11 @@
 
     <application
         android:allowBackup="true"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
-        android:theme="@style/Theme.LingxiChat"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/Theme.LingxiChat">
 
         <activity
             android:name=".MainActivity"

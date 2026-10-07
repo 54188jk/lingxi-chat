@@ -154,13 +154,81 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
+<TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="20dp"
+            android:text="数据备份"
+            android:textColor="@color/accent"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="4dp"
-            android:text="点角色设为当前使用，长按自定义角色可删除。聊天页点左上角 Logo 可快速切换。"
+            android:text="换手机、重装或更新签名后，可先备份全部会话再恢复，避免聊天记录丢失。备份文件仅保存在你选择的位置。"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnBackupSessions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_white"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_share"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:text="备份全部会话"
+                android:textColor="#FF000000" />
+
+            <Button
+                android:id="@+id/btnRestoreSessions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_white"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_history"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:text="从文件恢复"
+                android:textColor="#FF000000" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSessionBackupInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="24dp"
+            android:text="当前本机共 0 个会话"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:text="历史版本从官方公开仓库读取，免费、无需任何 Key。"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
