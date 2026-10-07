@@ -36,8 +36,8 @@ android {
         applicationId "com.lingxi.chat"
         minSdk 24
         targetSdk 35
-        versionCode 34
-        versionName "1.166"
+        versionCode 35
+        versionName "1.167"
         // 所有对外请求都是 HTTPS，不开明文流量（仅 debug 包为方便本地 mock 放开）
     }
 

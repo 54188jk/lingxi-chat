@@ -111,6 +111,18 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_CTRL_ON, false)
         set(v) = sp.edit().putBoolean(KEY_CTRL_ON, v).apply()
 
+    // ---------------- 历史安装包归档 ----------------
+
+    /** 归档位置：ask 还没问过用户 / root 内部储存/历史记录 / download 内部储存/下载/历史记录 */
+    var archiveLocation: String
+        get() = sp.getString(KEY_ARCHIVE_LOC, "ask") ?: "ask"
+        set(v) = sp.edit().putString(KEY_ARCHIVE_LOC, v).apply()
+
+    /** 最近一次归档成功的路径，设置页要显示 */
+    var lastArchivePath: String
+        get() = sp.getString(KEY_ARCHIVE_PATH, "") ?: ""
+        set(v) = sp.edit().putString(KEY_ARCHIVE_PATH, v).apply()
+
     fun loadRoles(): MutableList<RolePreset> {        val customs = mutableListOf<RolePreset>()
         val raw = sp.getString(KEY_ROLES, "[]") ?: "[]"
         val arr = JSONArray(raw)
@@ -157,5 +169,7 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_MEMORY = "ctrl_memory"
         private const val KEY_CTRL_PAY = "ctrl_block_pay"
         private const val KEY_CTRL_ON = "ctrl_enabled"
+        private const val KEY_ARCHIVE_LOC = "archive_location"
+        private const val KEY_ARCHIVE_PATH = "archive_last_path"
     }
 }

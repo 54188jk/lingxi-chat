@@ -54,6 +54,10 @@ object VersionsUi {
         private val currentVersion: String
     ) : RecyclerView.Adapter<VersionAdapter.Holder>() {
 
+        /** 本机已经存过安装包的那些版本，列表上要标出来 */
+        private val archived =
+            com.lingxi.chat.data.HistoryStore.list(activity).map { it.version }.toSet()
+
         inner class Holder(v: View) : RecyclerView.ViewHolder(v) {
             val name: TextView = v.findViewById(R.id.tvVerName)
             val meta: TextView = v.findViewById(R.id.tvVerMeta)
@@ -76,6 +80,10 @@ object VersionsUi {
                 if (info.sizeBytes > 0) {
                     if (isNotEmpty()) append(" · ")
                     append("%.1f MB".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0))
+                }
+                if (archived.contains(info.version)) {
+                    if (isNotEmpty()) append(" · ")
+                    append("本机已存安装包")
                 }
             }
             val note = plainNote(info)

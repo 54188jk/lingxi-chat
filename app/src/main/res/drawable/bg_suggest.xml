@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 欢迎页建议问题：整行卡片，按下有反馈 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/surface" />
+    <stroke android:width="0.5dp" android:color="@color/card_stroke" />
+    <corners android:radius="14dp" />
+</shape>

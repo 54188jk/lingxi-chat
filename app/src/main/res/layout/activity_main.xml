@@ -7,7 +7,7 @@
     android:background="@drawable/bg_app"
     android:fitsSystemWindows="true">
 
-    <!-- ============ 顶栏：头像 · 标题 · 时钟 · 四个操作键 ============ -->
+    <!-- ============ 顶栏：头像 · 标题 · 三个操作键 ============ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,13 +16,13 @@
         android:gravity="center_vertical"
         android:paddingStart="14dp"
         android:paddingEnd="10dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:paddingTop="9dp"
+        android:paddingBottom="9dp">
 
         <FrameLayout
             android:id="@+id/flLogo"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="@drawable/bg_ai_avatar"
             android:padding="2dp">
 
@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:minWidth="80dp"
+            android:minWidth="60dp"
             android:orientation="vertical">
 
             <TextView
@@ -56,35 +56,43 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvModel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="未配置模型"
-                android:textColor="@color/text_secondary"
-                android:textSize="11sp" />
-        </LinearLayout>
+                android:layout_marginTop="1dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvClock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_marginEnd="4dp"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.02"
-            android:maxLines="1"
-            android:text="--:--:--"
-            android:textColor="@color/text_secondary"
-            android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/tvModel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="未配置模型"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <!-- 时钟收进副标题行，顶栏不再多占一格 -->
+                <TextView
+                    android:id="@+id/tvClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:text="--:--:--"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnHistory"
             android:layout_width="34dp"
             android:layout_height="34dp"
+            android:layout_marginStart="6dp"
             android:background="@drawable/bg_icon_btn"
             android:contentDescription="历史会话"
             android:padding="8dp"
@@ -94,7 +102,7 @@
             android:id="@+id/btnNew"
             android:layout_width="34dp"
             android:layout_height="34dp"
-            android:layout_marginStart="4dp"
+            android:layout_marginStart="5dp"
             android:background="@drawable/bg_icon_circle"
             android:contentDescription="新建会话"
             android:padding="8dp"
@@ -104,21 +112,11 @@
             android:id="@+id/btnSettings"
             android:layout_width="34dp"
             android:layout_height="34dp"
-            android:layout_marginStart="4dp"
+            android:layout_marginStart="5dp"
             android:background="@drawable/bg_icon_btn"
             android:contentDescription="设置"
             android:padding="8dp"
             android:src="@drawable/ic_settings" />
-
-        <ImageButton
-            android:id="@+id/btnShare"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/bg_icon_btn"
-            android:contentDescription="导出分享"
-            android:padding="8dp"
-            android:src="@drawable/ic_share" />
     </LinearLayout>
 
     <View
@@ -137,25 +135,25 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingStart="14dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="16dp" />
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="14dp" />
 
         <!-- 欢迎页 -->
         <LinearLayout
             android:id="@+id/llWelcome"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:paddingStart="28dp"
-            android:paddingEnd="28dp">
+            android:paddingStart="26dp"
+            android:paddingEnd="26dp">
 
             <FrameLayout
-                android:layout_width="96dp"
-                android:layout_height="96dp"
+                android:layout_width="88dp"
+                android:layout_height="88dp"
                 android:background="@drawable/bg_icon_circle"
                 android:padding="4dp">
 
@@ -171,79 +169,92 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="18dp"
                 android:letterSpacing="0.06"
                 android:text="灵犀AI"
                 android:textColor="@color/text_primary"
-                android:textSize="26sp"
+                android:textSize="25sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="7dp"
                 android:letterSpacing="0.02"
                 android:text="接入云端大模型 · 随时随地智能对话"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <!-- 建议问题竖排，窄屏也不会挤成一团 -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="24dp"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/chip1"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_chip"
+                    android:background="@drawable/bg_suggest"
+                    android:drawableEnd="@drawable/ic_chevron_right"
+                    android:drawableTint="@color/text_tertiary"
                     android:foreground="?attr/selectableItemBackground"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp"
-                    android:paddingTop="9dp"
-                    android:paddingBottom="9dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
                     android:text="帮我写周报"
                     android:textColor="@color/text_primary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/chip2"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_chip"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_suggest"
+                    android:drawableEnd="@drawable/ic_chevron_right"
+                    android:drawableTint="@color/text_tertiary"
                     android:foreground="?attr/selectableItemBackground"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp"
-                    android:paddingTop="9dp"
-                    android:paddingBottom="9dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
                     android:text="解释一段代码"
                     android:textColor="@color/text_primary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/chip3"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_chip"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_suggest"
+                    android:drawableEnd="@drawable/ic_chevron_right"
+                    android:drawableTint="@color/text_tertiary"
                     android:foreground="?attr/selectableItemBackground"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp"
-                    android:paddingTop="9dp"
-                    android:paddingBottom="9dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
                     android:text="推荐三本科幻小说"
                     android:textColor="@color/text_primary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tvWelcomeHint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:alpha="0.75"
-                android:text="点胶囊快速填入 · 支持语音、图片、文件与联网搜索"
+                android:layout_marginTop="18dp"
+                android:alpha="0.8"
+                android:gravity="center"
+                android:lineSpacingMultiplier="1.3"
+                android:text="点一条试试看，或直接在下面输入\n点左下角 + 可以发图片、文件、表情，也能开启联网搜索和手机操控"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -278,6 +289,14 @@
             android:src="@drawable/ic_close"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="移除图片" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="图片待发，发送时一起提交"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- ============ 待发文件芯片 ============ -->
@@ -331,96 +350,127 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ============ 输入栏 ============ -->
+    <!-- ============ 已开启模式：只在开着的时候露出来 ============ -->
+    <LinearLayout
+        android:id="@+id/llModeBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="7dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/chipSearchMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_mode_chip"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="5dp"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:paddingStart="11dp"
+            android:paddingEnd="11dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="联网搜索中"
+            android:textColor="@color/accent"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/chipControlMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:background="@drawable/bg_mode_chip"
+            android:drawableStart="@drawable/ic_control"
+            android:drawablePadding="5dp"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:paddingStart="11dp"
+            android:paddingEnd="11dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="前台操控中"
+            android:textColor="@color/accent"
+            android:textSize="11sp" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:alpha="0.7"
+            android:text="点胶囊可关闭"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- ============ 输入栏：只剩 + · 输入框 · 语音 · 发送 ============ -->
     <LinearLayout
         android:id="@+id/llInputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:gravity="bottom"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_input_bar"
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
 
         <ImageButton
             android:id="@+id/btnAttach"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_attach"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:src="@drawable/ic_add_circle"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="附件" />
-
-        <ImageButton
-            android:id="@+id/btnMic"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_mic"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="语音输入" />
-
-        <ToggleButton
-            android:id="@+id/btnSearch"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_search_toggle"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_search"
-            android:drawablePadding="0dp"
-            android:padding="10dp"
-            android:textOn=""
-            android:textOff="" />
-
-        <ToggleButton
-            android:id="@+id/btnControl"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/bg_search_toggle"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_control"
-            android:drawablePadding="0dp"
-            android:padding="10dp"
-            android:textOn=""
-            android:textOff=""
-            android:contentDescription="手机操控" />
-
-        <ImageButton
-            android:id="@+id/btnEmoji"
-            android:layout_width="36dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_emoji"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="表情" />
+            android:contentDescription="添加附件或开启功能" />
 
         <EditText
             android:id="@+id/etInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
             android:hint="问点什么…"
-            android:textColorHint="@color/text_secondary"
+            android:textColorHint="@color/text_tertiary"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:background="@null"
             android:maxLines="5"
             android:minLines="1"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
             android:imeOptions="actionNone"
             android:inputType="textCapSentences|textMultiLine" />
 
         <ImageButton
+            android:id="@+id/btnMic"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:src="@drawable/ic_mic"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="语音输入" />
+
+        <ImageButton
             android:id="@+id/btnSend"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/bg_send_btn"
             android:contentDescription="发送"
-            android:padding="12dp"
+            android:padding="11dp"
             android:src="@drawable/ic_send" />
     </LinearLayout>
 

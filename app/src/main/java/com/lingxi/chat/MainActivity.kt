@@ -157,13 +157,17 @@ class MainActivity : BaseActivity() {
 
     private val openSessions =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-if (r.resultCode == Activity.RESULT_OK) {
-            r.data?.getStringExtra("session_id")?.let { loadSession(it) }
-            highlightKey = r.data?.getStringExtra("highlight")?.takeIf { it.isNotBlank() }
-            adapter.highlight = highlightKey
-            adapter.notifyDataSetChanged()
+            if (r.resultCode == Activity.RESULT_OK) {
+                if (r.data?.getBooleanExtra("new_session", false) == true) {
+                    newSession()
+                    return@registerForActivityResult
+                }
+                r.data?.getStringExtra("session_id")?.let { loadSession(it) }
+                highlightKey = r.data?.getStringExtra("highlight")?.takeIf { it.isNotBlank() }
+                adapter.highlight = highlightKey
+                adapter.notifyDataSetChanged()
+            }
         }
-    }
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -247,11 +251,10 @@ if (r.resultCode == Activity.RESULT_OK) {
             startActivity(Intent(this, SettingsActivity::class.java))
             animateForward()
         }
-        b.btnShare.setOnClickListener { exportSession() }
         startLogoBreathing()
         b.root.findViewById<android.widget.ImageView>(R.id.ivLogo).setOnClickListener { showRolePicker() }
 
-        b.btnAttach.setOnClickListener { showAttachOptions() }
+        b.btnAttach.setOnClickListener { showToolsSheet() }
         b.btnRemoveImage.setOnClickListener { clearPendingImage() }
         b.btnRemoveFile.setOnClickListener {
             pendingFileText = null
@@ -259,24 +262,19 @@ if (r.resultCode == Activity.RESULT_OK) {
             b.llFilePreview.visibility = View.GONE
         }
         b.btnMic.setOnClickListener { onMicClick() }
-        b.btnSearch.isChecked = configStore.searchEnabled
-        b.btnSearch.setOnCheckedChangeListener { _, checked ->
-            configStore.searchEnabled = checked
-            updateSearchTint()
-            if (checked) toast("联网搜索已开启（DuckDuckGo 免费搜索）")
-        }
-        updateSearchTint()
 
-        b.btnControl.isChecked = configStore.controlEnabled
-        b.btnControl.setOnCheckedChangeListener { _, checked ->
-            if (checked) {
-                if (!enableControlMode()) b.btnControl.isChecked = false
-            } else {
-                configStore.controlEnabled = false
-                updateControlTint()
-            }
+        // 联网搜索 / 手机操控都收进「+」面板，输入栏上方只留一条已开启的状态胶囊
+        b.chipSearchMode.setOnClickListener {
+            configStore.searchEnabled = false
+            updateModeBar()
+            toast("联网搜索已关闭")
         }
-        updateControlTint()
+        b.chipControlMode.setOnClickListener {
+            configStore.controlEnabled = false
+            updateModeBar()
+            toast("手机操控已关闭")
+        }
+        updateModeBar()
 
         b.btnSend.setOnClickListener { view ->
             view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
@@ -298,8 +296,6 @@ if (r.resultCode == Activity.RESULT_OK) {
                 false
             }
         }
-
-        b.btnEmoji.setOnClickListener { showEmojiPanel() }
 
         // 草稿：停手 600ms 落盘，切页面/退后台不丢
         b.etInput.addTextChangedListener(object : android.text.TextWatcher {
@@ -385,8 +381,7 @@ if (r.resultCode == Activity.RESULT_OK) {
     override fun onResume() {
         super.onResume()
         refreshModelLabel()
-        updateSearchTint()
-        updateControlTint()
+        updateModeBar()
         UpdateUi.resumeInstallIfNeeded(this)
         startClock()
         AgentBus.listener = { line -> onAgentLine(line) }
@@ -435,14 +430,16 @@ if (r.resultCode == Activity.RESULT_OK) {
             .start()
     }
 
-    private fun updateSearchTint() {
-        val color = ContextCompat.getColor(this, if (b.btnSearch.isChecked) R.color.accent else R.color.icon_tint)
-        b.btnSearch.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
-    }
-
-    private fun updateControlTint() {
-        val color = ContextCompat.getColor(this, if (b.btnControl.isChecked) R.color.accent else R.color.icon_tint)
-        b.btnControl.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
+    /** 输入栏上方的状态胶囊：只有开启的模式才会出现，点胶囊即关闭 */
+    private fun updateModeBar() {
+        val search = configStore.searchEnabled
+        val control = configStore.controlEnabled
+        b.chipSearchMode.visibility = if (search) View.VISIBLE else View.GONE
+        b.chipControlMode.visibility = if (control) View.VISIBLE else View.GONE
+        b.chipControlMode.text =
+            if (configStore.controlMode == "back") "后台操控中" else "前台操控中"
+        b.llModeBar.visibility =
+            if (search || control) View.VISIBLE else View.GONE
     }
 
     /** 操控开关：先确认有可用通道，再按前台/后台给不同提示 */
@@ -466,7 +463,7 @@ if (r.resultCode == Activity.RESULT_OK) {
             return false
         }
         configStore.controlEnabled = true
-        updateControlTint()
+        updateModeBar()
         askNotifPermission()
         toast(if (back) "后台模式：不读屏不点击，发送的文字作为指令任务" else "前台模式：会读屏并替你操作，发送后请暂时不要触屏")
         return true
@@ -1067,25 +1064,96 @@ if (r.resultCode == Activity.RESULT_OK) {
         }
     }
 
-    private fun showAttachOptions() {
-        val cfg = configStore.getActiveModel()
-        val items = mutableListOf("发送文本文件（txt/md/代码等）", "从剪贴板粘贴图片")
-        if (cfg?.vision == true) {
-            items.add(0, "发送图片")
-            items.add(1, "拍照提问")
+    /** 输入栏「+」面板：附件、表情、导出，以及联网搜索/手机操控两个开关 */
+    private fun showToolsSheet() {
+        val view = layoutInflater.inflate(R.layout.sheet_tools, null)
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        sheet.setContentView(view)
+        sheet.findViewById<android.view.View>(com.google.android.material.R.id.design_bottom_sheet)
+            ?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+        val vision = configStore.getActiveModel()?.vision == true
+        fun needVision(): Boolean {
+            if (vision) return true
+            toast("当前模型不支持图片，请在设置里换成视觉模型或改用文本提问")
+            return false
         }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("添加附件")
-            .setItems(items.toTypedArray()) { _, which ->
-                when (items[which]) {
-                    "发送图片" -> pickImage.launch("image/*")
-                    "拍照提问" -> launchCamera()
-                    "从剪贴板粘贴图片" -> pasteImageFromClipboard()
-                    else -> pickFile.launch("*/*")
-                }
+
+        view.findViewById<View>(R.id.toolCamera).setOnClickListener {
+            if (!needVision()) return@setOnClickListener
+            sheet.dismiss()
+            launchCamera()
+        }
+        view.findViewById<View>(R.id.toolAlbum).setOnClickListener {
+            if (!needVision()) return@setOnClickListener
+            sheet.dismiss()
+            pickImage.launch("image/*")
+        }
+        view.findViewById<View>(R.id.toolFile).setOnClickListener {
+            sheet.dismiss()
+            pickFile.launch("*/*")
+        }
+        view.findViewById<View>(R.id.toolEmoji).setOnClickListener {
+            sheet.dismiss()
+            showEmojiPanel()
+        }
+        view.findViewById<View>(R.id.toolPaste).setOnClickListener {
+            sheet.dismiss()
+            pasteImageFromClipboard()
+        }
+        view.findViewById<View>(R.id.toolExport).setOnClickListener {
+            sheet.dismiss()
+            exportSession()
+        }
+        view.findViewById<View>(R.id.toolHistory).setOnClickListener {
+            sheet.dismiss()
+            openSessions.launch(Intent(this, SessionsActivity::class.java))
+            animateForward()
+        }
+        view.findViewById<View>(R.id.toolNew).setOnClickListener {
+            sheet.dismiss()
+            newSession()
+        }
+
+        val swSearch = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.swSearch)
+        swSearch.isChecked = configStore.searchEnabled
+        swSearch.setOnCheckedChangeListener { _, checked ->
+            configStore.searchEnabled = checked
+            updateModeBar()
+            if (checked) toast("联网搜索已开启（DuckDuckGo 免费搜索）")
+        }
+        view.findViewById<View>(R.id.rowSearch).setOnClickListener { swSearch.toggle() }
+
+        val swControl = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.swControl)
+        val tvMode = view.findViewById<android.widget.TextView>(R.id.tvControlMode)
+        fun paintMode() {
+            val back = configStore.controlMode == "back"
+            tvMode.text = if (back) "当前：后台只发指令" else "当前：前台接管屏幕"
+        }
+        swControl.isChecked = configStore.controlEnabled
+        swControl.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                if (!enableControlMode()) swControl.isChecked = false
+            } else {
+                configStore.controlEnabled = false
+                updateModeBar()
             }
-            .show()
+        }
+        // 点整行：没开就先开；已经开着就切换前台/后台
+        view.findViewById<View>(R.id.rowControl).setOnClickListener {
+            if (!swControl.isChecked) swControl.toggle() else {
+                configStore.controlMode = if (configStore.controlMode == "back") "front" else "back"
+                paintMode()
+                updateModeBar()
+                toast(if (configStore.controlMode == "back")
+                    "已切到后台：不读屏不点击，只发指令"
+                else "已切到前台：会读屏并替你操作")
+            }
+        }
+        paintMode()
+        sheet.show()
     }
+
 
     private fun launchCamera() {
         try {
@@ -1204,10 +1272,10 @@ if (r.resultCode == Activity.RESULT_OK) {
         hideKeyboard()
         sessionStore.save(session)
 
-        val useControl = b.btnControl.isChecked && img == null && fileText == null
+        val useControl = configStore.controlEnabled && img == null && fileText == null
         if (useControl) {
             startControlTask(text)
-        } else if (b.btnSearch.isChecked) {
+        } else if (configStore.searchEnabled) {
             setStreaming(true)
             val searchingMsg = ChatMessage("assistant", "正在联网搜索…")
             session.messages.add(searchingMsg)

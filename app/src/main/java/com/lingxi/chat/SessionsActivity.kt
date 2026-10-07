@@ -22,7 +22,18 @@ class SessionsActivity : BaseActivity() {
 
         store = SessionStore(this)
         b.btnBack.setOnClickListener { finish() }
+        b.btnNewSession.setOnClickListener {
+            // 告诉聊天页：开一个新会话，不要加载旧的
+            val data = Intent()
+            data.putExtra("new_session", true)
+            setResult(Activity.RESULT_OK, data)
+            finish()
+        }
         b.rvSessions.layoutManager = LinearLayoutManager(this)
+        b.btnClearSearch.setOnClickListener {
+            b.etSearch.setText("")
+            refresh()
+        }
         b.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -38,9 +49,12 @@ class SessionsActivity : BaseActivity() {
             s.title.contains(keyword, ignoreCase = true) ||
                     s.messages.any { it.content.contains(keyword, ignoreCase = true) }
         }
+        b.btnClearSearch.visibility = if (keyword.isEmpty()) View.GONE else View.VISIBLE
         b.tvEmpty.text =
             if (all.isEmpty()) "还没有历史会话" else "没有包含「$keyword」的会话"
+        b.tvSessionsHint.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
         b.llEmpty.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
+        b.tvSessionTotal.text = if (all.isEmpty()) "" else "共 ${all.size} 个"
         b.tvSearchCount.text = if (keyword.isEmpty()) "" else "${sessions.size}/${all.size}"
         b.rvSessions.adapter = SessionAdapter(
             sessions,

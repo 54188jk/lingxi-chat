@@ -216,11 +216,13 @@ object UpdateUi {
             speed.text = "0 KB/s"
             val setProgress = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            askArchiveChoice(activity)
             download(activity, info, setProgress, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
                     dialog.dismiss()
+                    archiveApk(activity, info)
                     installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
@@ -498,11 +500,13 @@ object UpdateUi {
             speed.text = "0 KB/s"
             val setProgress = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
+            askArchiveChoice(activity)
             download(activity, info, setProgress, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {
                     dialog.dismiss()
+                    archiveApk(activity, info)
                     installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
@@ -515,6 +519,48 @@ object UpdateUi {
     }
 
     // ---------------- 安装 ----------------
+
+    /** 下载第一次开始前问一次：安装包存到内部储存根目录，还是免权限的下载子目录 */
+    private fun askArchiveChoice(activity: Activity) {
+        val store = com.lingxi.chat.data.ConfigStore(activity)
+        if (store.archiveLocation != "ask") return
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            // Android 10 及以下由系统弹窗直接申请存储权限，不必多问
+            store.archiveLocation = "root"
+            return
+        }
+        if (com.lingxi.chat.data.HistoryStore.canUseRoot(activity)) {
+            store.archiveLocation = "root"
+            return
+        }
+        androidx.appcompat.app.AlertDialog.Builder(activity)
+            .setTitle("安装包存到哪里")
+            .setMessage(
+                "每次下载都会在本机留一份安装包，方便你以后查看或重装。\n\n" +
+                        "· 内部储存/历史记录：目录最直观，需要授予一次「所有文件访问」权限（仅用于写这个文件夹）\n" +
+                        "· 内部储存/下载/历史记录：不用授权，但会混在下载文件里"
+            )
+            .setPositiveButton("存到历史记录（去授权）") { _, _ ->
+                store.archiveLocation = "root"
+                com.lingxi.chat.data.HistoryStore.openRootPermissionSettings(activity)
+            }
+            .setNegativeButton("存到下载目录") { _, _ -> store.archiveLocation = "download" }
+            .show()
+    }
+
+    /** 下载成功后往内部储存的「历史记录」文件夹存一份，用户随时能在文件管理器里点开安装 */
+    private fun archiveApk(activity: Activity, info: UpdateChecker.ReleaseInfo) {
+        val apk = File(activity.cacheDir, "updates/lingxi-v${info.version}.apk")
+        if (!apk.exists()) return
+        if (com.lingxi.chat.data.HistoryStore.list(activity).any { it.version == info.version }) return
+        val saved = com.lingxi.chat.data.HistoryStore.save(activity, apk, info.version)
+        Toast.makeText(
+            activity,
+            if (saved == null) "安装包已下载，但没能存进历史记录文件夹"
+            else "已存一份到${saved.displayPath}，可在文件管理器里查看并安装",
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
     private fun installApk(activity: Activity, apk: File) {
         if (!apk.exists()) {

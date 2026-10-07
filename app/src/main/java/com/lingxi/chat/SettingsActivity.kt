@@ -100,6 +100,10 @@ class SettingsActivity : BaseActivity() {
             VersionsUi.open(this, BuildConfig.VERSION_NAME)
         }
 
+        b.btnArchiveList.setOnClickListener { showArchiveList() }
+        b.btnArchiveLocation.setOnClickListener { pickArchiveLocation() }
+        refreshArchiveInfo()
+
         b.btnBackupSessions.setOnClickListener {
             val n = sessionStore.count()
             if (n == 0) {
@@ -160,6 +164,7 @@ class SettingsActivity : BaseActivity() {
         super.onResume()
         // 用户可能刚在系统设置里开了无障碍 / 授权了 Shizuku，回到本页要重新探测
         refreshControlStatus()
+        refreshArchiveInfo()
     }
 
     // ---------------- 系统操控 ----------------
@@ -539,8 +544,144 @@ class SettingsActivity : BaseActivity() {
         }
     }
 
-    private fun refreshBackupInfo() {
-        val n = sessionStore.count()
+    // ---------------- 历史安装包 ----------------
+
+    /** 设置页顶部那块「历史安装包」说明文字 */
+    private fun refreshArchiveInfo() {
+        val items = com.lingxi.chat.data.HistoryStore.list(this)
+        val sizeMb = items.sumOf { it.file?.length() ?: 0L } / 1024.0 / 1024.0
+        val where = com.lingxi.chat.data.HistoryStore.targetDescription(this)
+        val granted = com.lingxi.chat.data.HistoryStore.canUseRoot(this)
+        b.tvArchiveInfo.text = buildString {
+            append("保存位置：$where")
+            if (!granted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                append("\n还没拿到「所有文件访问」权限，安装包会退到 内部储存/下载/历史记录")
+            }
+            append(if (items.isEmpty()) "\n本机还没有存下任何安装包"
+            else "\n本机已存 ${items.size} 个版本，约 ${"%.1f".format(Locale.US, sizeMb)} MB")
+        }
+    }
+
+    /** 列出已存下来的安装包，可以直接安装或删除 */
+    private fun showArchiveList() {
+        val items = com.lingxi.chat.data.HistoryStore.list(this)
+        if (items.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("还没有存下安装包")
+                .setMessage("下次在「历史版本」或更新弹窗里下载安装包后，会自动在这里留一份。")
+                .setPositiveButton("去看历史版本") { _, _ ->
+                    VersionsUi.open(this, BuildConfig.VERSION_NAME)
+                }
+                .setNegativeButton("知道了", null)
+                .show()
+            return
+        }
+        val labels = items.map { it.displayVersion(this) }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("已存安装包")
+            .setItems(labels) { _, which -> askArchiveAction(items[which]) }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    private fun askArchiveAction(item: com.lingxi.chat.data.HistoryStore.Item) {
+        AlertDialog.Builder(this)
+            .setTitle("v${item.version}")
+            .setMessage("位置：${item.displayPath}\n\n可以马上安装这个版本，或把这份存档删掉。")
+            .setPositiveButton("安装") { _, _ -> installArchive(item) }
+            .setNeutralButton("删除存档") { _, _ ->
+                if (com.lingxi.chat.data.HistoryStore.delete(this, item)) {
+                    toast("已删除 v${item.version} 的存档")
+                    refreshArchiveInfo()
+                } else {
+                    toast("删除失败，请到文件管理器里手动删")
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun installArchive(item: com.lingxi.chat.data.HistoryStore.Item) {
+        // MediaStore 里的存档直接交给安装器会被部分系统拒收，先复制回缓存目录再走 FileProvider
+        val apk = item.file ?: copyArchiveToCache(item)
+        if (apk == null || !apk.exists()) {
+            toast("安装包读不到了，请重新下载一次")
+            return
+        }
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this, "com.lingxi.chat.fileprovider", apk
+            )
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        } catch (e: Exception) {
+            toast("无法调起安装：${e.message}")
+        }
+    }
+
+    private fun copyArchiveToCache(item: com.lingxi.chat.data.HistoryStore.Item): java.io.File? {
+        val u = item.uri ?: return null
+        return try {
+            val dir = java.io.File(cacheDir, "updates").apply { mkdirs() }
+            val dst = java.io.File(dir, "lingxi-v${item.version}.apk")
+            contentResolver.openInputStream(u)?.use { input ->
+                java.io.FileOutputStream(dst).use { out -> input.copyTo(out) }
+            } ?: return null
+            dst
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** 让用户决定装到根目录还是下载目录 */
+    private fun pickArchiveLocation() {
+        val rootFirst = store.archiveLocation != "download"
+        val options = arrayOf(
+            "内部储存/历史记录（推荐，需要「所有文件访问」权限）",
+            "内部储存/下载/历史记录（免权限，混在下载文件里）"
+        )
+        AlertDialog.Builder(this)
+            .setTitle("历史安装包存到哪里")
+            .setSingleChoiceItems(options, if (rootFirst) 0 else 1) { d, which ->
+                store.archiveLocation = if (which == 0) "root" else "download"
+                d.dismiss()
+                refreshArchiveInfo()
+                if (which == 0 && !com.lingxi.chat.data.HistoryStore.canUseRoot(this)) {
+                    askRootPermission()
+                } else {
+                    toast("下次下载会存到 ${com.lingxi.chat.data.HistoryStore.targetDescription(this)}")
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun askRootPermission() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            toast("Android 10 及以下会在下次下载时申请存储权限，允许即可")
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("需要「所有文件访问」权限")
+            .setMessage(
+                "要在内部储存根目录建「历史记录」文件夹，系统要求授予这个权限。\n\n" +
+                        "它只用来存放下载的安装包，灵犀AI 不会读取或上传你其他文件。"
+            )
+            .setPositiveButton("去授权") { _, _ ->
+                com.lingxi.chat.data.HistoryStore.openRootPermissionSettings(this)
+            }
+            .setNeutralButton("改用下载目录") { _, _ ->
+                store.archiveLocation = "download"
+                refreshArchiveInfo()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun refreshBackupInfo() {        val n = sessionStore.count()
         val latest = sessionStore.list().firstOrNull()
         b.tvSessionBackupInfo.text = if (n == 0) "当前本机共 0 个会话" else {
             "当前本机共 $n 个会话" + (latest?.let { "，最近更新 ${SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(it.updatedAt))}" } ?: "")
