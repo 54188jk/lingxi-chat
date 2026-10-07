@@ -2,6 +2,7 @@ package com.lingxi.chat.net
 
 import com.lingxi.chat.data.ChatMessage
 import com.lingxi.chat.data.ModelConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -63,17 +64,16 @@ class OpenAiClient {
         val call = http.newCall(req)
         currentCall = call
 
-        // 阻塞 IO 放到 IO 调度器；收集端取消会传播到本协程，进而让 call 抛异常退出
         val job = launch(Dispatchers.IO) {
             try {
                 call.execute().use { resp ->
                     if (!resp.isSuccessful) {
                         val errBody = resp.body?.string()?.take(500) ?: ""
-                        trySend(Event.Failed("请求失败 HTTP ${resp.code}：${parseErr(errBody)}"))
+                        send(Event.Failed("请求失败 HTTP ${resp.code}：${parseErr(errBody)}"))
                         return@use
                     }
                     val source = resp.body?.source() ?: run {
-                        trySend(Event.Failed("响应体为空"))
+                        send(Event.Failed("响应体为空"))
                         return@use
                     }
                     while (!source.exhausted()) {
@@ -81,25 +81,33 @@ class OpenAiClient {
                         if (!line.startsWith("data:")) continue
                         val data = line.removePrefix("data:").trim()
                         if (data == "[DONE]") break
-                        try {
-                            val json = JSONObject(data)
-                            val delta = json.optJSONArray("choices")
+                        val delta = try {
+                            JSONObject(data).optJSONArray("choices")
                                 ?.optJSONObject(0)
                                 ?.optJSONObject("delta")
                                 ?.optString("content", "")
-                            if (!delta.isNullOrEmpty()) trySend(Event.Delta(delta))
                         } catch (_: Exception) {
+                            null
                         }
+                        if (!delta.isNullOrEmpty()) send(Event.Delta(delta))
                     }
-                    trySend(Event.Done)
+                    send(Event.Done)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: IOException) {
-                if (call.isCanceled()) close() else trySend(Event.Failed("网络错误：${e.message}"))
+                if (!call.isCanceled()) send(Event.Failed("网络错误：${e.message}"))
             } catch (e: Exception) {
-                trySend(Event.Failed("出错：${e.message}"))
+                send(Event.Failed("出错：${e.message}"))
+            } finally {
+                close()
             }
         }
-        awaitClose { job.cancel() }
+        awaitClose {
+            call.cancel()
+            job.cancel()
+            if (currentCall === call) currentCall = null
+        }
     }
 
     private fun buildBody(config: ModelConfig, messages: List<ChatMessage>): JSONObject {

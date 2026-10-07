@@ -8,9 +8,14 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.lingxi.chat.net.UpdateChecker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /** 历史版本列表：列出所有 Release，点「下载」走和更新一样的镜像加速与安装流程 */
@@ -28,19 +33,19 @@ object VersionsUi {
             .create()
         dialog.show()
 
-        Thread {
-            val releases = UpdateChecker.fetchReleases()
-            activity.runOnUiThread {
-                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                if (releases.isEmpty()) {
-                    state.text = "获取失败，请检查网络后重试"
-                    state.visibility = View.VISIBLE
-                    return@runOnUiThread
-                }
-                state.visibility = View.GONE
-                list.adapter = VersionAdapter(activity, releases, currentVersion)
+        val owner = activity as? LifecycleOwner ?: return
+        val job = owner.lifecycleScope.launch {
+            val releases = withContext(Dispatchers.IO) { UpdateChecker.fetchReleases() }
+            if (activity.isFinishing || activity.isDestroyed || !dialog.isShowing) return@launch
+            if (releases.isEmpty()) {
+                state.text = "获取失败，请检查网络后重试"
+                state.visibility = View.VISIBLE
+                return@launch
             }
-        }.start()
+            state.visibility = View.GONE
+            list.adapter = VersionAdapter(activity, releases, currentVersion)
+        }
+        dialog.setOnDismissListener { job.cancel() }
     }
 
     private class VersionAdapter(
