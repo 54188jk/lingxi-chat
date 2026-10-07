@@ -78,7 +78,6 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     // 协程：异步层（替换裸Thread/Handler），随 APK 内置，不额外走网络
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
-    // 手机操控的 Shizuku 通道：AIDL 客户端 + 自动注册的 provider（库随 APK 内置，运行期不再联网）
+    // 手机操控的 Shizuku 通道：只用 AIDL 客户端，库随 APK 内置，运行期不再联网
     implementation 'dev.rikka.shizuku:api:13.1.5'
-    implementation 'dev.rikka.shizuku:provider:13.1.5'
 }

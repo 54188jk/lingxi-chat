@@ -38,6 +38,11 @@
         <activity android:name=".SessionsActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
 
+        <!-- 告诉 Shizuku 本应用走 V3（binder）协议，因此不必声明 API_V23 旧权限 -->
+        <meta-data
+            android:name="moe.shizuku.client.V3_SUPPORT"
+            android:value="true" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.lingxi.chat.fileprovider"
