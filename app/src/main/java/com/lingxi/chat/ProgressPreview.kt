@@ -91,6 +91,8 @@ object ProgressPreview {
                 restart()
             }
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                // 别让 dismiss 回调再开一次选择页
+                autoReturn = false
                 dialog.dismiss()
                 openSelector(activity)
             }
