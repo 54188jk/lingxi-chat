@@ -152,27 +152,44 @@ object UpdateUi {
         return list
     }
 
+    /** 一款进度条样式：名字 + 进度设置器（0-100） */
+    class ProgressStyle(val name: String, val set: (Int) -> Unit)
+
     /**
      * 下载进度条五选一（每次点击下载随机）：
-     * 普通横条、贪吃蛇、像素方块、液体波动、圆环。
-     * 返回进度设置器（0-100），调用方无需关心选了哪一款；布局里缺哪个就自动跳过哪个。
+     * 普通横条、贪吃蛇、像素方块、液体波动、圆环表盘。
+     * 布局里缺哪个就自动跳过哪个；没被选中的一款保持 GONE，动画不会空转。
      */
-    private fun pickProgressView(view: View): (Int) -> Unit {
-        val candidates: List<Pair<View, (Int) -> Unit>> = listOfNotNull(
-            view.findViewById<ProgressBar>(R.id.pbDownload)?.let { bar -> bar to { p: Int -> bar.progress = p } },
-            view.findViewById<SnakeProgressView>(R.id.spSnake)?.let { s -> s to { p: Int -> s.progress = p } },
-            view.findViewById<BlocksProgressView>(R.id.spBlocks)?.let { b -> b to { p: Int -> b.progress = p } },
-            view.findViewById<WaveProgressView>(R.id.spWave)?.let { w -> w to { p: Int -> w.progress = p } },
-            view.findViewById<RingProgressView>(R.id.spRing)?.let { r -> r to { p: Int -> r.progress = p } }
+    internal fun pickProgressView(view: View): ProgressStyle {
+        val candidates: List<Triple<String, View, (Int) -> Unit>> = listOfNotNull(
+            view.findViewById<ProgressBar>(R.id.pbDownload)?.let { bar ->
+                Triple("普通横条", bar, { p: Int -> bar.progress = p })
+            },
+            view.findViewById<SnakeProgressView>(R.id.spSnake)?.let { s ->
+                Triple("贪吃蛇", s, { p: Int -> s.progress = p })
+            },
+            view.findViewById<BlocksProgressView>(R.id.spBlocks)?.let { b ->
+                Triple("像素方块", b, { p: Int -> b.progress = p })
+            },
+            view.findViewById<WaveProgressView>(R.id.spWave)?.let { w ->
+                Triple("液体波动", w, { p: Int -> w.progress = p })
+            },
+            view.findViewById<RingProgressView>(R.id.spRing)?.let { r ->
+                Triple("圆环表盘", r, { p: Int -> r.progress = p })
+            }
         )
-        if (candidates.isEmpty()) return { }
+        if (candidates.isEmpty()) return ProgressStyle("无", {})
         val chosen = candidates.random()
-        candidates.forEach { (v, set) ->
-            v.visibility = if (v === chosen.first) View.VISIBLE else View.GONE
+        candidates.forEach { (_, v, set) ->
+            v.visibility = if (v === chosen.second) View.VISIBLE else View.GONE
             set(0)
         }
-        return chosen.second
+        return ProgressStyle(chosen.first, chosen.third)
     }
+
+    /** 全部样式名，预览页用来列清单 */
+    internal val progressStyleNames =
+        listOf("普通横条", "贪吃蛇", "像素方块", "液体波动", "圆环表盘")
 
     private fun inflate(activity: Activity): View =
         LayoutInflater.from(activity).inflate(R.layout.dialog_update, null)
@@ -228,9 +245,9 @@ object UpdateUi {
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
-            val setProgress = pickProgressView(view)
+            val style = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
-            download(activity, info, setProgress, percent, speed, status) { ok, msg ->
+            download(activity, info, style.set, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
@@ -530,10 +547,10 @@ object UpdateUi {
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
-            val setProgress = pickProgressView(view)
+            val style = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
             askArchiveChoice(activity)
-            download(activity, info, setProgress, percent, speed, status) { ok, msg ->
+            download(activity, info, style.set, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {

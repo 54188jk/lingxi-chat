@@ -1236,6 +1236,10 @@ class MainActivity : BaseActivity() {
             sheet.dismiss()
             startActivity(Intent(this, FreeModelActivity::class.java))
         }
+        view.findViewById<View>(R.id.toolProgress).setOnClickListener {
+            sheet.dismiss()
+            ProgressPreview.show(this)
+        }
 
         val swSearch = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.swSearch)
         swSearch.isChecked = configStore.searchEnabled
