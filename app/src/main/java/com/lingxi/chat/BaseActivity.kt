@@ -29,4 +29,15 @@ abstract class BaseActivity : AppCompatActivity() {
     /** 各页面都要提示用户，统一一条轻提示，别让 Toast 到处重复写 */
     protected fun toast(message: String) =
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+    /** 系统关闭动画时（开发者选项 / 无障碍）跳过所有动效 */
+    protected fun animationsEnabled(): Boolean =
+        android.provider.Settings.Global.getFloat(
+            contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        ) > 0.01f
+
+    protected fun animateForward() {
+        if (!animationsEnabled()) return
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left)
+    }
 }

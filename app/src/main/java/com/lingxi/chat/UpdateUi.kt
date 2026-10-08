@@ -141,14 +141,14 @@ object UpdateUi {
         val direct = giteeUrl.ifBlank {
             if (version.isNotBlank()) com.lingxi.chat.net.UpdateChecker.giteeDownloadUrl(version) else ""
         }
-        if (direct.isNotBlank()) list.add(direct to "Gitee 直连")
-        list.add(("https://ghfast.top/$url") to "加速源 1")
-        list.add(("https://gh-proxy.com/$url") to "加速源 2")
-        list.add(("https://ghproxy.net/$url") to "加速源 3")
-        list.add(("https://gh.ddlc.top/$url") to "加速源 4")
-        list.add(("https://github.moeyy.xyz/$url") to "加速源 5")
-        list.add(("https://mirror.ghproxy.com/$url") to "加速源 6")
-        list.add(url to "官方源")
+        if (direct.isNotBlank()) list.add(direct to "推荐线路")
+        list.add(("https://ghfast.top/$url") to "备用线路 1")
+        list.add(("https://gh-proxy.com/$url") to "备用线路 2")
+        list.add(("https://ghproxy.net/$url") to "备用线路 3")
+        list.add(("https://gh.ddlc.top/$url") to "备用线路 4")
+        list.add(("https://github.moeyy.xyz/$url") to "备用线路 5")
+        list.add(("https://mirror.ghproxy.com/$url") to "备用线路 6")
+        list.add(url to "官方线路")
         return list
     }
 
@@ -193,10 +193,30 @@ object UpdateUi {
             },
             view.findViewById<CometProgressView>(R.id.spComet)?.let { c ->
                 Triple("流星拉尾", c, { p: Int -> c.progress = p })
+            },
+            view.findViewById<GearProgressView>(R.id.spGear)?.let { g ->
+                Triple("齿轮咬合", g, { p: Int -> g.progress = p })
+            },
+            view.findViewById<EqualizerProgressView>(R.id.spEq)?.let { e ->
+                Triple("均衡器", e, { p: Int -> e.progress = p })
+            },
+            view.findViewById<EcgProgressView>(R.id.spEcg)?.let { e ->
+                Triple("心电图", e, { p: Int -> e.progress = p })
+            },
+            view.findViewById<BoatProgressView>(R.id.spBoat)?.let { b ->
+                Triple("小船过河", b, { p: Int -> b.progress = p })
+            },
+            view.findViewById<CaterpillarProgressView>(R.id.spWorm)?.let { c ->
+                Triple("毛毛虫", c, { p: Int -> c.progress = p })
             }
         )
         if (candidates.isEmpty()) return ProgressStyle("无", {})
-        val chosen = if (index in candidates.indices) candidates[index] else candidates.random()
+        // 老机器只在这几种「画得省」的里面挑，别为了好看把 CPU 占住
+        val light = com.lingxi.chat.data.DevicePerf.heavyFreeNames()
+        val pool = candidates.filter { it.first in light }.ifEmpty { candidates }
+        val chosen = if (index in candidates.indices) candidates[index]
+        else if (com.lingxi.chat.data.DevicePerf.lowEnd(view.context)) pool.random()
+        else candidates.random()
         candidates.forEach { (_, v, set) ->
             v.visibility = if (v === chosen.second) View.VISIBLE else View.GONE
             set(0)
@@ -210,7 +230,8 @@ object UpdateUi {
      */
     internal val progressStyleNames = listOf(
         "普通横条", "贪吃蛇", "像素方块", "液体波动", "圆环表盘",
-        "吃豆人", "小火车", "电池充电", "火柴人跑步", "流星拉尾"
+        "吃豆人", "小火车", "电池充电", "火柴人跑步", "流星拉尾",
+        "齿轮咬合", "均衡器", "心电图", "小船过河", "毛毛虫"
     )
 
     private fun inflate(activity: Activity): View =
@@ -242,7 +263,7 @@ object UpdateUi {
                 if (isNotEmpty()) append(" · ")
                 append("安装包 ${"%.1f".format(Locale.US, info.sizeBytes / 1024.0 / 1024.0)} MB")
             }
-            append(" · 多源并行下载，自动取最快")
+            append(" · 会自动挑一条快的线路下载")
         }
 
         val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
@@ -302,7 +323,7 @@ object UpdateUi {
         view.findViewById<TextView>(R.id.tvTag).text = "无需更新"
         view.findViewById<TextView>(R.id.tvNotes).text = "当前已是最新，没有新版本可安装。"
         view.findViewById<TextView>(R.id.tvMeta).text =
-            if (publishedAt.isBlank()) "官方源 GitHub" else "上一版本发布于 $publishedAt"
+            if (publishedAt.isBlank()) "已经是最新版" else "上一版本发布于 $publishedAt"
         androidx.appcompat.app.AlertDialog.Builder(activity)
             .setView(view)
             .setPositiveButton("好") { _, _ -> }
@@ -482,7 +503,7 @@ object UpdateUi {
                 activity.runOnUiThread {
                     if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                     if (d == 0L) {
-                        status.text = "正在并行连接 ${candidates.size} 个下载源…"
+                        status.text = "正在同时连几条线路…"
                     } else {
                         if (total > 0) {
                             val pct = (d * 100 / total).toInt().coerceAtMost(if (d >= total) 100 else 99)

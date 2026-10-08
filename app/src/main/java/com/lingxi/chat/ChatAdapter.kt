@@ -178,6 +178,8 @@ class ChatAdapter(
             context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         )
         if (scale <= 0.01f) return
+        // 老机器上来一条闪一次就够了，别再叠上浮动画
+        if (com.lingxi.chat.data.DevicePerf.lowEnd(context)) return
         alpha = 0f
         translationY = 12f * resources.displayMetrics.density
         animate().alpha(1f).translationY(0f).setDuration(220)

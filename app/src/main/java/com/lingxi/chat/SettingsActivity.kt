@@ -1,5 +1,6 @@
 package com.lingxi.chat
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.AdapterView
@@ -279,6 +280,15 @@ class SettingsActivity : BaseActivity() {
                 }
             }
             refreshControlStatus()
+        }
+
+        b.btnConsole.setOnClickListener {
+            startActivity(Intent(this, ControlActivity::class.java))
+            animateForward()
+        }
+        b.btnFiles.setOnClickListener {
+            startActivity(Intent(this, FilesActivity::class.java))
+            animateForward()
         }
 
         b.btnControlTest.setOnClickListener {

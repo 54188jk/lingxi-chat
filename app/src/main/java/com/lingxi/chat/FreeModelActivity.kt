@@ -16,7 +16,7 @@ import com.lingxi.chat.databinding.ActivityFreeModelBinding
  * 免费模型接入页。
  *
  * 任务顺序就三步：拿网址注册 → 拿到 sk- 开头的 Key → 回设置填三项。
- * 本页负责第一步和第三步的准备工作：复制并打开官网、把接口地址和模型名先填成一条配置，
+ * 本页负责第一步和第三步的准备工作：复制并打开官网、把服务地址和模型名先填成一条配置，
  * 用户只剩「粘贴 Key」一件事要做。
  */
 class FreeModelActivity : BaseActivity() {
@@ -42,9 +42,9 @@ class FreeModelActivity : BaseActivity() {
 
         b.btnBack.setOnClickListener { finish() }
         b.btnCopyAndOpen.setOnClickListener { copyAndOpenSite() }
-        b.rowBaseUrl.setOnClickListener { copy(BASE_URL, "接口地址已复制") }
+        b.rowBaseUrl.setOnClickListener { copy(BASE_URL, "服务地址已复制") }
         b.rowModelName.setOnClickListener { copy(MODEL, "模型名称已复制") }
-        b.tvBaseUrl.setOnClickListener { copy(BASE_URL, "接口地址已复制") }
+        b.tvBaseUrl.setOnClickListener { copy(BASE_URL, "服务地址已复制") }
         b.tvModelName.setOnClickListener { copy(MODEL, "模型名称已复制") }
         b.btnGoSettings.setOnClickListener { openSettings() }
         b.btnApplyPreset.setOnClickListener { applyPreset() }

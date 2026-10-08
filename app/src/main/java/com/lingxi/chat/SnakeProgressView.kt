@@ -1,6 +1,5 @@
 package com.lingxi.chat
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -59,30 +58,22 @@ class SnakeProgressView @JvmOverloads constructor(
     private val wiggleEnabled = Settings.Global.getFloat(
         context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
     ) > 0f
-    private val ticker = ValueAnimator.ofFloat(0f, (2f * PI).toFloat()).apply {
-        duration = 900L
-        repeatCount = ValueAnimator.INFINITE
-        interpolator = android.view.animation.LinearInterpolator()
-        addUpdateListener {
-            phase = it.animatedValue as Float
-            invalidate()
-        }
-    }
+    private val ticker = PhaseTicker(this, 900L, wiggleEnabled) { phase = it }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (wiggleEnabled && visibility == View.VISIBLE) ticker.start()
+        if (visibility == View.VISIBLE) ticker.attach()
     }
 
     // 随机没选中这条样式时它是 GONE，但依然挂在窗口上，不该空转
     override fun onVisibilityChanged(changedView: View, visibility: Int) {
         super.onVisibilityChanged(changedView, visibility)
         if (!wiggleEnabled) return
-        if (visibility == View.VISIBLE && isAttachedToWindow) ticker.start() else ticker.cancel()
+        if (visibility == VISIBLE && isAttachedToWindow) ticker.attach() else ticker.detach()
     }
 
     override fun onDetachedFromWindow() {
-        ticker.cancel()
+        ticker.detach()
         super.onDetachedFromWindow()
     }
 

@@ -36,6 +36,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -47,6 +48,8 @@
         <activity android:name=".SessionsActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".FreeModelActivity" android:exported="false" />
+        <activity android:name=".FilesActivity" android:exported="false" />
+        <activity android:name=".ControlActivity" android:exported="false" />
 
         <!-- 告诉 Shizuku 本应用走 V3（binder）协议，因此不必声明 API_V23 旧权限 -->
         <meta-data

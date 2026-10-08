@@ -79,6 +79,26 @@ object ProgressStyleCatalog {
         Entry("流星拉尾") { ctx ->
             val v = CometProgressView(ctx)
             Style(wrap(v, 20f), { p -> v.progress = p })
+        },
+        Entry("齿轮咬合") { ctx ->
+            val v = GearProgressView(ctx)
+            Style(wrap(v, 26f), { p -> v.progress = p })
+        },
+        Entry("均衡器") { ctx ->
+            val v = EqualizerProgressView(ctx)
+            Style(wrap(v, 24f), { p -> v.progress = p })
+        },
+        Entry("心电图") { ctx ->
+            val v = EcgProgressView(ctx)
+            Style(wrap(v, 26f), { p -> v.progress = p })
+        },
+        Entry("小船过河") { ctx ->
+            val v = BoatProgressView(ctx)
+            Style(wrap(v, 30f), { p -> v.progress = p })
+        },
+        Entry("毛毛虫") { ctx ->
+            val v = CaterpillarProgressView(ctx)
+            Style(wrap(v, 24f), { p -> v.progress = p })
         }
     )
 

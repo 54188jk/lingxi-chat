@@ -160,7 +160,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="接口地址"
+                        android:text="服务地址"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
 

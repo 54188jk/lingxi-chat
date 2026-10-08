@@ -108,6 +108,7 @@ class AgentRunner(
             "open_app" -> "打开 ${a.target}"
             "intent" -> "直达 ${a.target.take(40)}"
             "shell" -> "命令 ${a.text.take(40)}"
+            "fs" -> "文件 ${a.op} ${a.target.take(40)}" + if (a.text.isNotBlank()) " → ${a.text.take(30)}" else ""
             "wait" -> "等待 ${a.ms}ms"
             "read" -> "重新读屏"
             else -> a.type
@@ -194,6 +195,7 @@ class AgentRunner(
 - type：向当前已聚焦的输入框写入 text（先用 tap 让输入框获得焦点）
 - key：系统键，key 取 back / home / recents / enter
 - open_app：打开应用，package 填应用名或包名
+- fs：整理手机上的文件和文件夹，op 选操作、path 填位置、text 填目标或内容。${FileOps.HELP}
 - wait：等待，ms 为毫秒
 - read：只重新读屏，不做任何操作
 - answer：任务完成或需要用户接手，result 写给用户的答复
@@ -211,7 +213,7 @@ class AgentRunner(
     /** 后台模式：不看屏、不点屏，只能发直达指令和只读命令 */
     private fun headlessPrompt(): String = """
 你是「灵犀操控」的后台模式。你看不到屏幕，也不会替用户点击任何地方，用户的手机照常自己用。
-你能做的是：拉起应用、打开链接或深链、发起网页搜索、在用户授予 Root/Shizuku 时执行只读查询命令。
+你能做的是：整理手机里的文件和文件夹、拉起应用、打开链接或深链、发起网页搜索、在用户授予 Root/Shizuku 时执行只读查询命令。
 
 输出规则（最重要）：
 - 每次回复只输出一个 JSON 对象，不要解释、不要输出多个动作。
@@ -222,16 +224,20 @@ class AgentRunner(
 - intent：打开链接/深链，package 填 https://… 、tel:… 、mailto:… 、geo:… 之类；填普通文字时会自动转为网页搜索
 - shell：执行只读命令，text 填命令；只允许 dumpsys / pm list / getprop / settings get / ls / cat / id / wm size / date 这类查询，
   任何写操作、删除、模拟点击、改设置的命令都会被拒绝
+- fs：整理手机里的文件和文件夹，op 填操作、path 填位置、需要第二个参数时填在 text。可用 op：list / info / mkdir / rename / move / copy / delete / restore / purge / search / read / write / append / open / free。
+  path 可以写「下载」「文档」「图片」「内部储存」「应用文件夹」「回收站」，也可以写「下载/灵犀归档」这样的相对路径
 - wait：等待，ms 为毫秒
 - answer：任务完成或需要用户接手，result 写给用户的答复
 - fail：确实做不到，result 说明原因
 
 行为规则：
 1. 需要看见界面、需要逐个点击输入的任务，后台模式做不了——直接 answer，告诉用户切到「前台操作」模式再来一次。
-2. 能用一条 open_app / intent / shell 解决就别多步；拿不准就 answer 说明你打算做什么。
-3. shell 的输出我会原样回给你，回答时只挑用户关心的信息，别把整段日志贴给用户。
-4. 涉及付款、转账、发送验证码/隐私信息这类不可逆动作，不要替用户完成，直接 answer。
-5. 最多五步；同一条命令重复执行没有新信息时，直接 answer 收尾。
+2. 整理文件是后台模式的强项：先 fs list 看清现状，再一步一个 move / copy / mkdir / rename；别一上来就删。
+3. fs 的 delete 只是放进回收站，用户还能还原；「彻底删除」只有在东西已经在回收站里时才允许，且要 answer 跟用户确认过。
+4. 能用一条 open_app / intent / shell / fs 解决就别多步；拿不准就 answer 说明你打算做什么。
+5. shell 的输出我会原样回给你，回答时只挑用户关心的信息，别把整段日志贴给用户。
+6. 涉及付款、转账、发送验证码/隐私信息这类不可逆动作，不要替用户完成，直接 answer。
+7. 最多八步；同一条命令重复执行没有新信息时，直接 answer 收尾。
 """.trimIndent()
 
     /** 一次「模型输出 + 执行结论」 */

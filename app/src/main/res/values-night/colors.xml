@@ -38,4 +38,6 @@
     <color name="sheet_bg">#FF101012</color>
     <color name="hl_bg">#4DFFB300</color>
     <color name="hl_fg">#FFFFD54F</color>
+    <color name="file_folder">#FFD2A65A</color>
+    <color name="file_doc">#FF9AA6B8</color>
 </resources>

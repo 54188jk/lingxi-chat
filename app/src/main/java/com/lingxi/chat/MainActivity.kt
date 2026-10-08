@@ -112,14 +112,6 @@ class MainActivity : BaseActivity() {
     // 流式光标闪烁：▍ 每 500ms 显示/隐藏
     private var caretVisible = true
 
-    /** 系统关闭动画时（开发者选项/无障碍）跳过动态效果 */
-    private fun animationsEnabled(): Boolean {
-        val scale = android.provider.Settings.Global.getFloat(
-            contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
-        )
-        return scale > 0.01f
-    }
-
     // 会话内搜索命中的关键词
     private var highlightKey: String? = null
 
@@ -180,6 +172,22 @@ class MainActivity : BaseActivity() {
             }
         }
 
+    /** 从文件页或操控台带过来的任务草稿 */
+    private fun applyPrefill(i: Intent?) {
+        val text = i?.getStringExtra("prefill_text") ?: return
+        if (text.isBlank()) return
+        b.etInput.setText(text)
+        b.etInput.setSelection(text.length)
+        b.etInput.requestFocus()
+        i.removeExtra("prefill_text")
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyPrefill(intent)
+    }
+
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { handleImage(it) }
@@ -210,9 +218,14 @@ class MainActivity : BaseActivity() {
         lm.stackFromEnd = true
         b.rvMessages.layoutManager = lm
         b.rvMessages.adapter = adapter
-        b.rvMessages.itemAnimator?.apply {
-            addDuration = 180
-            changeDuration = 0
+        if (com.lingxi.chat.data.DevicePerf.lowEnd(this)) {
+            // 老机器上一条消息一次动画就够了，累积起来会明显发涩
+            b.rvMessages.itemAnimator = null
+        } else {
+            b.rvMessages.itemAnimator?.apply {
+                addDuration = 180
+                changeDuration = 0
+            }
         }
         adapter.registerAdapterDataObserver(object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
             override fun onChanged() = updateWelcome()
@@ -325,6 +338,7 @@ class MainActivity : BaseActivity() {
             b.etInput.setText(configStore.draft)
             b.etInput.setSelection(b.etInput.text.length)
         }
+        applyPrefill(intent)
 
         UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
         remindPendingInstall()
@@ -467,14 +481,9 @@ class MainActivity : BaseActivity() {
         super.onDestroy()
     }
 
-    private fun animateForward() {
-        if (!animationsEnabled()) return
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left)
-    }
-
     /** 顶栏头像缓慢呼吸，提示「点我切换角色」 */
     private fun startLogoBreathing() {
-        if (!animationsEnabled()) return
+        if (!animationsEnabled() || com.lingxi.chat.data.DevicePerf.lowEnd(this)) return
         b.ivLogo.animate().cancel()
         b.ivLogo.animate()
             .scaleX(1.06f).scaleY(1.06f)
@@ -1239,6 +1248,16 @@ class MainActivity : BaseActivity() {
         view.findViewById<View>(R.id.toolProgress).setOnClickListener {
             sheet.dismiss()
             ProgressPreview.show(this)
+        }
+        view.findViewById<View>(R.id.toolFiles).setOnClickListener {
+            sheet.dismiss()
+            startActivity(Intent(this, FilesActivity::class.java))
+            animateForward()
+        }
+        view.findViewById<View>(R.id.toolConsole).setOnClickListener {
+            sheet.dismiss()
+            startActivity(Intent(this, ControlActivity::class.java))
+            animateForward()
         }
 
         val swSearch = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.swSearch)

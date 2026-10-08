@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -26,9 +27,11 @@ object ProgressPreview {
         val rows = view.findViewById<LinearLayout>(R.id.llRows)
         view.findViewById<TextView>(R.id.tvChooseHint).text =
             "下面 ${ProgressStyleCatalog.entries.size} 行，每行右边都是那一款真实跑起来的样子。" +
-                    "点哪一行就放大播一轮，播完自动回到这里；真实下载时是从这些里随机挑一款。"
+                    "点哪一行就放大播一轮，播完自动回到这里。\n" +
+                    "真实下载时随机挑一款；机器带不动时会自动只用画得省的那几种。"
 
         val styles = ArrayList<ProgressStyleCatalog.Style>()
+        val rowViews = ArrayList<View>()
         var chooser: Dialog? = null
         ProgressStyleCatalog.entries.forEachIndexed { idx, entry ->
             val style = entry.create(activity)
@@ -55,6 +58,7 @@ object ProgressPreview {
                 ).apply { topMargin = (6 * activity.resources.displayMetrics.density).toInt() }
             )
             styles.add(style)
+            rowViews.add(row)
         }
 
         val dialog = AlertDialog.Builder(activity)
@@ -65,15 +69,20 @@ object ProgressPreview {
 
         // 各行的起点与步长都错开，看着像一批任务在并行下载，而不是同一条动画的复读
         val handler = Handler(Looper.getMainLooper())
-        // 起点错开，进来第一眼就是十款各自在不同位置上跑
         val pct = IntArray(styles.size) { (it * 37) % 100 }
         val step = IntArray(styles.size) { (2..6).random() }
         val hold = BooleanArray(styles.size)
+        val rect = android.graphics.Rect()
+        // 老机器刷得慢一点，而且只刷露在屏幕上的行，滚动看不见的绝不浪费帧
+        val low = com.lingxi.chat.data.DevicePerf.lowEnd(activity)
+        val cadence = if (low) 240L else 130L
         val tick = object : Runnable {
             override fun run() {
                 if (!dialog.isShowing) return
                 styles.forEachIndexed { i, s ->
                     if (hold[i]) return@forEachIndexed
+                    val row = rowViews[i]
+                    if (!row.getGlobalVisibleRect(rect) || rect.height() <= 0) return@forEachIndexed
                     pct[i] = (pct[i] + step[i]).coerceAtMost(100)
                     s.set(pct[i])
                     if (pct[i] >= 100) {
@@ -83,10 +92,10 @@ object ProgressPreview {
                             pct[i] = 0
                             step[i] = (2..6).random()
                             s.set(0)
-                        }, 700L)
+                        }, if (low) 1200L else 700L)
                     }
                 }
-                handler.postDelayed(this, 130L)
+                handler.postDelayed(this, cadence)
             }
         }
         dialog.setOnShowListener { handler.post(tick) }
@@ -126,7 +135,7 @@ object ProgressPreview {
                 status.text = if (pct >= 100) {
                     "${style.name} · 下载完成，正在校验…"
                 } else {
-                    "${style.name} · Gitee 直连 · $mb/2.6 MB"
+                    "${style.name} · $mb/2.6 MB"
                 }
                 if (pct >= 100) {
                     autoReturn = true

@@ -135,6 +135,36 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
                 android:visibility="gone" />
+        <com.lingxi.chat.GearProgressView
+            android:id="@+id/spGear"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
+        <com.lingxi.chat.EqualizerProgressView
+            android:id="@+id/spEq"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
+        <com.lingxi.chat.EcgProgressView
+            android:id="@+id/spEcg"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
+        <com.lingxi.chat.BoatProgressView
+            android:id="@+id/spBoat"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
+        <com.lingxi.chat.CaterpillarProgressView
+            android:id="@+id/spWorm"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
         </FrameLayout>
 
         <TextView

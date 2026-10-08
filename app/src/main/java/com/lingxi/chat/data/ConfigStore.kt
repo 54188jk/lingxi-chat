@@ -103,6 +103,16 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_CTRL_ON, false)
         set(v) = sp.edit().putBoolean(KEY_CTRL_ON, v).apply()
 
+    /** 允许 AI 整理文件和文件夹（列目录、建文件夹、挪动、复制、删进回收站） */
+    var controlFileOps: Boolean
+        get() = sp.getBoolean(KEY_CTRL_FS, true)
+        set(v) = sp.edit().putBoolean(KEY_CTRL_FS, v).apply()
+
+    /** 文件页的排序方式：0 名字 / 1 时间 / 2 大小 */
+    var fileSort: Int
+        get() = sp.getInt(KEY_FILE_SORT, 0)
+        set(v) = sp.edit().putInt(KEY_FILE_SORT, v.coerceIn(0, 2)).apply()
+
     // ---------------- 历史安装包归档 ----------------
 
     /** 归档位置：ask 还没问过用户 / root 内部储存/历史记录 / download 内部储存/下载/历史记录 */
@@ -174,6 +184,8 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_MEMORY = "ctrl_memory"
         private const val KEY_CTRL_PAY = "ctrl_block_pay"
         private const val KEY_CTRL_ON = "ctrl_enabled"
+        private const val KEY_CTRL_FS = "ctrl_file_ops"
+        private const val KEY_FILE_SORT = "file_sort"
         private const val KEY_ARCHIVE_LOC = "archive_location"
         private const val KEY_ARCHIVE_PATH = "archive_last_path"
         private const val KEY_ARCHIVE_PENDING = "archive_pending_version"

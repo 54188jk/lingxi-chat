@@ -509,6 +509,38 @@
                     android:textAllCaps="false"
                     android:textColor="@color/btn_outline_fg" />
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnConsole"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_primary"
+                    android:backgroundTint="@null"
+                    android:gravity="center"
+                    android:text="打开操控台"
+                    android:textAllCaps="false"
+                    android:textColor="@color/btn_solid_fg" />
+
+                <Button
+                    android:id="@+id/btnFiles"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_white"
+                    android:backgroundTint="@null"
+                    android:gravity="center"
+                    android:text="文件与文件夹"
+                    android:textAllCaps="false"
+                    android:textColor="@color/btn_outline_fg" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ============ 数据备份 ============ -->

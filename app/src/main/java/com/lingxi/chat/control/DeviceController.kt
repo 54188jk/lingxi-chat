@@ -175,11 +175,13 @@ class DeviceController(private val ctx: Context, private val store: ConfigStore)
         if (a.type == "answer" || a.type == "fail") {
             return Outcome(true, a.result)
         }
+        // 文件操作只用存储权限，不占通道也不碰屏幕，前台/后台都能用
+        if (a.type == "fs") return runFs(a)
         val chain = resolve()
         if (headless() && a.type in DeviceAction.SCREEN_ACTIONS) {
             return Outcome(
                 false,
-                "现在是后台模式，不读屏也不动你的屏幕。可改用 open_app / intent / shell，" +
+                "现在是后台模式，不读屏也不动你的屏幕。可改用 open_app / intent / shell / fs，" +
                     "或让用户到 设置 → 系统操控 切换为前台模式。"
             )
         }
@@ -245,6 +247,27 @@ class DeviceController(private val ctx: Context, private val store: ConfigStore)
     }
 
     /** 后台命令：只有 Root / Shizuku 通道能跑，且只允许只读类命令 */
+    /**
+     * 文件与文件夹：列目录、建文件夹、改名、挪动、复制、删除（进回收站）、还原、搜索、读写文本、交给系统文件管理器打开。
+     * 只允许内部储存和本应用目录，删除永远先进回收站，越界写法在 FileOps.resolve 里就被挡掉。
+     */
+    private suspend fun runFs(a: DeviceAction): Outcome {
+        if (!store.controlFileOps) {
+            return Outcome(
+                false,
+                "整理文件这件事被你在 设置 → 系统操控 里关掉了（「允许整理文件和文件夹」）。需要的话先打开再让我做。"
+            )
+        }
+        if (!FileOps.canUseStorage(ctx)) {
+            return Outcome(
+                false,
+                "现在还没有存储权限，我只能在本应用自己的目录里放文件。请先在 设置 → 系统操控 里授予存储权限。"
+            )
+        }
+        val done = withContext(Dispatchers.IO) { FileOps.run(ctx, a.op, a.target, a.text) }
+        return Outcome(done.ok, done.note.take(2000))
+    }
+
     private fun runShell(a: DeviceAction): Outcome {
         val shell = firstShell()
             ?: return Outcome(false, "执行命令需要 Root 或 Shizuku 授权；只有无障碍时请改用 open_app / intent")

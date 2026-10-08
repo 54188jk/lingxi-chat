@@ -1,6 +1,6 @@
 package com.lingxi.chat
 
-import android.animation.ValueAnimator
+import com.lingxi.chat.data.ProgressFrameClock
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -22,29 +22,28 @@ internal fun animationsOn(context: Context): Boolean = Settings.Global.getFloat(
     context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
 ) > 0f
 
-/** 0→2π 的无限循环，驱动帧动画；每次刷新把相位交给 onPhase 并请求重绘 */
+/**
+ * 0→2π 的循环相位。所有花样进度条共用一条时间轴（ProgressFrameClock），
+ * 不再每款各开一个无限动画；系统关掉动画时这里什么都不做，只剩静态跟随进度。
+ */
 internal class PhaseTicker(
-    view: View,
-    durationMs: Long,
+    private val view: View,
+    private val durationMs: Long,
     private val enabled: Boolean,
     private val onPhase: (Float) -> Unit
 ) {
-    private val anim = ValueAnimator.ofFloat(0f, (2.0 * Math.PI).toFloat()).apply {
-        duration = durationMs
-        repeatCount = ValueAnimator.INFINITE
-        interpolator = android.view.animation.LinearInterpolator()
-        addUpdateListener {
-            onPhase(it.animatedValue as Float)
-            view.invalidate()
-        }
-    }
+    private var attached = false
 
     fun attach() {
-        if (enabled) anim.start()
+        if (!enabled || attached) return
+        attached = true
+        ProgressFrameClock.register(view, durationMs, onPhase)
     }
 
     fun detach() {
-        anim.cancel()
+        if (!attached) return
+        attached = false
+        ProgressFrameClock.unregister(view)
     }
 }
 

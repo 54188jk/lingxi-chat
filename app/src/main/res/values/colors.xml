@@ -41,4 +41,6 @@
     <color name="sheet_bg">#FFFFFFFF</color>
     <color name="hl_bg">#66FFC53D</color>
     <color name="hl_fg">#FF7A4B00</color>
+    <color name="file_folder">#FFE0A34A</color>
+    <color name="file_doc">#FF8A94A6</color>
 </resources>

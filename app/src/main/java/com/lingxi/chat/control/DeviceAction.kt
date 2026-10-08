@@ -16,6 +16,7 @@ data class DeviceAction(
     val direction: String = "down",
     val key: String = "back",
     val target: String = "",
+    val op: String = "",
     val ms: Int = 600,
     val reason: String = "",
     val result: String = ""
@@ -26,7 +27,7 @@ data class DeviceAction(
         val TYPES = setOf(
             "tap", "long_press", "swipe", "scroll", "type", "key",
             "open_app", "wait", "read", "screenshot", "intent", "shell",
-            "answer", "fail"
+            "fs", "answer", "fail"
         )
 
         /** 需要占用屏幕的动作，后台模式一律不执行 */
@@ -66,7 +67,8 @@ data class DeviceAction(
                 text = json.optString("text", ""),
                 direction = json.optString("direction", "down"),
                 key = json.optString("key", "back"),
-                target = json.optString("package", json.optString("target", "")),
+                target = json.optString("package", json.optString("target", json.optString("path", ""))),
+                op = json.optString("op", "").lowercase().trim(),
                 ms = json.optInt("ms", 600).coerceIn(0, 10_000),
                 reason = json.optString("reason", "").take(120),
                 result = resultText(json),
@@ -79,6 +81,13 @@ data class DeviceAction(
                 "open_app" -> if (a.target.isBlank()) "open_app 缺少 package（包名或应用名）" else ""
                 "intent" -> if (a.target.isBlank()) "intent 缺少 package（要打开的链接或直达地址）" else ""
                 "shell" -> if (a.text.isBlank()) "shell 缺少 text（要执行的命令）" else ""
+                "fs" -> when {
+                    a.op.isBlank() -> """fs 缺少 op（要做的文件操作）。${FileOps.HELP}"""
+                    a.target.isBlank() && a.op !in setOf("free") -> "fs 缺少 path（要操作哪个文件夹或文件，可写「下载」「内部储存/xxx」这样的路径）"
+                    a.op in setOf("move", "copy", "rename", "write", "append") && a.text.isBlank() ->
+                        "fs 的 ${a.op} 还需要 text（目标位置或要写入的内容）"
+                    else -> ""
+                }
                 "scroll" -> if (a.direction !in setOf("up", "down", "left", "right")) {
                     "scroll 的 direction 只能是 up/down/left/right"
                 } else ""
