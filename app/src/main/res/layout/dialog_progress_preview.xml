@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:lineSpacingMultiplier="1.35"
-            android:text="这只是演示，不会下载任何东西。真实下载时会在下面这几款里随机挑一款。"
+            android:text="这只是演示，不会下载任何东西。选中的这一款从 0 跑到 100，跑完自动回到选择列表。"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
@@ -146,15 +146,5 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
 
-        <TextView
-            android:id="@+id/tvPvAll"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_note_card"
-            android:lineSpacingMultiplier="1.4"
-            android:padding="12dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>

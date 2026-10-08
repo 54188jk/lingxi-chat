@@ -155,12 +155,14 @@ object UpdateUi {
     /** 一款进度条样式：名字 + 进度设置器（0-100） */
     class ProgressStyle(val name: String, val set: (Int) -> Unit)
 
+    /** 每次真实下载随机一款 */
+    internal fun pickProgressView(view: View): ProgressStyle = applyProgressStyle(view, -1)
+
     /**
-     * 下载进度条十选一（每次点击下载随机）：
-     * 普通横条、贪吃蛇、像素方块、液体波动、圆环表盘、吃豆人、小火车、电池充电、火柴人、流星拉尾。
+     * 装上某一款进度条：index 传 -1 表示随机（真实下载用它），传具体序号用于预览页「选一款看」。
      * 布局里缺哪个就自动跳过哪个；没被选中的一款保持 GONE，动画不会空转。
      */
-    internal fun pickProgressView(view: View): ProgressStyle {
+    internal fun applyProgressStyle(view: View, index: Int): ProgressStyle {
         val candidates: List<Triple<String, View, (Int) -> Unit>> = listOfNotNull(
             view.findViewById<ProgressBar>(R.id.pbDownload)?.let { bar ->
                 Triple("普通横条", bar, { p: Int -> bar.progress = p })
@@ -194,7 +196,7 @@ object UpdateUi {
             }
         )
         if (candidates.isEmpty()) return ProgressStyle("无", {})
-        val chosen = candidates.random()
+        val chosen = if (index in candidates.indices) candidates[index] else candidates.random()
         candidates.forEach { (_, v, set) ->
             v.visibility = if (v === chosen.second) View.VISIBLE else View.GONE
             set(0)
@@ -202,7 +204,10 @@ object UpdateUi {
         return ProgressStyle(chosen.first, chosen.third)
     }
 
-    /** 全部样式名，预览页用来列清单 */
+    /**
+     * 每款的序号与名字，预览页的选择列表用它。
+     * 序号要和 [applyProgressStyle] 里的顺序一致。
+     */
     internal val progressStyleNames = listOf(
         "普通横条", "贪吃蛇", "像素方块", "液体波动", "圆环表盘",
         "吃豆人", "小火车", "电池充电", "火柴人跑步", "流星拉尾"
