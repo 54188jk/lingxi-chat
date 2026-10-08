@@ -18,12 +18,12 @@ import kotlin.math.sin
  * 深浅色自动适配；系统动画被关掉（animator scale = 0）时不做循环动效，只静态跟随进度。
  */
 
-private fun animationsOn(context: Context): Boolean = Settings.Global.getFloat(
+internal fun animationsOn(context: Context): Boolean = Settings.Global.getFloat(
     context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
 ) > 0f
 
 /** 0→2π 的无限循环，驱动帧动画；每次刷新把相位交给 onPhase 并请求重绘 */
-private class PhaseTicker(
+internal class PhaseTicker(
     view: View,
     durationMs: Long,
     private val enabled: Boolean,

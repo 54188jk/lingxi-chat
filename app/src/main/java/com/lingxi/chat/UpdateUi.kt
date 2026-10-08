@@ -156,8 +156,8 @@ object UpdateUi {
     class ProgressStyle(val name: String, val set: (Int) -> Unit)
 
     /**
-     * 下载进度条五选一（每次点击下载随机）：
-     * 普通横条、贪吃蛇、像素方块、液体波动、圆环表盘。
+     * 下载进度条十选一（每次点击下载随机）：
+     * 普通横条、贪吃蛇、像素方块、液体波动、圆环表盘、吃豆人、小火车、电池充电、火柴人、流星拉尾。
      * 布局里缺哪个就自动跳过哪个；没被选中的一款保持 GONE，动画不会空转。
      */
     internal fun pickProgressView(view: View): ProgressStyle {
@@ -176,6 +176,21 @@ object UpdateUi {
             },
             view.findViewById<RingProgressView>(R.id.spRing)?.let { r ->
                 Triple("圆环表盘", r, { p: Int -> r.progress = p })
+            },
+            view.findViewById<PacmanProgressView>(R.id.spPacman)?.let { p ->
+                Triple("吃豆人", p, { v: Int -> p.progress = v })
+            },
+            view.findViewById<TrainProgressView>(R.id.spTrain)?.let { t ->
+                Triple("小火车", t, { p: Int -> t.progress = p })
+            },
+            view.findViewById<BatteryProgressView>(R.id.spBattery)?.let { b ->
+                Triple("电池充电", b, { p: Int -> b.progress = p })
+            },
+            view.findViewById<RunnerProgressView>(R.id.spRunner)?.let { r ->
+                Triple("火柴人跑步", r, { p: Int -> r.progress = p })
+            },
+            view.findViewById<CometProgressView>(R.id.spComet)?.let { c ->
+                Triple("流星拉尾", c, { p: Int -> c.progress = p })
             }
         )
         if (candidates.isEmpty()) return ProgressStyle("无", {})
@@ -188,8 +203,10 @@ object UpdateUi {
     }
 
     /** 全部样式名，预览页用来列清单 */
-    internal val progressStyleNames =
-        listOf("普通横条", "贪吃蛇", "像素方块", "液体波动", "圆环表盘")
+    internal val progressStyleNames = listOf(
+        "普通横条", "贪吃蛇", "像素方块", "液体波动", "圆环表盘",
+        "吃豆人", "小火车", "电池充电", "火柴人跑步", "流星拉尾"
+    )
 
     private fun inflate(activity: Activity): View =
         LayoutInflater.from(activity).inflate(R.layout.dialog_update, null)
@@ -303,7 +320,7 @@ object UpdateUi {
 
     /**
      * 全源并行竞速下载：
-     * 1. 所有候选源（Gitee 直连 + 4 个加速镜像 + 官方源）同时发起，不再串行等待慢源
+     * 1. 所有候选源（Gitee 直连 + 6 个加速镜像 + 官方源）同时发起，不再串行等待慢源
      * 2. 任意源卡住 15 秒即被 OkHttp 超时判死，其余源不受影响
      * 3. 第一个下载完成并通过完整性校验的源立即胜出，其余源全部取消
      * 4. 进度、速度、剩余时间实时展示当前最快源

@@ -100,6 +100,41 @@
                 android:layout_height="34dp"
                 android:layout_gravity="center_vertical"
                 android:visibility="gone" />
+
+            <com.lingxi.chat.PacmanProgressView
+                android:id="@+id/spPacman"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:layout_gravity="center_vertical"
+                android:visibility="gone" />
+
+            <com.lingxi.chat.TrainProgressView
+                android:id="@+id/spTrain"
+                android:layout_width="match_parent"
+                android:layout_height="26dp"
+                android:layout_gravity="center_vertical"
+                android:visibility="gone" />
+
+            <com.lingxi.chat.BatteryProgressView
+                android:id="@+id/spBattery"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:visibility="gone" />
+
+            <com.lingxi.chat.RunnerProgressView
+                android:id="@+id/spRunner"
+                android:layout_width="match_parent"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:visibility="gone" />
+
+            <com.lingxi.chat.CometProgressView
+                android:id="@+id/spComet"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:visibility="gone" />
         </FrameLayout>
 
         <TextView
