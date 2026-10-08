@@ -1,6 +1,7 @@
 package com.lingxi.chat
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -32,17 +33,28 @@ class ControlActivity : BaseActivity() {
     private val store by lazy { ConfigStore(this) }
     private val controller by lazy { DeviceController(this, store) }
 
-    private class Quick(val label: String, val task: String, val needFront: Boolean)
+    /** ask 不为空时，先让用户把要处理的内容填进来，再拼到任务后面 */
+    private class Quick(
+        val label: String,
+        val task: String,
+        val needFront: Boolean,
+        val ask: String = "",
+        val askHint: String = ""
+    )
 
     private val quicks = listOf(
         Quick("按类型整理下载", "把「下载」里的文件按类型整理进子文件夹：安装包、压缩包、文档、图片、视频、其他；先告诉我你会怎么分，再动手。", false),
-        Quick("新建归档文件夹", "在内部储存里新建一个文件夹，名字叫「灵犀归档」。", false),
+        Quick("新建归档文件夹", "在内部储存里新建一个文件夹，名字叫「糯叽归档」。", false),
         Quick("清理旧安装包", "找出「下载」里的安装包文件，把一个月前又不是当前版本的列出来给我看，先别删。", false),
         Quick("看剩余空间", "看看内部储存还剩多少空间，并列出最占地方的几个顶层文件夹。", false),
         Quick("找文件", "在整个内部储存里找名字包含「报告」的文件，把位置和大小列出来。", false),
+        Quick("按名字归档", "把「下载」里名字包含指定关键词的文件，统一挪进「下载/糯叽归档」，先说清单再动手。", false,
+            "要找的关键词", "比如：发票、合同、截图"),
         Quick("拉起微信", "打开微信。", false),
-        Quick("把这段发出去", "打开微信，进入最近一个聊天，把我口述的内容发出去；发送前必须停下来让我自己确认。", true),
-        Quick("填表单", "打开浏览器，把我说的内容一项项填进网页表单里；提交之前先停下来交给我。", true)
+        Quick("把这段发出去", "打开微信，进入最近一个聊天，把下面这段内容发出去；发送前必须停下来让我自己确认。内容：",
+            true, "要发出去的内容", "会原样发给对方，发送前你还能自己看一眼再点"),
+        Quick("填表单", "打开浏览器，把下面这些内容一项项填进网页表单里；提交之前先停下来交给我。要填的内容：",
+            true, "要填的内容", "例如：姓名 张三，手机 138xxxxxxxx，城市 杭州")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +66,7 @@ class ControlActivity : BaseActivity() {
         b.btnA11y.setOnClickListener { openAccessibility() }
         b.btnAdv.setOnClickListener { showBackendHelp() }
         b.btnProbe.setOnClickListener { probe() }
+        b.btnBattery.setOnClickListener { askIgnoreBattery() }
         b.btnAdvancedSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             animateForward()
@@ -147,14 +160,47 @@ class ControlActivity : BaseActivity() {
         b.tvBackState.text = if (!front) "正在用这种" else "点这里切换"
         b.cardFront.setBackgroundResource(if (front) R.drawable.bg_card_active else R.drawable.bg_card)
         b.cardBack.setBackgroundResource(if (!front) R.drawable.bg_card_active else R.drawable.bg_card)
+        b.tvBatteryState.text = if (ignoringBattery()) "系统打断：已允许一直跑，任务不会半路被冻住"
+            else "系统打断：省电策略可能在中途把糯叽冻住，建议点下面按钮放行"
+        b.btnBattery.text = if (ignoringBattery()) "已经放行" else "让它别被系统打断"
         refreshFileRow()
+    }
+
+    private fun ignoringBattery(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return true
+        val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+        return runCatching { pm.isIgnoringBatteryOptimizations(packageName) }.getOrDefault(false)
+    }
+
+    private fun askIgnoreBattery() {
+        if (ignoringBattery()) {
+            toast("已经放行，不用重复设置")
+            return
+        }
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+            toast("这台系统不需要额外设置")
+            return
+        }
+        runCatching {
+            startActivity(
+                Intent(
+                    android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:$packageName")
+                )
+            )
+        }.onFailure {
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                toast("在「电池 → 后台限制」里选「不限制」")
+            }.onFailure { toast("请到系统设置里手动允许糯叽后台运行") }
+        }
     }
 
     private fun refreshFileRow() {
         val can = FileOps.canUseStorage(this)
         b.tvFileState.text = buildString {
             append(if (store.controlFileOps) "已允许整理文件" else "已禁止整理文件")
-            append(" · ").append(if (can) "存储权限：已给，能整理下载、文档这些位置" else "存储权限：还没给，只能整理灵犀自己的文件夹")
+            append(" · ").append(if (can) "存储权限：已给，能整理下载、文档这些位置" else "存储权限：还没给，只能整理糯叽自己的文件夹")
             append(" · ").append(FileOps.freeGb(this@ControlActivity))
         }
         b.btnFilePerm.visibility = if (can) View.GONE else View.VISIBLE
@@ -169,7 +215,7 @@ class ControlActivity : BaseActivity() {
             AlertDialog.Builder(this)
                 .setTitle("前台操作需要系统无障碍")
                 .setMessage(
-                    "要替你看屏幕、点按、输入，得先在系统的无障碍列表里把「灵犀AI」打开。\n\n" +
+                    "要替你看屏幕、点按、输入，得先在系统的无障碍列表里把「糯叽」打开。\n\n" +
                             "现在去开吗？"
                 )
                 .setPositiveButton("去开启") { _, _ ->
@@ -192,8 +238,8 @@ class ControlActivity : BaseActivity() {
     private fun openAccessibility() {
         runCatching {
             startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            toast("在列表里找「灵犀AI」→ 打开开关")
-        }.onFailure { toast("跳转失败，请到 系统设置 → 无障碍 里找「灵犀AI」") }
+            toast("在列表里找「糯叽」→ 打开开关")
+        }.onFailure { toast("跳转失败，请到 系统设置 → 无障碍 里找「糯叽」") }
     }
 
     private fun askStorage() {
@@ -248,9 +294,9 @@ class ControlActivity : BaseActivity() {
         AlertDialog.Builder(this)
             .setTitle("三条路，任选一条")
             .setMessage(
-                "1. 免 Root（推荐）：系统的「无障碍」里打开「灵犀AI」。能看屏幕、能点按输入，绝大多数任务都够用。\n\n" +
-                        "2. Root：手机已经 root 过，灵犀可以直接下指令，动作更快更稳。\n\n" +
-                        "3. Shizuku：没 root 但装了 Shizuku 并在运行，且给灵犀授过权。\n\n" +
+                "1. 免 Root（推荐）：系统的「无障碍」里打开「糯叽」。能看屏幕、能点按输入，绝大多数任务都够用。\n\n" +
+                        "2. Root：手机已经 root 过，糯叽可以直接下指令，动作更快更稳。\n\n" +
+                        "3. Shizuku：没 root 但装了 Shizuku 并在运行，且给糯叽授过权。\n\n" +
                         "在 更多操控设置 里可以指定优先走哪条；走不通会自动退回能用的一条。"
             )
             .setNeutralButton("更多操控设置") { _, _ ->
@@ -297,10 +343,24 @@ class ControlActivity : BaseActivity() {
     }
 
     private fun hand(q: Quick) {
+        if (q.ask.isNotBlank()) {
+            askText(q.ask, q.askHint, "把内容写在这里") { content ->
+                if (content.isBlank()) {
+                    toast("没内容就先不做了")
+                    return@askText
+                }
+                hand(q, content)
+            }
+            return
+        }
+        hand(q, "")
+    }
+
+    private fun hand(q: Quick, content: String) {
         if (store.getActiveModel() == null) {
             AlertDialog.Builder(this)
                 .setTitle("还没配模型")
-                .setMessage("灵犀要先把一个云端模型配好才办事。现在去配吗？")
+                .setMessage("糯叽要先把一个云端模型配好才办事。现在去配吗？")
                 .setPositiveButton("去配置") { _, _ ->
                     startActivity(Intent(this, SettingsActivity::class.java))
                     animateForward()
@@ -317,11 +377,11 @@ class ControlActivity : BaseActivity() {
                     store.controlMode = "front"
                     if (controller.accessibilityEnabled()) {
                         store.controlEnabled = true
-                        startTask(q.task)
+                        startTask(q.task + content)
                     } else {
                         refresh()
                         openAccessibility()
-                        toast("先在系统无障碍里打开「灵犀AI」，回来再点一次")
+                        toast("先在系统无障碍里打开「糯叽」，回来再点一次")
                     }
                 }
                 .setNegativeButton("算了", null)
@@ -338,7 +398,7 @@ class ControlActivity : BaseActivity() {
             return
         }
         store.controlEnabled = true
-        startTask(q.task)
+        startTask(q.task + content)
     }
 
     private fun startTask(task: String) {

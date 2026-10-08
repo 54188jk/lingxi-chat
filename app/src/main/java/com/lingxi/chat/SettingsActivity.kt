@@ -263,9 +263,9 @@ class SettingsActivity : BaseActivity() {
                     android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
                 )
             }.onFailure {
-                toast("跳转失败，请到 系统设置 → 无障碍 → 已下载的服务 里找「灵犀AI」")
+                toast("跳转失败，请到 系统设置 → 无障碍 → 已下载的服务 里找「糯叽」")
             }
-            toast("在列表里选「灵犀AI」→ 打开开关并允许")
+            toast("在列表里选「糯叽」→ 打开开关并允许")
         }
 
         b.btnRequestShizuku.setOnClickListener {
@@ -330,9 +330,9 @@ class SettingsActivity : BaseActivity() {
     )
 
     private fun modeHint(mode: String): String = if (mode == "back") {
-        "后台模式：灵犀不读屏也不碰屏幕，只能拉起应用、打开链接或搜索、执行只读查询命令，你可以照常用手机。"
+        "后台模式：糯叽不读屏也不碰屏幕，只能拉起应用、打开链接或搜索、执行只读查询命令，你可以照常用手机。"
     } else {
-        "前台接管：灵犀读屏并替你看清、点按、输入，期间请尽量不要碰屏幕。"
+        "前台接管：糯叽读屏并替你看清、点按、输入，期间请尽量不要碰屏幕。"
     }
 
     private fun refreshModels() {
@@ -668,7 +668,7 @@ class SettingsActivity : BaseActivity() {
             .setTitle("需要「所有文件访问」权限")
             .setMessage(
                 "要在内部储存根目录建「历史记录」文件夹，系统要求授予这个权限。\n\n" +
-                        "它只用来存放下载的安装包，灵犀AI 不会读取或上传你其他文件。"
+                        "它只用来存放下载的安装包，糯叽不会读取或上传你其他文件。"
             )
             .setPositiveButton("去授权") { _, _ ->
                 com.lingxi.chat.data.HistoryStore.openRootPermissionSettings(this)

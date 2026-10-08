@@ -173,12 +173,19 @@ class MainActivity : BaseActivity() {
         }
 
     /** 从文件页或操控台带过来的任务草稿 */
+    /** 文件页 / 操控台交回来的草稿：要动手的先点亮操控开关，免得发出去变成普通聊天 */
     private fun applyPrefill(i: Intent?) {
         val text = i?.getStringExtra("prefill_text") ?: return
         if (text.isBlank()) return
+        val asTask = i.getBooleanExtra("prefill_control", false)
+        if (asTask && !enableControlMode()) {
+            i.removeExtra("prefill_text")
+            return
+        }
         b.etInput.setText(text)
         b.etInput.setSelection(text.length)
         b.etInput.requestFocus()
+        if (asTask) toast("发出去我就照这句话去做")
         i.removeExtra("prefill_text")
     }
 
@@ -378,7 +385,7 @@ class MainActivity : BaseActivity() {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("v${item.version} 已下载，还没安装")
             .setMessage(
-                "它存在「${item.displayPath}」里（灵犀AI-${item.version}.apk），不影响现在的使用。\n\n" +
+                "它存在「${item.displayPath}」里（文件名 ${item.name}），不影响现在的使用。\n\n" +
                         "· 想现在换版本：点「立即安装」\n" +
                         "· 不想动：这个提示以后不再出现，你可以随时去 设置 → 历史安装包 里安装"
             )
@@ -1079,7 +1086,7 @@ class MainActivity : BaseActivity() {
                         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val sb = StringBuilder()
                         session.messages.forEach { m ->
-                            sb.append(if (m.role == "user") "我：" else "灵犀AI：").append(m.content).append("\n\n")
+                            sb.append(if (m.role == "user") "我：" else "糯叽：").append(m.content).append("\n\n")
                         }
                         cm.setPrimaryClip(ClipData.newPlainText("session", sb.toString()))
                         toast("已复制全文")
@@ -1092,10 +1099,10 @@ class MainActivity : BaseActivity() {
     private fun buildMarkdownExport(): String {
         val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val sb = StringBuilder()
-        sb.append("# ${session.title.ifBlank { "灵犀AI 会话" }}\n\n")
+        sb.append("# ${session.title.ifBlank { "糯叽会话" }}\n\n")
         sb.append("> 导出时间 ${fmt.format(Date())} · 共 ${session.messages.size} 条\n\n")
         session.messages.forEach { m ->
-            val who = if (m.role == "user") "用户" else "灵犀AI"
+            val who = if (m.role == "user") "用户" else "糯叽"
             sb.append("**$who**：${m.content}\n\n---\n\n")
         }
         return sb.toString()
@@ -1105,7 +1112,7 @@ class MainActivity : BaseActivity() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
-            putExtra(Intent.EXTRA_TITLE, session.title.ifBlank { "灵犀AI 会话" })
+            putExtra(Intent.EXTRA_TITLE, session.title.ifBlank { "糯叽会话" })
         }
         startActivity(Intent.createChooser(intent, "导出会话"))
     }
@@ -1144,7 +1151,7 @@ class MainActivity : BaseActivity() {
                 setPadding(dp(18), dp(18), dp(18), dp(18))
             }
             container.addView(android.widget.TextView(this).apply {
-                text = session.title.ifBlank { "灵犀AI 会话" }
+                text = session.title.ifBlank { "糯叽会话" }
                 textSize = 17f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setTextColor(primary)
@@ -1157,7 +1164,7 @@ class MainActivity : BaseActivity() {
             })
             session.messages.forEach { m ->
                 container.addView(android.widget.TextView(this).apply {
-                    text = (if (m.role == "user") "我：\n" else "灵犀AI：\n") + m.content
+                    text = (if (m.role == "user") "我：\n" else "糯叽：\n") + m.content
                     textSize = 13f
                     setTextColor(primary)
                     setLineSpacing(dp(3).toFloat(), 1f)
@@ -1477,7 +1484,7 @@ class MainActivity : BaseActivity() {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("还没有可用的模型配置")
                 .setMessage(
-                    "灵犀AI 需要一个能对话的大模型才能回答。\n\n" +
+                    "糯叽需要一个能对话的大模型才能回答。\n\n" +
                             "· 手上有 Key：去 设置 → 模型配置 添加\n" +
                             "· 还没有 Key：用「获取免费模型网址」，注册后复制一个就能填"
                 )

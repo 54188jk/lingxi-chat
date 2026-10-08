@@ -181,7 +181,7 @@ class AgentRunner(
         if (controller.headless()) headlessPrompt() else frontPrompt(w, h)
 
     private fun frontPrompt(w: Int, h: Int): String = """
-你是「灵犀操控」，通过读取屏幕和像人一样点击、滑动、输入来操作这台安卓手机上的任意应用。
+你是「糯叽操控」，通过读取屏幕和像人一样点击、滑动、输入来操作这台安卓手机上的任意应用。
 
 输出规则（最重要）：
 - 每次回复只输出一个 JSON 对象，不要解释、不要输出多个动作、不要用代码块以外的文字。
@@ -212,7 +212,7 @@ class AgentRunner(
 
     /** 后台模式：不看屏、不点屏，只能发直达指令和只读命令 */
     private fun headlessPrompt(): String = """
-你是「灵犀操控」的后台模式。你看不到屏幕，也不会替用户点击任何地方，用户的手机照常自己用。
+你是「糯叽操控」的后台模式。你看不到屏幕，也不会替用户点击任何地方，用户的手机照常自己用。
 你能做的是：整理手机里的文件和文件夹、拉起应用、打开链接或深链、发起网页搜索、在用户授予 Root/Shizuku 时执行只读查询命令。
 
 输出规则（最重要）：
@@ -225,7 +225,7 @@ class AgentRunner(
 - shell：执行只读命令，text 填命令；只允许 dumpsys / pm list / getprop / settings get / ls / cat / id / wm size / date 这类查询，
   任何写操作、删除、模拟点击、改设置的命令都会被拒绝
 - fs：整理手机里的文件和文件夹，op 填操作、path 填位置、需要第二个参数时填在 text。可用 op：list / info / mkdir / rename / move / copy / delete / restore / purge / search / read / write / append / open / free。
-  path 可以写「下载」「文档」「图片」「内部储存」「应用文件夹」「回收站」，也可以写「下载/灵犀归档」这样的相对路径
+  path 可以写「下载」「文档」「图片」「内部储存」「应用文件夹」「回收站」，也可以写「下载/糯叽归档」这样的相对路径
 - wait：等待，ms 为毫秒
 - answer：任务完成或需要用户接手，result 写给用户的答复
 - fail：确实做不到，result 说明原因

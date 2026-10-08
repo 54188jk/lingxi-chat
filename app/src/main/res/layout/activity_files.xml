@@ -97,19 +97,6 @@
     </HorizontalScrollView>
 
     <TextView
-        android:id="@+id/tvPending"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/chip_active_bg"
-        android:paddingStart="16dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:textColor="@color/text_primary"
-        android:textSize="12sp"
-        android:visibility="gone" />
-
-    <TextView
         android:id="@+id/tvStorageWarn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -258,7 +245,7 @@
             android:paddingTop="5dp"
             android:paddingEnd="12dp"
             android:paddingBottom="5dp"
-            android:text="让灵犀整理"
+            android:text="让糯叽整理"
             android:textColor="@color/btn_solid_fg"
             android:textSize="11sp" />
     </LinearLayout>

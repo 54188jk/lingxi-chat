@@ -28,13 +28,21 @@ object UpdateChecker {
     /**
      * Gitee 上按约定命名的下载直链（免 Token，国内直连最快，用作下载首选源）。
      *
-     * 注意：正式签名版资产名带 `-release` 后缀（灵犀AI-v1.161-release.apk），
+     * 注意：正式签名版资产名带 `-release` 后缀（糯叽-v1.161-release.apk），
      * 与 GitHub 上的 lingxi-vX.apk 命名不同，所以这里必须用 Gitee 的命名规则。
      * 拿不到确切资产名时（Gitee API 没返回）才会退化到按约定拼接。
      */
-    fun giteeDownloadUrl(version: String): String =
+    fun giteeDownloadUrl(version: String): String = giteeAssetUrl(version, "糯叽")
+
+    /**
+     * 改名（灵犀AI → 糯叽）之前发布的版本，附件名用的还是旧前缀；
+     * 拿不准是哪个版本时，两条名字都作为候选线路给出，不会因为改名下不到包。
+     */
+    fun giteeDownloadUrlLegacy(version: String): String = giteeAssetUrl(version, "灵犀AI")
+
+    private fun giteeAssetUrl(version: String, prefix: String): String =
         "https://gitee.com/wuzhuf/lingxi-chat/releases/download/v$version/" +
-                java.net.URLEncoder.encode("灵犀AI-v$version-release.apk", "UTF-8").replace("+", "%20")
+                java.net.URLEncoder.encode("$prefix-v$version-release.apk", "UTF-8").replace("+", "%20")
 
     private const val GITHUB = 0
     private const val GITEE = 1

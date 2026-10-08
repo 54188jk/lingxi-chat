@@ -141,7 +141,13 @@ object UpdateUi {
         val direct = giteeUrl.ifBlank {
             if (version.isNotBlank()) com.lingxi.chat.net.UpdateChecker.giteeDownloadUrl(version) else ""
         }
-        if (direct.isNotBlank()) list.add(direct to "推荐线路")
+        if (direct.isNotBlank()) {
+            list.add(direct to "推荐线路")
+            // 改名之前发布的那些版本，附件用的还是旧文件名，一起作为候选，别因为改了名下不到包
+            if (version.isNotBlank()) {
+                list.add(com.lingxi.chat.net.UpdateChecker.giteeDownloadUrlLegacy(version) to "老版本线路")
+            }
+        }
         list.add(("https://ghfast.top/$url") to "备用线路 1")
         list.add(("https://gh-proxy.com/$url") to "备用线路 2")
         list.add(("https://ghproxy.net/$url") to "备用线路 3")
@@ -543,7 +549,7 @@ object UpdateUi {
             androidx.appcompat.app.AlertDialog.Builder(activity)
                 .setTitle("这是历史版本 v${info.version}")
                 .setMessage(
-                    "你当前已是更新版本，安装旧版需要先卸载「灵犀AI」，" +
+                    "你当前已是更新版本，安装旧版需要先卸载「糯叽」，" +
                             "卸载会一并清空本机的会话记录和模型配置。\n\n" +
                             "确定要安装 v${info.version} 吗？"
                 )
@@ -730,7 +736,7 @@ object UpdateUi {
         androidx.appcompat.app.AlertDialog.Builder(activity)
             .setTitle("v$version 已下载，还没安装")
             .setMessage(
-                "安装包已存到「$where」，文件名 灵犀AI-v$version.apk。\n\n" +
+                "安装包已存到「$where」，文件名 糯叽-v$version.apk。\n\n" +
                         "· 现在就想换版本：点「立即安装」\n" +
                         "· 暂时不装：它一直留在那个文件夹里，之后从 设置 → 历史安装包 里点一下就能装\n" +
                         "· 也可以在文件管理器打开这个文件夹，点文件自己安装\n" +
@@ -758,7 +764,7 @@ object UpdateUi {
         ) {
             androidx.appcompat.app.AlertDialog.Builder(activity)
                 .setTitle("需要安装权限")
-                .setMessage("新版本已下载完成（${"%.1f".format(Locale.US, apk.length() / 1024.0 / 1024.0)} MB）。\n\n请在下一页允许「灵犀AI」安装应用，返回后将自动继续安装。")
+                .setMessage("新版本已下载完成（${"%.1f".format(Locale.US, apk.length() / 1024.0 / 1024.0)} MB）。\n\n请在下一页允许「糯叽」安装应用，返回后将自动继续安装。")
                 .setPositiveButton("去授权") { _, _ ->
                     try {
                         pendingApk = apk

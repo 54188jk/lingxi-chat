@@ -105,7 +105,7 @@ object HistoryStore {
     fun save(context: Context, src: File, version: String): Saved? {
         val ver = version
         if (!src.exists()) return null
-        val name = "灵犀AI-v$version.apk"
+        val name = "糯叽-v$version.apk"
         val store = ConfigStore(context)
         val rootFirst = store.archiveLocation != "download"
         val saved = if (rootFirst) {
@@ -169,6 +169,11 @@ object HistoryStore {
     /** 一条归档记录：文件或 MediaStore Uri 二者其一可用即可安装 */
     class Item(val version: String, val file: File?, val uri: Uri?, val displayPath: String) {
 
+        /** 归档时的真实文件名；媒体库那条拿不到文件，就按现在的命名规则推 */
+        val name: String
+            get() = file?.name ?: "糯叽-v$version.apk"
+
+
         fun installableFile(context: Context): File? =
             Saved(displayPath, file, uri, version).installableFile(context)
 
@@ -195,8 +200,9 @@ object HistoryStore {
         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "内部储存/下载/$FOLDER"
         else "应用文件夹/$FOLDER（授予存储权限后改为内部储存/$FOLDER）"
 
+    /** 改名（灵犀AI → 糯叽）之前存下的安装包，文件名还是旧前缀，两种都要认 */
     private fun versionOf(name: String): String =
-        name.removePrefix("灵犀AI-v").removeSuffix(".apk")
+        name.removePrefix("糯叽-v").removePrefix("灵犀AI-v").removeSuffix(".apk")
 
     /** 已归档的安装包，按版本名从新到旧 */
     fun list(context: Context): List<Item> {

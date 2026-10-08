@@ -197,7 +197,7 @@ class AgentService : Service() {
             Notification.Builder(this)
         }
         return builder
-            .setContentTitle(if (back) "灵犀在后台执行任务" else "灵犀正在操作手机")
+            .setContentTitle(if (back) "糯叽在后台执行任务" else "糯叽正在操作手机")
             .setContentText(
                 if (back) task.take(60) else "${task.take(50)} · 请暂时不要触屏"
             )

@@ -35,9 +35,7 @@ class FilesActivity : BaseActivity() {
     private var path = "内部储存"
     private var nodes: List<FileOps.Node> = emptyList()
     private var filter = ""
-    private var pending: Pending? = null
 
-    private class Pending(val op: String, val node: FileOps.Node)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +45,15 @@ class FilesActivity : BaseActivity() {
         b.rvFiles.layoutManager = LinearLayoutManager(this)
         b.rvFiles.adapter = adapter
         b.btnBack.setOnClickListener { finish() }
-        b.btnNewFolder.setOnClickListener { askNewFolder(path) }
+        b.btnNewFolder.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("在这里新建")
+                .setItems(arrayOf("文件夹", "文本文件")) { _, which ->
+                    if (which == 0) askNewFolder(path) else askNewTextFile(path)
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
         b.btnEmptyAction.setOnClickListener { askNewFolder(path) }
         b.btnSort.setOnClickListener {
             store.fileSort = (store.fileSort + 1) % 3
@@ -75,7 +81,6 @@ class FilesActivity : BaseActivity() {
             go("内部储存")
             true
         }
-        b.tvPending.setOnClickListener { clearPending() }
         b.tvStorageWarn.setOnClickListener { askStoragePermission() }
 
         buildPlaces()
@@ -191,9 +196,8 @@ class FilesActivity : BaseActivity() {
             val can = withContext(Dispatchers.IO) { FileOps.canUseStorage(this@FilesActivity) }
             b.tvStorageWarn.visibility = if (can) View.GONE else View.VISIBLE
             if (!can) {
-                b.tvStorageWarn.text = "还没给存储权限，现在只能整理灵犀自己的文件夹。点这里去开启（开启后才能整理下载、文档这些位置）"
+                b.tvStorageWarn.text = "还没给存储权限，现在只能整理糯叽自己的文件夹。点这里去开启（开启后才能整理下载、文档这些位置）"
             }
-            drawPending()
         }
     }
 
@@ -204,7 +208,7 @@ class FilesActivity : BaseActivity() {
         val items = when {
             n.isDir && trash -> arrayOf("打开", "还原到原来的位置", "彻底删除", "在里面新建文件夹", "属性")
             trash -> arrayOf("还原到原来的位置", "彻底删除", "属性")
-            n.isDir -> arrayOf("打开", "在里面新建文件夹", "重命名", "复制到…", "移动到…", "删除（放进回收站）", "属性")
+            n.isDir -> arrayOf("打开", "在里面新建文件夹", "在里面新建文本文件", "重命名", "复制到…", "移动到…", "删除（放进回收站）", "属性")
             FileOps.looksLikeText(n.name) -> arrayOf("打开", "看内容", "重命名", "复制到…", "移动到…", "删除（放进回收站）", "属性")
             else -> arrayOf("打开", "重命名", "复制到…", "移动到…", "删除（放进回收站）", "属性")
         }
@@ -217,10 +221,11 @@ class FilesActivity : BaseActivity() {
                     pick.startsWith("看内容") -> showText(n)
                     pick.startsWith("还原") -> run("还原") { FileOps.restore(this, n.path) }
                     pick.startsWith("彻底删除") -> confirmPurge(n)
-                    pick.startsWith("在里面新建") -> askNewFolder(n.path)
+                    pick.startsWith("在里面新建文件夹") -> askNewFolder(n.path)
+                    pick.startsWith("在里面新建文本文件") -> askNewTextFile(n.path)
                     pick.startsWith("重命名") -> askRename(n)
-                    pick.startsWith("复制到") -> setPending("copy", n)
-                    pick.startsWith("移动到") -> setPending("move", n)
+                    pick.startsWith("复制到") -> pickTarget("复制", n) { to -> run("复制") { FileOps.copy(this, n.path, to) } }
+                    pick.startsWith("移动到") -> pickTarget("挪到", n) { to -> run("挪走") { FileOps.move(this, n.path, to) } }
                     pick.startsWith("删除") -> confirmDelete(n)
                     pick.startsWith("属性") -> AlertDialog.Builder(this)
                         .setTitle(n.name)
@@ -321,37 +326,51 @@ class FilesActivity : BaseActivity() {
         go(up.path)
     }
 
-    // ---------------- 复制 / 移动的暂存 ----------------
-
-    private fun setPending(op: String, n: FileOps.Node) {
-        pending = Pending(op, n)
-        drawPending()
-        toast(if (op == "copy") "好，先记住要复制「${n.name}」。进去哪个文件夹，点下面那条横条就能落地。" else "好，先记住要挪走「${n.name}」。进目标文件夹后点下面那条横条。")
-    }
-
-    private fun clearPending() {
-        pending = null
-        drawPending()
-    }
-
-    private fun drawPending() {
-        val p = pending
-        if (p == null) {
-            b.tvPending.visibility = View.GONE
-            return
-        }
-        val here = FileOps.resolve(this, path).file
-        b.tvPending.visibility = View.VISIBLE
-        b.tvPending.text = (if (p.op == "copy") "准备复制" else "准备挪走") + "：${p.node.name} → 到这里\n（点我可以取消；换个文件夹再点就是换个去处）"
-        b.tvPending.setOnClickListener {
-            if (here == null) {
-                toast("当前位置读不到，换一个文件夹再试")
-                return@setOnClickListener
+    /** 复制 / 挪走的去处选择：常用去处 + 当前位置 + 手动写路径 */
+    private fun pickTarget(verb: String, n: FileOps.Node, go: (String) -> Unit) {
+        val here = FileOps.resolve(this, path).file?.path ?: path
+        val places = FileOps.roots(this)
+        val labels = ArrayList<String>()
+        val targets = ArrayList<String>()
+        places.forEach { (name, dir) ->
+            if (dir.path == here) {
+                labels.add("当前所在位置（$name）")
+                targets.add(dir.path)
+            } else {
+                labels.add(name)
+                targets.add(dir.path)
             }
-            val done = if (p.op == "copy") FileOps.copy(this, p.node.path, path) else FileOps.move(this, p.node.path, path)
-            toast(done.note)
-            pending = null
-            refresh()
+        }
+        labels.add("手动写一个路径")
+        targets.add("")
+        AlertDialog.Builder(this)
+            .setTitle("把「${n.name}」${verb}到哪里")
+            .setItems(labels.toTypedArray()) { _, which ->
+                val t = targets[which]
+                if (t.isBlank()) {
+                    askText("写到哪个位置", "可以填「下载/归档」这样的路径，也可以填完整路径", "目标文件夹") { input ->
+                        if (input.isBlank()) {
+                            toast("路径没填")
+                            return@askText
+                        }
+                        go(input)
+                    }
+                } else {
+                    go(t)
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun askNewTextFile(inPath: String) {
+        askText("新建文本文件", "会建在：${FileOps.display(FileOps.resolve(this, inPath).file?.path ?: inPath)}", "文件名，比如 说明.txt") { name ->
+            if (name.isBlank()) {
+                toast("文件名没填")
+                return@askText
+            }
+            val file = FileOps.child(this, inPath, if (name.contains('.')) name else "$name.txt")
+            run("新建文本文件") { FileOps.writeText(this, file, "", false) }
         }
     }
 
@@ -388,7 +407,7 @@ class FilesActivity : BaseActivity() {
         }
     }
 
-    // ---------------- 交给灵犀 ----------------
+    // ---------------- 交给糯叽 ----------------
 
     private fun handToAgent() {
         val here = FileOps.resolve(this, path).file?.path ?: path
@@ -396,6 +415,7 @@ class FilesActivity : BaseActivity() {
                 "先列出你打算怎么安排，再动手。"
         val i = Intent(this, MainActivity::class.java)
         i.putExtra("prefill_text", draft)
+        i.putExtra("prefill_control", true)
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         startActivity(i)
         finish()
@@ -420,24 +440,4 @@ class FilesActivity : BaseActivity() {
         }
     }
 
-    private fun askText(title: String, hint: String, label: String, onOk: (String) -> Unit) {
-        val density = resources.displayMetrics.density
-        val box = FrameLayout(this)
-        val input = EditText(this).apply {
-            setHint(hint)
-            textSize = 13f
-            setPadding((12 * density).toInt(), (10 * density).toInt(), (12 * density).toInt(), (10 * density).toInt())
-            setBackgroundResource(R.drawable.bg_input_bar)
-            setSingleLine()
-        }
-        val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        lp.setMargins((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (4 * density).toInt())
-        box.addView(input, lp)
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setView(box)
-            .setPositiveButton("好", { _, _ -> onOk(input.text.toString().trim()) })
-            .setNegativeButton("取消", null)
-            .show()
-    }
 }

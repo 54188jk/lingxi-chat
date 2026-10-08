@@ -36,6 +36,35 @@ abstract class BaseActivity : AppCompatActivity() {
             contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) > 0.01f
 
+
+    /** 一行输入框的弹窗：名字、说明、确认后回调 */
+    protected fun askText(title: String, note: String, inputHint: String, onOk: (String) -> Unit) {
+        val density = resources.displayMetrics.density
+        val box = android.widget.FrameLayout(this)
+        val input = android.widget.EditText(this).apply {
+            setHint(inputHint)
+            textSize = 13f
+            setPadding(
+                (12 * density).toInt(), (10 * density).toInt(),
+                (12 * density).toInt(), (10 * density).toInt()
+            )
+            setBackgroundResource(R.drawable.bg_input_bar)
+        }
+        val lp = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+        lp.setMargins((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (4 * density).toInt())
+        box.addView(input, lp)
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(title)
+            .apply { if (note.isNotBlank()) setMessage(note) }
+            .setView(box)
+            .setPositiveButton("好") { _, _ -> onOk(input.text.toString().trim()) }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
     protected fun animateForward() {
         if (!animationsEnabled()) return
         overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left)

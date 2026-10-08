@@ -31,7 +31,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
-                    android:contentDescription="灵犀AI"
+                    android:contentDescription="糯叽"
                     android:scaleType="fitCenter"
                     android:src="@mipmap/ic_launcher" />
             </FrameLayout>

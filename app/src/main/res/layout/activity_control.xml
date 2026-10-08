@@ -107,7 +107,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="开启后灵犀能看见屏幕并替你点按"
+                            android:text="开启后糯叽能看见屏幕并替你点按"
                             android:textColor="@color/text_secondary"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -227,6 +227,27 @@
                         android:textColor="@color/btn_outline_fg"
                         android:textSize="12sp" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvBatteryState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/btnBattery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_btn_white"
+                    android:gravity="center"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:text="让它别被系统打断"
+                    android:textColor="@color/btn_outline_fg"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <!-- 怎么干活 -->
@@ -354,7 +375,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="允许灵犀整理文件和文件夹"
+                            android:text="允许糯叽整理文件和文件夹"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp" />
 

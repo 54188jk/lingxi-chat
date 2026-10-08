@@ -14,7 +14,7 @@ import java.util.Locale
  * 文件与文件夹操作：AI 的文件动作和「文件与文件夹」页面共用这一套。
  *
  * 三条硬规矩：
- * 1. 只能在内部储存和灵犀自己的目录里活动，路径先过 [resolve]，`../` 这类越界写法当场挡掉；
+ * 1. 只能在内部储存和糯叽自己的目录里活动，路径先过 [resolve]，`../` 这类越界写法当场挡掉；
  * 2. 删除一律先进回收站（内部储存/.回收站），不直接抹掉，用户随时能还原；
  * 3. 每个操作都回「成没成 + 给用户看的一句话」，上层不用猜。
  */
@@ -78,7 +78,7 @@ object FileOps {
             list.add("蓝牙接收" to File(ext, "Bluetooth"))
             list.add("回收站" to File(ext, TRASH))
         }
-        list.add("灵犀文件夹" to appRoot(context))
+        list.add("糯叽文件夹" to appRoot(context))
         return list.filter { it.second.isDirectory || it.second.mkdirs() }
     }
 
@@ -113,7 +113,7 @@ object FileOps {
         val inside = allowedRoots(context).any {
             canonical.path == it.path || canonical.path.startsWith(it.path + File.separator)
         }
-        return if (!inside) Where(null, "只能动内部储存和灵犀自己目录里的东西：${display(canonical.path)}")
+        return if (!inside) Where(null, "只能动内部储存和糯叽自己目录里的东西：${display(canonical.path)}")
         else Where(canonical, "")
     }
 
@@ -271,7 +271,7 @@ object FileOps {
         return if (total <= 0) "容量读不到" else "还剩 ${sizeText(free)}（共 ${sizeText(total)}）"
     }
 
-    /** 能不能直接动内部储存；拿不到就只能待在灵犀自己的文件夹里 */
+    /** 能不能直接动内部储存；拿不到就只能待在糯叽自己的文件夹里 */
     fun canUseStorage(context: Context): Boolean {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             return Environment.isExternalStorageManager()

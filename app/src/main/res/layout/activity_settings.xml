@@ -283,7 +283,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
             android:lineSpacingMultiplier="1.4"
-            android:text="不开这个功能也完全不影响聊天。开启后，你在聊天页说一句话，灵犀就能替你操作手机。
+            android:text="不开这个功能也完全不影响聊天。开启后，你在聊天页说一句话，糯叽就能替你操作手机。
 · 前台：读屏并替你点按、滑动、输入，操作时请先别碰屏幕
 · 后台：不读屏也不碰屏幕，只发指令（打开应用、打开链接、查信息），你可以照常玩手机
 · 通道：默认用系统无障碍，免 root；装了 Root 或 Shizuku 可以在下面换
@@ -321,7 +321,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp"
-                android:text="前台接管：灵犀读屏并替你看清、点按、输入，期间请尽量不要碰屏幕。"
+                android:text="前台接管：糯叽读屏并替你看清、点按、输入，期间请尽量不要碰屏幕。"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
@@ -474,7 +474,7 @@
                 android:background="@drawable/bg_btn_white"
                 android:backgroundTint="@null"
                 android:gravity="center"
-                android:text="去系统无障碍里开启灵犀AI"
+                android:text="去系统无障碍里开启糯叽"
                 android:textAllCaps="false"
                 android:textColor="@color/btn_outline_fg" />
 
@@ -741,7 +741,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="灵犀AI"
+                    android:text="糯叽"
                     android:textColor="@color/text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
