@@ -1,4 +1,4 @@
-﻿# 灵犀AI（LingxiChat）
+# 灵犀AI（LingxiChat）
 
 > Android 端 AI 对话助手 · 兼容 OpenAI 格式的任意云端大模型 · 免 Token · 无广告
 
