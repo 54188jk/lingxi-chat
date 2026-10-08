@@ -112,7 +112,17 @@ class AgentService : Service() {
             AgentBus.publish("已收到急停，正在结束当前步骤…")
             return START_NOT_STICKY
         }
-        val task = intent?.getStringExtra(EXTRA_TASK) ?: return START_NOT_STICKY
+        val task = intent?.getStringExtra(EXTRA_TASK)
+        if (task.isNullOrBlank()) {
+            // 系统回收后 START_STICKY 会用空 Intent 重建：没有任务内容就别再假装在跑
+            if (AgentBus.running) AgentBus.finish("任务已被系统中断，请重新发送。")
+            stopForeground(true)
+            return START_NOT_STICKY
+        }
+        if (runner != null || AgentBus.running) {
+            AgentBus.publish("上一条任务还没结束，这条没启动。可以先点发送键急停。")
+            return START_NOT_STICKY
+        }
         val store = ConfigStore(this)
         val back = store.controlMode == "back"
         startForeground(NOTIFY_ID, buildNotification(task, back))
@@ -138,8 +148,11 @@ class AgentService : Service() {
                 r.run(task, cfg) { index, action, note -> AgentBus.step(index, action, note) }
             }
             val result = out.getOrElse { e ->
-                if (e is kotlinx.coroutines.CancellationException) "任务被取消。"
-                else "任务异常中断：${e.message}"
+                when (e) {
+                    is kotlinx.coroutines.CancellationException -> "任务被取消。"
+                    is AgentRunner.ModelCallFailed -> "模型没连上：${e.message}\n任务已停止，修好模型配置再重试。"
+                    else -> "任务异常中断：${e.message}"
+                }
             }
             AgentBus.finish(result)
             runner = null

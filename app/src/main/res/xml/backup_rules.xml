@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 以下：本机的 API Key 和聊天记录都不允许随系统备份外传 -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="lingxi_config.xml" />
+    <exclude domain="file" path="sessions/" />
+    <exclude domain="file" path="no_backup/" />
+    <exclude domain="external" path="Android/data/com.lingxi.chat/files/历史记录/" />
+    <exclude domain="external" path="Android/data/com.lingxi.chat/files/exports/" />
+</full-backup-content>

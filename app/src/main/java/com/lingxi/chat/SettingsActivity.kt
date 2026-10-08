@@ -96,6 +96,10 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "回车将直接发送" else "回车改为换行")
         }
 
+        b.btnFreeModel.setOnClickListener {
+            startActivity(android.content.Intent(this, FreeModelActivity::class.java))
+        }
+
         b.btnHistoryVersion.setOnClickListener {
             VersionsUi.open(this, BuildConfig.VERSION_NAME)
         }
@@ -153,6 +157,15 @@ class SettingsActivity : BaseActivity() {
         refreshModels()
         refreshRoles()
         setupControl()
+
+        // 从免费模型引导页过来时，一般就是来粘 Key 的，别让人再翻一遍
+        if (intent.getStringExtra("paste_key_for") == "vsllm") {
+            val target = store.loadModels().firstOrNull { it.baseUrl.contains("vsllm.cc") }
+            if (target != null) {
+                b.rvModels.scrollToPosition(0)
+                editModel(target)
+            }
+        }
 
         b.tvVersion.text = "当前版本 v${BuildConfig.VERSION_NAME}"
         b.btnCheckUpdate.setOnClickListener {
@@ -495,7 +508,6 @@ class SettingsActivity : BaseActivity() {
             .show()
     }
 
-    private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
     // ---------------- 会话备份 / 恢复 ----------------
 
@@ -538,6 +550,8 @@ class SettingsActivity : BaseActivity() {
         try {
             val n = sessionStore.importAll(raw, merge)
             refreshBackupInfo()
+            // 聊天页内存里还握着导入前的会话，标记一下让它回来时重新加载，否则会被旧内容盖掉
+            store.sessionsReloadPending = true
             toast("已恢复 $n 个会话")
         } catch (e: Exception) {
             toast("恢复失败：文件格式不正确")
@@ -576,21 +590,32 @@ class SettingsActivity : BaseActivity() {
                 .show()
             return
         }
-        val labels = items.map { it.displayVersion(this) }.toTypedArray()
+        val labels = items.map { item ->
+            val state = if (item.version == BuildConfig.VERSION_NAME) "已安装" else "未安装"
+            "v${item.version}　$state\n${item.displayVersion(this)}"
+        }.toTypedArray()
         AlertDialog.Builder(this)
-            .setTitle("已存安装包")
+            .setTitle("已存安装包（共 ${items.size} 个）")
             .setItems(labels) { _, which -> askArchiveAction(items[which]) }
             .setNegativeButton("关闭", null)
             .show()
     }
 
     private fun askArchiveAction(item: com.lingxi.chat.data.HistoryStore.Item) {
+        val installed = item.version == BuildConfig.VERSION_NAME
         AlertDialog.Builder(this)
-            .setTitle("v${item.version}")
-            .setMessage("位置：${item.displayPath}\n\n可以马上安装这个版本，或把这份存档删掉。")
-            .setPositiveButton("安装") { _, _ -> installArchive(item) }
+            .setTitle("v${item.version}" + if (installed) "（当前版本）" else "")
+            .setMessage(
+                "位置：${item.displayPath}\n\n" +
+                        if (installed) "本机正在用这个版本，存档只是留个底，删掉不影响使用。"
+                        else "下载后没有自动安装，就是这个版本。现在装就点「立即安装」，不装它继续留在文件夹里。"
+            )
+            .setPositiveButton(if (installed) "仍然重装一次" else "立即安装") { _, _ ->
+                UpdateUi.installFromHistory(this, item)
+            }
             .setNeutralButton("删除存档") { _, _ ->
                 if (com.lingxi.chat.data.HistoryStore.delete(this, item)) {
+                    if (store.pendingInstallVersion == item.version) store.pendingInstallVersion = ""
                     toast("已删除 v${item.version} 的存档")
                     refreshArchiveInfo()
                 } else {
@@ -599,41 +624,6 @@ class SettingsActivity : BaseActivity() {
             }
             .setNegativeButton("取消", null)
             .show()
-    }
-
-    private fun installArchive(item: com.lingxi.chat.data.HistoryStore.Item) {
-        // MediaStore 里的存档直接交给安装器会被部分系统拒收，先复制回缓存目录再走 FileProvider
-        val apk = item.file ?: copyArchiveToCache(item)
-        if (apk == null || !apk.exists()) {
-            toast("安装包读不到了，请重新下载一次")
-            return
-        }
-        try {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                this, "com.lingxi.chat.fileprovider", apk
-            )
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-        } catch (e: Exception) {
-            toast("无法调起安装：${e.message}")
-        }
-    }
-
-    private fun copyArchiveToCache(item: com.lingxi.chat.data.HistoryStore.Item): java.io.File? {
-        val u = item.uri ?: return null
-        return try {
-            val dir = java.io.File(cacheDir, "updates").apply { mkdirs() }
-            val dst = java.io.File(dir, "lingxi-v${item.version}.apk")
-            contentResolver.openInputStream(u)?.use { input ->
-                java.io.FileOutputStream(dst).use { out -> input.copyTo(out) }
-            } ?: return null
-            dst
-        } catch (e: Exception) {
-            null
-        }
     }
 
     /** 让用户决定装到根目录还是下载目录 */

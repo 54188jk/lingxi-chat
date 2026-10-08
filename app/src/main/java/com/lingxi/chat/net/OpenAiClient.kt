@@ -28,7 +28,9 @@ class OpenAiClient {
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.MILLISECONDS)
+        // 流式响应不能设整体超时，但 90 秒收不到任何数据就是断了，
+        // 否则服务端悄悄挂掉时界面上的「思考中」会一直转
+        .readTimeout(90, TimeUnit.SECONDS)
         .build()
 
     @Volatile
@@ -69,13 +71,14 @@ class OpenAiClient {
                 call.execute().use { resp ->
                     if (!resp.isSuccessful) {
                         val errBody = resp.body?.string()?.take(500) ?: ""
-                        send(Event.Failed("请求失败 HTTP ${resp.code}：${parseErr(errBody)}"))
+                        send(Event.Failed(describeHttpError(resp.code, errBody)))
                         return@use
                     }
                     val source = resp.body?.source() ?: run {
-                        send(Event.Failed("响应体为空"))
+                        send(Event.Failed("响应体为空：这家服务商没有返回任何内容"))
                         return@use
                     }
+                    var gotAny = false
                     while (!source.exhausted()) {
                         val line = source.readUtf8Line() ?: continue
                         if (!line.startsWith("data:")) continue
@@ -89,7 +92,14 @@ class OpenAiClient {
                         } catch (_: Exception) {
                             null
                         }
-                        if (!delta.isNullOrEmpty()) send(Event.Delta(delta))
+                        if (!delta.isNullOrEmpty()) {
+                            gotAny = true
+                            send(Event.Delta(delta))
+                        }
+                    }
+                    if (!gotAny) {
+                        // 空回复直接说明白，否则界面上只剩一个空气泡，用户以为卡住了
+                        send(Event.Failed("模型没有返回内容，可能是这个模型名填错了、内容被安全策略拦下，或服务商暂时异常，换模型或稍后再试"))
                     }
                     send(Event.Done)
                 }
@@ -141,6 +151,21 @@ class OpenAiClient {
         }
         body.put("messages", arr)
         return body
+    }
+
+    /** 把常见 HTTP 错误码翻成一句普通人能照着做的话 */
+    private fun describeHttpError(code: Int, body: String): String {
+        val detail = parseErr(body)
+        val hint = when (code) {
+            400 -> "接口地址或参数不对：检查 Base URL 是否以 /v1 结尾、模型名是否填错"
+            401, 403 -> "API Key 不对或没有权限：到 设置 → 模型配置 里重新粘贴 Key"
+            404 -> "找不到这个模型或接口：Base URL 末尾一般要带 /v1，模型名要和服务商页面写的一致"
+            408 -> "服务商响应超时，稍后再试"
+            429 -> "被限流了（请求太频繁或额度用完）：等一会儿再试，或换一个有额度的模型"
+            in 500..599 -> "服务商自己出问题了（$code），不是本机设置错误，稍后再试"
+            else -> "服务商返回了错误（$code）"
+        }
+        return if (detail.isBlank()) hint else "$hint\n服务商原文：$detail"
     }
 
     private fun parseErr(body: String): String {

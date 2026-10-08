@@ -9,10 +9,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- 历史安装包归档：Android 10 及以下用存储权限，11+ 由用户授予「所有文件访问」 -->
+    <!-- 历史安装包归档：Android 10 及以下用存储权限（配合 requestLegacyExternalStorage），11+ 由用户授予「所有文件访问」 -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
+        android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- 操控需要枚举/拉起其他应用 -->
@@ -25,6 +25,9 @@
 
     <application
         android:allowBackup="true"
+        android:requestLegacyExternalStorage="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -43,6 +46,7 @@
 
         <activity android:name=".SessionsActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".FreeModelActivity" android:exported="false" />
 
         <!-- 告诉 Shizuku 本应用走 V3（binder）协议，因此不必声明 API_V23 旧权限 -->
         <meta-data

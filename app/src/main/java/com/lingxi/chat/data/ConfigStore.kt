@@ -34,14 +34,6 @@ class ConfigStore(context: Context) {
         sp.edit().putString(KEY_ACTIVE, id).apply()
     }
 
-    var searchProvider: String
-        get() = sp.getString(KEY_SEARCH_PROVIDER, "tavily") ?: "tavily"
-        set(v) = sp.edit().putString(KEY_SEARCH_PROVIDER, v).apply()
-
-    var searchKey: String
-        get() = sp.getString(KEY_SEARCH_KEY, "") ?: ""
-        set(v) = sp.edit().putString(KEY_SEARCH_KEY, v).apply()
-
     var searchEnabled: Boolean
         get() = sp.getBoolean(KEY_SEARCH_ON, false)
         set(v) = sp.edit().putBoolean(KEY_SEARCH_ON, v).apply()
@@ -118,6 +110,21 @@ class ConfigStore(context: Context) {
         get() = sp.getString(KEY_ARCHIVE_LOC, "ask") ?: "ask"
         set(v) = sp.edit().putString(KEY_ARCHIVE_LOC, v).apply()
 
+    /** 已下载但还没安装的版本，聊天页启动时据此提醒一次 */
+    var pendingInstallVersion: String
+        get() = sp.getString(KEY_ARCHIVE_PENDING, "") ?: ""
+        set(v) = sp.edit().putString(KEY_ARCHIVE_PENDING, v).apply()
+
+    /** 这个版本的「还没安装」提醒已经弹过一次，不再重复唠叨 */
+    var installReminderFor: String
+        get() = sp.getString(KEY_INSTALL_REMINDED, "") ?: ""
+        set(v) = sp.edit().putString(KEY_INSTALL_REMINDED, v).apply()
+
+    /** 刚在设置页恢复过备份：聊天页要按最新落盘内容重载当前会话，否则内存里的旧会话会盖掉导入结果 */
+    var sessionsReloadPending: Boolean
+        get() = sp.getBoolean(KEY_SESSIONS_RELOAD, false)
+        set(v) = sp.edit().putBoolean(KEY_SESSIONS_RELOAD, v).apply()
+
     /** 最近一次归档成功的路径，设置页要显示 */
     var lastArchivePath: String
         get() = sp.getString(KEY_ARCHIVE_PATH, "") ?: ""
@@ -151,8 +158,6 @@ class ConfigStore(context: Context) {
     companion object {
         private const val KEY_MODELS = "models"
         private const val KEY_ACTIVE = "active_model"
-        private const val KEY_SEARCH_PROVIDER = "search_provider"
-        private const val KEY_SEARCH_KEY = "search_key"
         private const val KEY_SEARCH_ON = "search_on"
         private const val KEY_THEME = "theme_mode"
         private const val KEY_FONT_SCALE = "font_scale"
@@ -171,5 +176,8 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_ON = "ctrl_enabled"
         private const val KEY_ARCHIVE_LOC = "archive_location"
         private const val KEY_ARCHIVE_PATH = "archive_last_path"
+        private const val KEY_ARCHIVE_PENDING = "archive_pending_version"
+        private const val KEY_SESSIONS_RELOAD = "sessions_reload_pending"
+        private const val KEY_INSTALL_REMINDED = "install_reminder_for"
     }
 }

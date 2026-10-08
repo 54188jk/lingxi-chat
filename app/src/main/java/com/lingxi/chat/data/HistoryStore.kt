@@ -24,7 +24,26 @@ object HistoryStore {
     const val FOLDER = "历史记录"
 
     /** 落盘结果：展示给用户的路径 + 可直接安装的文件或 Uri */
-    class Saved(val displayPath: String, val file: File?, val uri: Uri?)
+    class Saved(val displayPath: String, val file: File?, val uri: Uri?, val version: String) {
+
+        /**
+         * 拿到一个安装器认的文件：
+         * 根目录/应用目录的存档本来就是文件；MediaStore 里的先复制回缓存再交给安装器，
+         * 部分系统会拒收 content:// 形式的安装包。
+         */
+        fun installableFile(context: Context): File? {
+            file?.let { if (it.exists()) return it }
+            val u = uri ?: return null
+            return runCatching {
+                val dir = File(context.cacheDir, "updates").apply { mkdirs() }
+                val dst = File(dir, "lingxi-v$version.apk")
+                context.contentResolver.openInputStream(u)?.use { input ->
+                    java.io.FileOutputStream(dst).use { out -> input.copyTo(out) }
+                } ?: return null
+                dst
+            }.getOrNull()
+        }
+    }
 
     /** 能不能直接在内部储存根目录建「历史记录」文件夹 */
     fun canUseRoot(context: Context): Boolean =
@@ -60,6 +79,19 @@ object HistoryStore {
         }
     }
 
+    /** Android 10 及以下要动态申请存储权限，才能在内部储存建文件夹 */
+    fun needsRuntimePermission(context: Context): Boolean =
+        Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !canUseRoot(context)
+
+    fun requestRuntimePermission(activity: android.app.Activity): Boolean {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) return false
+        if (canUseRoot(activity)) return false
+        androidx.core.app.ActivityCompat.requestPermissions(
+            activity, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 7103
+        )
+        return true
+    }
+
     fun rootDir(): File? {
         val base = Environment.getExternalStorageDirectory() ?: return null
         return File(base, FOLDER)
@@ -71,20 +103,21 @@ object HistoryStore {
      * 位置由用户选过的方式决定：选过「根目录」就优先根目录，选过「下载目录」就优先 MediaStore。
      */
     fun save(context: Context, src: File, version: String): Saved? {
+        val ver = version
         if (!src.exists()) return null
         val name = "灵犀AI-v$version.apk"
         val store = ConfigStore(context)
         val rootFirst = store.archiveLocation != "download"
         val saved = if (rootFirst) {
-            saveToRoot(context, src, name) ?: saveToMediaStore(context, src, name)
+            saveToRoot(context, src, name, ver) ?: saveToMediaStore(context, src, name, ver)
         } else {
-            saveToMediaStore(context, src, name) ?: saveToRoot(context, src, name)
-        } ?: saveToAppDir(context, src, name)
+            saveToMediaStore(context, src, name, ver) ?: saveToRoot(context, src, name, ver)
+        } ?: saveToAppDir(context, src, name, ver)
         saved?.let { store.lastArchivePath = it.displayPath }
         return saved
     }
 
-    private fun saveToRoot(context: Context, src: File, name: String): Saved? = try {
+    private fun saveToRoot(context: Context, src: File, name: String, ver: String): Saved? = try {
         if (!canUseRoot(context)) {
             null
         } else {
@@ -93,14 +126,14 @@ object HistoryStore {
             else {
                 val dst = File(dir, name)
                 src.copyTo(dst, overwrite = true)
-                if (dst.length() != src.length()) null else Saved("内部储存/$FOLDER", dst, null)
+                if (dst.length() != src.length()) null else Saved("内部储存/$FOLDER", dst, null, ver)
             }
         }
     } catch (e: Exception) {
         null
     }
 
-    private fun saveToMediaStore(context: Context, src: File, name: String): Saved? = try {
+    private fun saveToMediaStore(context: Context, src: File, name: String, ver: String): Saved? = try {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) null else {
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, name)
@@ -115,19 +148,19 @@ object HistoryStore {
             else if (context.contentResolver.openOutputStream(uri)?.use { out ->
                     src.inputStream().use { it.copyTo(out) }
                 } == null) null
-            else Saved("内部储存/下载/$FOLDER", null, uri)
+            else Saved("内部储存/下载/$FOLDER", null, uri, ver)
         }
     } catch (e: Exception) {
         null
     }
 
     /** 最后兜底：应用专属目录，任何设备都可写，只是别的文件管理器看不到 */
-    private fun saveToAppDir(context: Context, src: File, name: String): Saved? = try {
+    private fun saveToAppDir(context: Context, src: File, name: String, ver: String): Saved? = try {
         val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, FOLDER)
         if (dir.exists() || dir.mkdirs()) {
             val dst = File(dir, name)
             src.copyTo(dst, overwrite = true)
-            Saved("应用文件夹/$FOLDER", dst, null)
+            Saved("应用文件夹/$FOLDER", dst, null, ver)
         } else null
     } catch (e: Exception) {
         null
@@ -135,6 +168,9 @@ object HistoryStore {
 
     /** 一条归档记录：文件或 MediaStore Uri 二者其一可用即可安装 */
     class Item(val version: String, val file: File?, val uri: Uri?, val displayPath: String) {
+
+        fun installableFile(context: Context): File? =
+            Saved(displayPath, file, uri, version).installableFile(context)
 
         /** 给列表用的一行文案：版本号 + 大小 + 位置 */
         fun displayVersion(context: Context): String {

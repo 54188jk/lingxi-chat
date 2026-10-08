@@ -2,7 +2,9 @@
 <paths>
     <cache-path name="camera" path="camera/" />
     <cache-path name="updates" path="updates/" />
+    <cache-path name="exports_cache" path="exports/" />
     <!-- 内部储存/历史记录 里的安装包也要能调起安装 -->
     <external-path name="history" path="历史记录/" />
     <external-files-path name="history_app" path="历史记录/" />
+    <external-files-path name="exports" path="exports/" />
 </paths>

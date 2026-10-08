@@ -201,6 +201,22 @@
             android:backgroundTint="@null"
             android:background="@drawable/bg_btn_white" />
 
+        <Button
+            android:id="@+id/btnFreeModel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_btn_white"
+            android:backgroundTint="@null"
+            android:drawableStart="@drawable/ic_sparkle"
+            android:drawablePadding="6dp"
+            android:gravity="center"
+            android:text="没有 Key？点这里获取免费模型网址"
+            android:textColor="@color/btn_outline_fg"
+            android:textAllCaps="false" />
+
         <!-- ============ AI 角色 ============ -->
         <TextView
             style="@style/SettingsSection"

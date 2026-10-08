@@ -12,6 +12,18 @@ interface Shell {
 private fun Shell.text(cmd: String): String = String(exec(cmd), Charsets.UTF_8)
 
 /** Root 通道：`su -c` */
+/**
+ * 等进程收尾：API 26 以下没有带超时的 waitFor，
+ * 而输出流已经读到 EOF，进程正常会立即退出，直接等就行。
+ */
+internal fun waitWithin(p: Process) {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (!p.waitFor(20, TimeUnit.SECONDS)) p.destroy()
+    } else {
+        runCatching { p.waitFor() }.onFailure { p.destroy() }
+    }
+}
+
 object RootShell : Shell {
 
     @Volatile
@@ -28,7 +40,7 @@ object RootShell : Shell {
     override fun exec(cmd: String): ByteArray = runCatching {
         val p = ProcessBuilder("su", "-c", cmd).redirectErrorStream(true).start()
         val out = p.inputStream.readBytes()
-        if (!p.waitFor(20, TimeUnit.SECONDS)) p.destroy()
+        waitWithin(p)
         out
     }.getOrDefault(ByteArray(0))
 
@@ -36,7 +48,7 @@ object RootShell : Shell {
         val p = ProcessBuilder("su", "-c", cmd + "; echo LXST_\$?")
             .redirectErrorStream(true).start()
         val out = p.inputStream.readBytes()
-        if (!p.waitFor(20, TimeUnit.SECONDS)) p.destroy()
+        waitWithin(p)
         out.toString(Charsets.UTF_8).contains("LXST_0")
     }.getOrDefault(false)
 }
@@ -78,14 +90,14 @@ object ShizukuShell : Shell {
     override fun exec(cmd: String): ByteArray = runCatching {
         val p = process(cmd) ?: return@runCatching ByteArray(0)
         val out = p.inputStream.readBytes()
-        if (!p.waitFor(20, TimeUnit.SECONDS)) p.destroy()
+        waitWithin(p)
         out
     }.getOrDefault(ByteArray(0))
 
     override fun ok(cmd: String): Boolean = runCatching {
         val p = process(cmd + "; echo LXST_\$?") ?: return@runCatching false
         val out = p.inputStream.readBytes().toString(Charsets.UTF_8)
-        if (!p.waitFor(20, TimeUnit.SECONDS)) p.destroy()
+        waitWithin(p)
         out.contains("LXST_0")
     }.getOrDefault(false)
 }

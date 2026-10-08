@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 用户气泡：实心黑白对比，圆角不对称（尾角收小） -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/user_bubble_start" />
-    <corners
-        android:topLeftRadius="18dp"
-        android:topRightRadius="18dp"
-        android:bottomLeftRadius="18dp"
-        android:bottomRightRadius="6dp" />
-</shape>
+<!-- 用户气泡：墨黑微渐变（深色主题下自动反成白底，仍是黑白对比） -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="1dp" android:top="1.5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card_shadow" />
+            <corners
+                android:topLeftRadius="19dp"
+                android:topRightRadius="19dp"
+                android:bottomLeftRadius="19dp"
+                android:bottomRightRadius="7dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="@color/user_bubble_start"
+                android:endColor="@color/user_bubble_end"
+                android:type="linear" />
+            <corners
+                android:topLeftRadius="18dp"
+                android:topRightRadius="18dp"
+                android:bottomLeftRadius="18dp"
+                android:bottomRightRadius="6dp" />
+        </shape>
+    </item>
+</layer-list>

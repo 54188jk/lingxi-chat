@@ -56,7 +56,11 @@ object UpdateUi {
 
     private val activeCalls = java.util.Collections.synchronizedList(mutableListOf<Call>())
     private val downloadCancelled = AtomicBoolean(false)
+    private val downloadingNow = AtomicBoolean(false)
     private var pendingApk: File? = null
+
+    /** 记下待安装的时刻：超过 15 分钟就当作用户已经放弃，不再自动续装 */
+    private var pendingApkAt = 0L
 
     private const val PREF_SKIP = "lingxi_update_skip"
     private const val KEY_SKIP_VERSION = "skip_version"
@@ -222,8 +226,7 @@ object UpdateUi {
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
                     dialog.dismiss()
-                    archiveApk(activity, info)
-                    installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
+                    onDownloaded(activity, info)
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
@@ -296,9 +299,17 @@ object UpdateUi {
         status: TextView,
         onEnd: (Boolean, String?) -> Unit
     ) {
+        if (!downloadingNow.compareAndSet(false, true)) {
+            onEnd(false, "已经有一个下载正在进行，请先把它取消或等它完成")
+            return
+        }
         val dir = File(activity.cacheDir, "updates").apply { mkdirs() }
         val apk = File(dir, "lingxi-v${info.version}.apk")
         apk.delete()
+        // 上一次下载留下的分片和其他版本残留都清掉，缓存不该越堆越大
+        dir.listFiles()?.forEach { stale ->
+            if (stale.name.endsWith(".part") || stale.name.contains(".part")) stale.delete()
+        }
         // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链；GitHub 官方链接按版本号可拼出
         val githubUrl = if (info.sourceName == "Gitee") {
             "https://github.com/54188jk/lingxi-chat/releases/download/v${info.version}/lingxi-v${info.version}.apk"
@@ -318,6 +329,7 @@ object UpdateUi {
 
         fun finishOnce(ok: Boolean, err: String?) {
             if (!finished.compareAndSet(false, true)) return
+            downloadingNow.set(false)
             cancelRunningCalls()
             activity.runOnUiThread {
                 if (!activity.isFinishing && !activity.isDestroyed) onEnd(ok, err)
@@ -506,8 +518,7 @@ object UpdateUi {
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {
                     dialog.dismiss()
-                    archiveApk(activity, info)
-                    installApk(activity, File(activity.cacheDir, "updates/lingxi-v${info.version}.apk"))
+                    onDownloaded(activity, info)
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
@@ -520,13 +531,27 @@ object UpdateUi {
 
     // ---------------- 安装 ----------------
 
+    /** 供设置页/历史列表使用：走同一套「已存档版本 → 安装 + 授权引导」流程 */
+    fun installFromHistory(activity: Activity, item: com.lingxi.chat.data.HistoryStore.Item): Boolean {
+        val apk = item.installableFile(activity)
+        if (apk == null || !apk.exists()) {
+            Toast.makeText(activity, "这个存档读不到了，请重新下载", Toast.LENGTH_LONG).show()
+            return false
+        }
+        val store = com.lingxi.chat.data.ConfigStore(activity)
+        if (store.pendingInstallVersion == item.version) store.pendingInstallVersion = ""
+        installApk(activity, apk)
+        return true
+    }
+
     /** 下载第一次开始前问一次：安装包存到内部储存根目录，还是免权限的下载子目录 */
     private fun askArchiveChoice(activity: Activity) {
         val store = com.lingxi.chat.data.ConfigStore(activity)
         if (store.archiveLocation != "ask") return
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
-            // Android 10 及以下由系统弹窗直接申请存储权限，不必多问
+            // Android 10 及以下：直接弹系统授权，点了允许就能在内部储存建「历史记录」
             store.archiveLocation = "root"
+            com.lingxi.chat.data.HistoryStore.requestRuntimePermission(activity)
             return
         }
         if (com.lingxi.chat.data.HistoryStore.canUseRoot(activity)) {
@@ -548,18 +573,55 @@ object UpdateUi {
             .show()
     }
 
-    /** 下载成功后往内部储存的「历史记录」文件夹存一份，用户随时能在文件管理器里点开安装 */
-    private fun archiveApk(activity: Activity, info: UpdateChecker.ReleaseInfo) {
-        val apk = File(activity.cacheDir, "updates/lingxi-v${info.version}.apk")
-        if (!apk.exists()) return
-        if (com.lingxi.chat.data.HistoryStore.list(activity).any { it.version == info.version }) return
-        val saved = com.lingxi.chat.data.HistoryStore.save(activity, apk, info.version)
-        Toast.makeText(
-            activity,
-            if (saved == null) "安装包已下载，但没能存进历史记录文件夹"
-            else "已存一份到${saved.displayPath}，可在文件管理器里查看并安装",
-            Toast.LENGTH_LONG
-        ).show()
+    /**
+     * 下载完成后只存档，不自动跳安装：
+     * 存进「历史记录」成功后删掉缓存副本，避免同一份 2.6MB 存两处；
+     * 装不装由用户在提示里决定，之后还能从 设置 → 历史安装包 里装。
+     */
+    private fun onDownloaded(activity: Activity, info: UpdateChecker.ReleaseInfo) {
+        val cacheApk = File(activity.cacheDir, "updates/lingxi-v${info.version}.apk")
+        if (!cacheApk.exists()) {
+            Toast.makeText(activity, "下载显示完成但文件不见了，请重新下载", Toast.LENGTH_LONG).show()
+            return
+        }
+        val history = com.lingxi.chat.data.HistoryStore
+        val existing = history.list(activity).firstOrNull { it.version == info.version }
+        val saved = if (existing != null) com.lingxi.chat.data.HistoryStore.Saved(
+            existing.displayPath, existing.file, existing.uri, existing.version
+        ) else history.save(activity, cacheApk, info.version)
+        // 存档里确实是这个文件了，缓存副本就没必要再占一份空间
+        if (saved != null && saved.file?.exists() == true) cacheApk.delete()
+        com.lingxi.chat.data.ConfigStore(activity).pendingInstallVersion = info.version
+        showArchivedDialog(activity, info.version, saved)
+    }
+
+    /** 存档完成的提示：说清楚「还没安装」以及之后怎么装 */
+    private fun showArchivedDialog(
+        activity: Activity,
+        version: String,
+        saved: com.lingxi.chat.data.HistoryStore.Saved?
+    ) {
+        val where = saved?.displayPath ?: "应用缓存目录（没能写进历史记录）"
+        val upgrade = UpdateChecker.isNewer(version, BuildConfig.VERSION_NAME)
+        androidx.appcompat.app.AlertDialog.Builder(activity)
+            .setTitle("v$version 已下载，还没安装")
+            .setMessage(
+                "安装包已存到「$where」，文件名 灵犀AI-v$version.apk。\n\n" +
+                        "· 现在就想换版本：点「立即安装」\n" +
+                        "· 暂时不装：它一直留在那个文件夹里，之后从 设置 → 历史安装包 里点一下就能装\n" +
+                        "· 也可以在文件管理器打开这个文件夹，点文件自己安装\n" +
+                        (if (upgrade) "" else "\n注意：这是旧版本，安装前需要先卸载当前版本，本机会话和配置会被清空，建议先到 设置 → 数据备份 备份。")
+            )
+            .setPositiveButton("立即安装") { _, _ ->
+                val apk = saved?.installableFile(activity)
+                if (apk == null || !apk.exists()) {
+                    Toast.makeText(activity, "找不到已保存的安装包，请重新下载", Toast.LENGTH_LONG).show()
+                } else {
+                    installApk(activity, apk)
+                }
+            }
+            .setNegativeButton("稍后再装", null)
+            .show()
     }
 
     private fun installApk(activity: Activity, apk: File) {
@@ -576,6 +638,7 @@ object UpdateUi {
                 .setPositiveButton("去授权") { _, _ ->
                     try {
                         pendingApk = apk
+                        pendingApkAt = System.currentTimeMillis()
                         activity.startActivity(
                             Intent(
                                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -587,7 +650,7 @@ object UpdateUi {
                         Toast.makeText(activity, "请在系统设置中允许安装未知应用", Toast.LENGTH_LONG).show()
                     }
                 }
-                .setNegativeButton("取消", null)
+                .setNegativeButton("取消") { _, _ -> pendingApk = null }
                 .show()
             return
         }
@@ -612,8 +675,14 @@ object UpdateUi {
     /** 从安装授权页返回时自动续装 */
     fun resumeInstallIfNeeded(activity: Activity) {
         val apk = pendingApk ?: return
-        if (apk.exists() && (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O ||
-                    activity.packageManager.canRequestPackageInstalls())) {
+        val fresh = System.currentTimeMillis() - pendingApkAt < 15 * 60 * 1000L
+        if (!fresh || !apk.exists()) {
+            pendingApk = null
+            return
+        }
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O ||
+                activity.packageManager.canRequestPackageInstalls()
+        ) {
             launchInstaller(activity, apk)
         }
     }

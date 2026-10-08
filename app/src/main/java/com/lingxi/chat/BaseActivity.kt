@@ -3,6 +3,7 @@ package com.lingxi.chat
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.lingxi.chat.data.ConfigStore
@@ -24,4 +25,8 @@ abstract class BaseActivity : AppCompatActivity() {
         }
         super.onCreate(savedInstanceState)
     }
+
+    /** 各页面都要提示用户，统一一条轻提示，别让 Toast 到处重复写 */
+    protected fun toast(message: String) =
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }

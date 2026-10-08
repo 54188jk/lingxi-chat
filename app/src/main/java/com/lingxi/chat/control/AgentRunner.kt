@@ -153,20 +153,26 @@ class AgentRunner(
         return out
     }
 
+    /** 模型调用失败时把真实原因带出去，别让网络问题被误报成「输出格式错误」 */
+    class ModelCallFailed(message: String) : Exception(message)
+
     private suspend fun ask(cfg: ModelConfig, msgs: List<ChatMessage>): String {
         val sb = StringBuilder()
+        var failure: String? = null
         try {
             client.streamChat(cfg, msgs).collect { ev ->
                 when (ev) {
                     is OpenAiClient.Event.Delta -> sb.append(ev.text)
+                    is OpenAiClient.Event.Failed -> failure = ev.message
                     else -> Unit
                 }
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
-            // 网络层已在 Event.Failed 里给出提示，这里保持返回已收到的部分
+        } catch (e: Exception) {
+            failure = failure ?: "连接中断：${e.message}"
         }
+        if (sb.isBlank() && failure != null) throw ModelCallFailed(failure)
         return sb.toString()
     }
 

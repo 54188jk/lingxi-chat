@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 输入栏聚焦态：细描边点亮主色 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/input_bg" />
-    <stroke android:width="1.5dp" android:color="@color/accent" />
-    <corners android:radius="26dp" />
-</shape>
+<!-- 输入栏聚焦：主色描边 + 淡投影 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="1dp" android:top="1.5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card_shadow" />
+            <corners android:radius="27dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/input_bg" />
+            <stroke android:width="1dp" android:color="@color/accent" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</layer-list>

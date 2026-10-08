@@ -1,35 +1,44 @@
 <resources>
-    <!-- 简约白色风：近白底 + 纯白卡片 + 近黑文字，玫红仅作小面积点缀 -->
-    <color name="bg">#FFF6F6F7</color>
+    <!--
+      浅色（默认）配色：冷白底 + 纯白卡片 + 近黑文字，玫红只在小面积点缀。
+      深色对应值在 values-night/colors.xml，两边同名 token 必须一一对应。
+    -->
+    <color name="bg">#FFF2F3F6</color>
+    <color name="bg_top">#FFFBFBFD</color>
+    <color name="bg_bottom">#FFEEF0F4</color>
     <color name="surface">#FFFFFFFF</color>
+    <color name="surface_dim">#FFF7F8FA</color>
     <color name="card_ai">#FFFFFFFF</color>
-    <color name="card_stroke">#14000000</color>
+    <color name="card_stroke">#FFE2E4EA</color>
+    <color name="card_shadow">#14000000</color>
     <color name="input_bg">#FFFFFFFF</color>
     <color name="chip_bg">#FFFFFFFF</color>
-    <color name="chip_stroke">#1A000000</color>
-    <color name="chip_active_bg">#14E11D48</color>
+    <color name="chip_stroke">#FFDDDFE6</color>
+    <color name="chip_active_bg">#1AE11D48</color>
     <color name="badge_bg">#14E11D48</color>
-    <color name="divider">#14000000</color>
-    <color name="code_bg">#FFF4F4F5</color>
-    <color name="code_fg">#FF18181B</color>
-    <color name="accent">#FFE11D48</color>
-    <color name="accent_deep">#FFBE123C</color>
-    <color name="text_primary">#FF18181B</color>
-    <color name="text_secondary">#FF71717A</color>
-    <color name="text_tertiary">#FFA1A1AA</color>
-    <color name="accent_soft">#80E11D48</color>
-    <!-- 用户气泡：近黑底白字（黑白极简对比） -->
-    <color name="user_bubble_start">#FF18181B</color>
-    <color name="user_bubble_end">#FF18181B</color>
+    <color name="divider">#FFE7E8ED</color>
+    <color name="hairline">#FFEFF0F3</color>
+    <color name="code_bg">#FFF3F4F7</color>
+    <color name="code_fg">#FF1B1C20</color>
+    <color name="accent">#FFD6123F</color>
+    <color name="accent_deep">#FFAE0E33</color>
+    <color name="accent_soft">#66D6123F</color>
+    <color name="text_primary">#FF141518</color>
+    <color name="text_secondary">#FF5C616B</color>
+    <color name="text_tertiary">#FF9A9FAA</color>
+    <!-- 用户气泡：墨黑底白字，浅色下靠描边和投影分层 -->
+    <color name="user_bubble_start">#FF16171B</color>
+    <color name="user_bubble_end">#FF232529</color>
     <color name="user_bubble_fg">#FFFFFFFF</color>
     <!-- 实心按钮（发送键等）：黑底白符号 -->
-    <color name="btn_solid">#FF18181B</color>
+    <color name="btn_solid">#FF16171B</color>
     <color name="btn_solid_fg">#FFFFFFFF</color>
     <color name="btn_solid_ripple">#26FFFFFF</color>
     <!-- 描边按钮：白底细描边黑字 -->
-    <color name="btn_outline_fg">#FF18181B</color>
-    <color name="icon_tint">#FF52525B</color>
+    <color name="btn_outline_fg">#FF141518</color>
+    <color name="icon_tint">#FF5A5F69</color>
     <color name="dialog_bg">#FFFFFFFF</color>
-    <color name="hl_bg">#66FFB300</color>
+    <color name="sheet_bg">#FFFFFFFF</color>
+    <color name="hl_bg">#66FFC53D</color>
     <color name="hl_fg">#FF7A4B00</color>
 </resources>

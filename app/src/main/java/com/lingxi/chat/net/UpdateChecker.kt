@@ -89,11 +89,8 @@ object UpdateChecker {
             pool.shutdownNow()
         }
         if (results.isEmpty()) return null
-        return results.maxByOrNull { info -> versionValue(info.version) }
+        return results.maxWith(Comparator { a, b -> compare(a.version, b.version) })
     }
-
-    private fun versionValue(v: String): Long =
-        v.split(".").fold(0L) { acc, s -> acc * 1000 + (s.toIntOrNull() ?: 0) }
 
     private fun fetchFrom(src: CheckSource): ReleaseInfo? {
         return try {
@@ -201,15 +198,21 @@ object UpdateChecker {
         }
     }
 
-    fun isNewer(latest: String, current: String): Boolean {
-        val a = latest.split(".").map { it.toIntOrNull() ?: 0 }
-        val b = current.split(".").map { it.toIntOrNull() ?: 0 }
-        for (i in 0 until maxOf(a.size, b.size)) {
-            val x = a.getOrElse(i) { 0 }
-            val y = b.getOrElse(i) { 0 }
-            if (x != y) return x > y
+    fun isNewer(latest: String, current: String): Boolean = compare(latest, current) > 0
+
+    /**
+     * 逐段比较版本号：1.167 > 1.9，段数不同按缺位补 0。
+     * 之前挑「最新版本」用的是 acc*1000 折成一个大整数，段号一旦超过 999 就会比错，
+     * 和这里的结果也对不上，所以两处统一走这一个函数。
+     */
+    fun compare(a: String, b: String): Int {
+        val x = a.split(".").map { it.trim().removePrefix("v").toIntOrNull() ?: 0 }
+        val y = b.split(".").map { it.trim().removePrefix("v").toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(x.size, y.size)) {
+            val c = x.getOrElse(i) { 0 }.compareTo(y.getOrElse(i) { 0 })
+            if (c != 0) return c
         }
-        return false
+        return 0
     }
 
     /**

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+：云备份与设备迁移同样排除 Key 与会话 -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="lingxi_config.xml" />
+        <exclude domain="file" path="sessions/" />
+        <exclude domain="external" path="Android/data/com.lingxi.chat/files/历史记录/" />
+        <exclude domain="external" path="Android/data/com.lingxi.chat/files/exports/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="lingxi_config.xml" />
+        <exclude domain="file" path="sessions/" />
+        <exclude domain="external" path="Android/data/com.lingxi.chat/files/历史记录/" />
+        <exclude domain="external" path="Android/data/com.lingxi.chat/files/exports/" />
+    </device-transfer>
+</data-extraction-rules>

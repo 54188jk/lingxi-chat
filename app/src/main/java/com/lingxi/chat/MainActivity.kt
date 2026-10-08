@@ -69,6 +69,17 @@ class MainActivity : BaseActivity() {
     /** 操控任务的实时进度消息；服务每推一步就往这里追加一行 */
     private var agentMsg: ChatMessage? = null
 
+    /** 这条进度气泡属于哪个会话：切会话后也不能把进度写错地方 */
+    private var agentSession: Session? = null
+
+    /** 语音转写共用一个客户端：连接池复用，也不会留下一堆待回收线程 */
+    private val sttHttp by lazy {
+        okhttp3.OkHttpClient.Builder()
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var speechRecognizer: SpeechRecognizer? = null
@@ -316,6 +327,50 @@ class MainActivity : BaseActivity() {
         }
 
         UpdateUi.check(this, BuildConfig.VERSION_NAME, silent = true)
+        remindPendingInstall()
+    }
+
+    /**
+     * 下载过但没装的版本：启动时提醒一次，同一个版本只唠叨一遍。
+     * 已经装上（存档版本号等于当前运行版本）就把待装标记清掉。
+     */
+    private fun remindPendingInstall() {
+        val pending = configStore.pendingInstallVersion
+        if (pending.isBlank()) return
+        if (pending == BuildConfig.VERSION_NAME) {
+            configStore.pendingInstallVersion = ""
+            return
+        }
+        if (configStore.installReminderFor == pending) return
+        // 扫目录和 MediaStore 都是磁盘活，别在主线程做
+        scope.launch {
+            val item = withContext(Dispatchers.IO) {
+                com.lingxi.chat.data.HistoryStore.list(this@MainActivity)
+                    .firstOrNull { it.version == pending }
+            }
+            if (item == null) {
+                // 用户在文件管理器里把存档删了，标记也就没意义了
+                configStore.pendingInstallVersion = ""
+                return@launch
+            }
+            if (configStore.installReminderFor == pending) return@launch
+            configStore.installReminderFor = pending
+            showPendingInstallDialog(item)
+        }
+    }
+
+    private fun showPendingInstallDialog(item: com.lingxi.chat.data.HistoryStore.Item) {
+        if (isFinishing || isDestroyed) return
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("v${item.version} 已下载，还没安装")
+            .setMessage(
+                "它存在「${item.displayPath}」里（灵犀AI-${item.version}.apk），不影响现在的使用。\n\n" +
+                        "· 想现在换版本：点「立即安装」\n" +
+                        "· 不想动：这个提示以后不再出现，你可以随时去 设置 → 历史安装包 里安装"
+            )
+            .setPositiveButton("立即安装") { _, _ -> UpdateUi.installFromHistory(this, item) }
+            .setNegativeButton("先不装", null)
+            .show()
     }
 
     private fun showEmojiPanel() {
@@ -386,6 +441,7 @@ class MainActivity : BaseActivity() {
         startClock()
         AgentBus.listener = { line -> onAgentLine(line) }
         reattachRunningAgent()
+        reloadAfterRestoreIfNeeded()
     }
 
     override fun onPause() {
@@ -482,6 +538,18 @@ class MainActivity : BaseActivity() {
 
     /** 发送：把这句话交给操控服务，不再走普通对话 */
     private fun startControlTask(text: String) {
+        if (AgentBus.running) {
+            // 服务正忙：直接重置会把上一条任务掐掉，这里只回一句提示
+            val busy = ChatMessage(
+                "assistant",
+                "上一条操控任务还在执行中。\n点发送键可以先急停，再发这条任务。"
+            )
+            session.messages.add(busy)
+            adapter.notifyItemInserted(session.messages.size - 1)
+            b.rvMessages.scrollToPosition(adapter.itemCount - 1)
+            sessionStore.save(session)
+            return
+        }
         val back = configStore.controlMode == "back"
         val carried = AgentBus.stepLines.filter { !it.startsWith("已开始") }
         if (!AgentBus.running && carried.isNotEmpty()) {
@@ -497,17 +565,28 @@ class MainActivity : BaseActivity() {
             if (back) "后台任务已下发，不占用你的屏幕…" else "前台任务已开始，请暂时不要触屏…"
         )
         agentMsg = msg
+        agentSession = session
         session.messages.add(msg)
         adapter.notifyItemInserted(session.messages.size - 1)
         b.rvMessages.scrollToPosition(adapter.itemCount - 1)
         AgentControl.launch(this, text)
     }
 
-    /** 服务推进度过来时追加到同一条气泡；任务结束就定稿 */
+    /** 服务推进度过来时追加到任务所属会话的那条气泡；任务结束就定稿 */
     private fun onAgentLine(line: String) {
         runOnUiThread {
             val msg = agentMsg ?: return@runOnUiThread
+            val owner = agentSession ?: return@runOnUiThread
             msg.content = if (msg.content.contains(line)) msg.content else msg.content + "\n" + line
+            if (owner !== session) {
+                // 用户已经切到别的会话：任务结束就悄悄落盘，不动当前界面
+                if (!AgentBus.running) {
+                    sessionStore.save(owner)
+                    agentMsg = null
+                    agentSession = null
+                }
+                return@runOnUiThread
+            }
             val idx = session.messages.indexOf(msg)
             if (idx >= 0) adapter.notifyItemChanged(idx)
             scrollToEndIfNearBottom()
@@ -517,6 +596,7 @@ class MainActivity : BaseActivity() {
 
     private fun finishControl(idx: Int) {
         agentMsg = null
+        agentSession = null
         setStreaming(false)
         if (idx in session.messages.indices && session.messages[idx].content.isBlank()) {
             session.messages.removeAt(idx)
@@ -525,12 +605,45 @@ class MainActivity : BaseActivity() {
         sessionStore.save(session)
     }
 
-    /** 任务在本页后台时跑的，回到聊天页要把已发生的步骤补回气泡 */
+    /** 从设置页恢复备份回来后，用磁盘上的内容刷新当前会话 */
+    private fun reloadAfterRestoreIfNeeded() {
+        if (!configStore.sessionsReloadPending) return
+        configStore.sessionsReloadPending = false
+        val restored = sessionStore.load(session.id)
+        if (restored != null) {
+            session = restored
+        } else if (session.messages.isNotEmpty()) {
+            // 这条会话被「覆盖导入」清掉了，开一条新的，避免把旧内容又写回去
+            session = Session()
+        } else {
+            return
+        }
+        newAdapter()
+        refreshTitle()
+        b.rvMessages.scrollToPosition(maxOf(0, adapter.itemCount - 1))
+        updateWelcome()
+        toast("已按刚导入的备份刷新当前会话")
+    }
+
+    /**
+     * 接着看正在跑的操控任务：
+     * 进度气泡本来就属于当前会话就接回来，Activity 重建过则按已有步骤重建。
+     */
     private fun reattachRunningAgent() {
-        if (!AgentBus.running || agentMsg != null) return
-        val msg = ChatMessage("assistant", AgentBus.stepLines.joinToString("\n"))
-        agentMsg = msg
-        session.messages.add(msg)
+        if (!AgentBus.running) return
+        val msg = agentMsg
+        if (msg != null) {
+            if (agentSession === session && !streaming) {
+                setStreaming(true)
+                val idx = session.messages.indexOf(msg)
+                if (idx >= 0) adapter.notifyItemChanged(idx)
+            }
+            return
+        }
+        val rebuilt = ChatMessage("assistant", AgentBus.stepLines.joinToString("\n"))
+        agentMsg = rebuilt
+        agentSession = session
+        session.messages.add(rebuilt)
         adapter.notifyItemInserted(session.messages.size - 1)
         b.rvMessages.scrollToPosition(adapter.itemCount - 1)
         setStreaming(true)
@@ -835,11 +948,17 @@ class MainActivity : BaseActivity() {
             var text: String? = null
             // 依次尝试：当前模型 → 其余已配置且有 Key 的模型（优先带语音模型的）
             val candidates = ArrayList<com.lingxi.chat.data.ModelConfig>()
-            configStore.getActiveModel()?.let { candidates.add(it) }
+            // 只有填了 Key 的配置才值得试，空 Key 每家都会直接 401
+            configStore.getActiveModel()?.takeIf { it.apiKey.isNotBlank() }?.let { candidates.add(it) }
             configStore.loadModels()
                 .filter { it.apiKey.isNotBlank() && candidates.none { c -> c.id == it.id } }
                 .sortedByDescending { if (it.sttModel.isNotBlank()) 1 else 0 }
                 .forEach { candidates.add(it) }
+            if (candidates.isEmpty()) {
+                withContext(Dispatchers.IO) { f.delete() }
+                toast("还没有可用的语音服务：请到 设置 → 免费语音识别 添加一套并粘贴 Key")
+                return@launch
+            }
             withContext(Dispatchers.IO) {
                 try {
                     for (cfg in candidates) {
@@ -877,10 +996,7 @@ class MainActivity : BaseActivity() {
 
     private fun transcribeAudio(cfg: com.lingxi.chat.data.ModelConfig, audio: File): String? {
         val url = cfg.baseUrl.trimEnd('/') + "/audio/transcriptions"
-        val client = okhttp3.OkHttpClient.Builder()
-            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
+        val client = sttHttp
         val body = okhttp3.MultipartBody.Builder()
             .setType(okhttp3.MultipartBody.FORM)
             .addFormDataPart("model", resolveSttModel(cfg))
@@ -1044,6 +1160,8 @@ class MainActivity : BaseActivity() {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             )
             val h = container.measuredHeight.coerceIn(dp(200), 20000)
+            // 只 measure 不 layout 的话子 View 位置全是 0，画出来是一张白图
+            container.layout(0, 0, width, h)
             val bmp = Bitmap.createBitmap(width, h, Bitmap.Config.ARGB_8888)
             val canvas = android.graphics.Canvas(bmp)
             canvas.drawColor(surface)
@@ -1114,6 +1232,10 @@ class MainActivity : BaseActivity() {
             sheet.dismiss()
             newSession()
         }
+        view.findViewById<View>(R.id.toolFreeModel).setOnClickListener {
+            sheet.dismiss()
+            startActivity(Intent(this, FreeModelActivity::class.java))
+        }
 
         val swSearch = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.swSearch)
         swSearch.isChecked = configStore.searchEnabled
@@ -1166,48 +1288,62 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    /** 读图、压缩都在 IO 线程做，大图不该把主线程卡住 */
     private fun handleImage(uri: android.net.Uri) {
-        try {
-            val bytes = if (uri.scheme == "file") {
-                FileInputStream(File(uri.path!!)).use { it.readBytes() }
-            } else {
-                contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
+        scope.launch {
+            val prepared = withContext(Dispatchers.IO) {
+                runCatching {
+                    val bytes = if (uri.scheme == "file") {
+                        FileInputStream(File(uri.path!!)).use { it.readBytes() }
+                    } else {
+                        contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    } ?: return@runCatching null
+                    val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                    var sample = 1
+                    while (opts.outWidth / sample > 1280 || opts.outHeight / sample > 1280) sample *= 2
+                    val bmp = BitmapFactory.decodeByteArray(
+                        bytes, 0, bytes.size,
+                        BitmapFactory.Options().apply { inSampleSize = sample }
+                    ) ?: return@runCatching null
+                    val out = ByteArrayOutputStream()
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                    Pair(bmp, Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP))
+                }
             }
-            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
-            var sample = 1
-            while (opts.outWidth / sample > 1280 || opts.outHeight / sample > 1280) sample *= 2
-            val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sample }
-            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOpts) ?: return
-            val out = ByteArrayOutputStream()
-            bmp.compress(Bitmap.CompressFormat.JPEG, 80, out)
-            pendingImageBase64 = Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+            val data = prepared.getOrNull()
+            if (data == null) {
+                toast("图片读取失败，换一张试试")
+                return@launch
+            }
+            pendingImageBase64 = data.second
             pendingImageMime = "image/jpeg"
-            b.ivPreview.setImageBitmap(bmp)
+            b.ivPreview.setImageBitmap(data.first)
             b.llImagePreview.visibility = View.VISIBLE
-        } catch (e: Exception) {
-            toast("图片读取失败：${e.message}")
         }
     }
 
     private fun handleFile(uri: android.net.Uri) {
-        try {
-            val name = queryFileName(uri) ?: "文件"
-            val stream = contentResolver.openInputStream(uri) ?: return
-            val bytes = stream.readBytes()
-            stream.close()
-            if (bytes.size > 200 * 1024) {
-                toast("文件太大，最多 200KB 的文本文件")
-                return
+        scope.launch {
+            val read = withContext(Dispatchers.IO) {
+                runCatching {
+                    val name = queryFileName(uri) ?: "文件"
+                    val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: return@runCatching null
+                    if (bytes.size > 200 * 1024) return@runCatching null
+                    Pair(name, String(bytes, Charsets.UTF_8).take(20000))
+                }
             }
-            val text = String(bytes, Charsets.UTF_8).take(20000)
-            pendingFileText = text
-            pendingFileName = name
-            b.tvFileName.text = name
+            val data = read.getOrNull()
+            if (data == null) {
+                toast("文件读不了：只支持 200KB 以内的文本文件（txt/md/代码/json 等）")
+                return@launch
+            }
+            pendingFileText = data.second
+            pendingFileName = data.first
+            b.tvFileName.text = data.first
             b.llFilePreview.visibility = View.VISIBLE
-            toast("已附加文件 $name，发送时会一起提交")
-        } catch (e: Exception) {
-            toast("只支持文本类文件（txt/md/代码/json 等）")
+            toast("已附加文件 ${data.first}，发送时会一起提交")
         }
     }
 
@@ -1312,8 +1448,48 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    /** 没配置或没填 Key 时别默默不发，直接给出下一步该点哪里 */
+    private fun promptMissingModel(noConfig: Boolean) {
+        if (noConfig) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("还没有可用的模型配置")
+                .setMessage(
+                    "灵犀AI 需要一个能对话的大模型才能回答。\n\n" +
+                            "· 手上有 Key：去 设置 → 模型配置 添加\n" +
+                            "· 还没有 Key：用「获取免费模型网址」，注册后复制一个就能填"
+                )
+                .setPositiveButton("获取免费模型") { _, _ ->
+                    startActivity(Intent(this, FreeModelActivity::class.java))
+                }
+                .setNegativeButton("去设置") { _, _ ->
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
+                .show()
+        } else {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("这条配置还没填 API Key")
+                .setMessage(
+                    "当前选中的模型配置缺少 Key，服务商不会回应。\n\n" +
+                            "点「去填 Key」把官网复制的那串 sk- 开头的字符贴进去。"
+                )
+                .setPositiveButton("去填 Key") { _, _ ->
+                    startActivity(
+                        Intent(this, SettingsActivity::class.java)
+                            .putExtra("paste_key_for", "vsllm")
+                    )
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+    }
+
     private fun callApi(searchContext: String?, sources: List<SearchClient.Hit>) {
-        val cfg = configStore.getActiveModel() ?: return
+        val cfg = configStore.getActiveModel()
+        if (cfg == null || cfg.apiKey.isBlank()) {
+            setStreaming(false)
+            promptMissingModel(cfg == null)
+            return
+        }
         setStreaming(true)
 
         val apiMsgs = mutableListOf<ChatMessage>()
@@ -1404,7 +1580,19 @@ class MainActivity : BaseActivity() {
         if (!streaming) return
         if (agentMsg != null) {
             AgentControl.halt(this)
-            toast("已发送急停，当前步骤做完就停下")
+            if (AgentBus.running) {
+                toast("已发送急停，当前步骤做完就停下")
+                return
+            }
+            // 服务那边已经停了：就地收尾，发送键不能一直卡在「停止」
+            val owner = agentSession
+            val idx = if (owner === session) session.messages.indexOf(agentMsg) else -1
+            agentMsg = null
+            agentSession = null
+            setStreaming(false)
+            owner?.let { sessionStore.save(it) }
+            if (idx >= 0) adapter.notifyItemChanged(idx)
+            toast("已停止操控")
             return
         }
         // 取消收集 → callbackFlow 的 awaitClose 触发 → call.cancel()，无需等超时
@@ -1472,5 +1660,4 @@ class MainActivity : BaseActivity() {
         imm.hideSoftInputFromWindow(b.etInput.windowToken, 0)
     }
 
-    private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 }
