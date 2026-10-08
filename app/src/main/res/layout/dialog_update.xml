@@ -160,7 +160,7 @@
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="22dp"
+                    android:layout_height="34dp"
                     android:layout_marginTop="8dp">
 
                     <ProgressBar
@@ -177,6 +177,27 @@
                         android:id="@+id/spSnake"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:visibility="gone" />
+
+                    <com.lingxi.chat.BlocksProgressView
+                        android:id="@+id/spBlocks"
+                        android:layout_width="match_parent"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center_vertical"
+                        android:visibility="gone" />
+
+                    <com.lingxi.chat.WaveProgressView
+                        android:id="@+id/spWave"
+                        android:layout_width="match_parent"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center_vertical"
+                        android:visibility="gone" />
+
+                    <com.lingxi.chat.RingProgressView
+                        android:id="@+id/spRing"
+                        android:layout_width="match_parent"
+                        android:layout_height="34dp"
+                        android:layout_gravity="center_vertical"
                         android:visibility="gone" />
                 </FrameLayout>
 

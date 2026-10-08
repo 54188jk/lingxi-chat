@@ -582,7 +582,7 @@ class SettingsActivity : BaseActivity() {
         if (items.isEmpty()) {
             AlertDialog.Builder(this)
                 .setTitle("还没有存下安装包")
-                .setMessage("下次在「历史版本」或更新弹窗里下载安装包后，会自动在这里留一份。")
+                .setMessage("只有在「历史版本」里下载安装包才会在这里留一份存档；普通更新不会存到这里。")
                 .setPositiveButton("去看历史版本") { _, _ ->
                     VersionsUi.open(this, BuildConfig.VERSION_NAME)
                 }

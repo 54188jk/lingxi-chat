@@ -71,7 +71,14 @@ class SnakeProgressView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (wiggleEnabled) ticker.start()
+        if (wiggleEnabled && visibility == View.VISIBLE) ticker.start()
+    }
+
+    // 随机没选中这条样式时它是 GONE，但依然挂在窗口上，不该空转
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (!wiggleEnabled) return
+        if (visibility == View.VISIBLE && isAttachedToWindow) ticker.start() else ticker.cancel()
     }
 
     override fun onDetachedFromWindow() {

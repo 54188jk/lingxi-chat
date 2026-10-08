@@ -2,7 +2,6 @@ package com.lingxi.chat
 
 import android.app.Activity
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -39,10 +38,12 @@ import java.util.Locale
  */
 object UpdateUi {
 
-    // 下载专用：连接 10 秒、读 15 秒——任何源卡住会被立刻判死并由其他源顶上
+    // 下载专用：连接 10 秒、读 45 秒；监视线程另有 10 秒无进展即换源的判定
     private val http = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        // 首字节/读超时收紧到 45s：配合监视线程的 10s 无进展换源判定，
+        // 避免一个半死连接把界面卡三分钟不动
+        .readTimeout(45, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
@@ -52,6 +53,10 @@ object UpdateUi {
         val downloaded = AtomicLong(0)
         @Volatile var total: Long = -1
         @Volatile var failed: String? = null
+        @Volatile var call: Call? = null
+        @Volatile var settled = false
+        @Volatile var lastBytes = 0L
+        @Volatile var lastChangeAt = System.currentTimeMillis()
     }
 
     private val activeCalls = java.util.Collections.synchronizedList(mutableListOf<Call>())
@@ -62,10 +67,11 @@ object UpdateUi {
     /** 记下待安装的时刻：超过 15 分钟就当作用户已经放弃，不再自动续装 */
     private var pendingApkAt = 0L
 
-    private const val PREF_SKIP = "lingxi_update_skip"
-    private const val KEY_SKIP_VERSION = "skip_version"
+    /** 旧版本残留的「忽略此版本」标记文件名，这个功能已取消，启动时顺手清掉 */
+    private const val LEGACY_SKIP_PREFS = "lingxi_update_skip"
 
     fun check(activity: Activity, currentVersion: String, silent: Boolean) {
+        clearLegacySkip(activity)
         if (!silent) Toast.makeText(activity, "正在检查更新…", Toast.LENGTH_SHORT).show()
         val owner = activity as? LifecycleOwner ?: return
         owner.lifecycleScope.launch {
@@ -77,10 +83,7 @@ object UpdateUi {
                         Toast.makeText(activity, "检查失败，请检查网络后重试", Toast.LENGTH_SHORT).show()
                     }
                 }
-                UpdateChecker.isNewer(info.version, currentVersion) -> {
-                    if (isSkipped(activity, info.version) && silent) return@launch
-                    showUpdatePage(activity, info, currentVersion)
-                }
+                UpdateChecker.isNewer(info.version, currentVersion) -> showUpdatePage(activity, info, currentVersion)
                 else -> {
                     if (!silent) showUpToDatePage(activity, currentVersion, info.publishedAt)
                 }
@@ -88,16 +91,9 @@ object UpdateUi {
         }
     }
 
-    // ---------------- 忽略此版本 ----------------
-
-    private fun prefs(activity: Activity): SharedPreferences =
-        activity.getSharedPreferences(PREF_SKIP, Activity.MODE_PRIVATE)
-
-    private fun isSkipped(activity: Activity, version: String): Boolean =
-        prefs(activity).getString(KEY_SKIP_VERSION, "") == version
-
-    private fun skipVersion(activity: Activity, version: String) {
-        prefs(activity).edit().putString(KEY_SKIP_VERSION, version).apply()
+    private fun clearLegacySkip(activity: Activity) {
+        val p = activity.getSharedPreferences(LEGACY_SKIP_PREFS, Activity.MODE_PRIVATE)
+        if (!p.all.isNullOrEmpty()) p.edit().clear().apply()
     }
 
     // ---------------- 更新页 ----------------
@@ -150,24 +146,32 @@ object UpdateUi {
         list.add(("https://gh-proxy.com/$url") to "加速源 2")
         list.add(("https://ghproxy.net/$url") to "加速源 3")
         list.add(("https://gh.ddlc.top/$url") to "加速源 4")
+        list.add(("https://github.moeyy.xyz/$url") to "加速源 5")
+        list.add(("https://mirror.ghproxy.com/$url") to "加速源 6")
         list.add(url to "官方源")
         return list
     }
 
     /**
-     * 下载进度条二选一（每次点击下载随机）：
-     * 普通横条保持原样，贪吃蛇版由蛇头逐格吃掉豆子推进。
-     * 返回进度设置器（0-100），调用方无需关心选了哪一款。
+     * 下载进度条五选一（每次点击下载随机）：
+     * 普通横条、贪吃蛇、像素方块、液体波动、圆环。
+     * 返回进度设置器（0-100），调用方无需关心选了哪一款；布局里缺哪个就自动跳过哪个。
      */
     private fun pickProgressView(view: View): (Int) -> Unit {
-        val normal = view.findViewById<ProgressBar>(R.id.pbDownload)
-        val snake = view.findViewById<SnakeProgressView>(R.id.spSnake)
-        val useSnake = kotlin.random.Random.nextBoolean()
-        normal.visibility = if (useSnake) View.GONE else View.VISIBLE
-        snake.visibility = if (useSnake) View.VISIBLE else View.GONE
-        normal.progress = 0
-        snake.progress = 0
-        return { pct -> if (useSnake) snake.progress = pct else normal.progress = pct }
+        val candidates: List<Pair<View, (Int) -> Unit>> = listOfNotNull(
+            view.findViewById<ProgressBar>(R.id.pbDownload)?.let { bar -> bar to { p: Int -> bar.progress = p } },
+            view.findViewById<SnakeProgressView>(R.id.spSnake)?.let { s -> s to { p: Int -> s.progress = p } },
+            view.findViewById<BlocksProgressView>(R.id.spBlocks)?.let { b -> b to { p: Int -> b.progress = p } },
+            view.findViewById<WaveProgressView>(R.id.spWave)?.let { w -> w to { p: Int -> w.progress = p } },
+            view.findViewById<RingProgressView>(R.id.spRing)?.let { r -> r to { p: Int -> r.progress = p } }
+        )
+        if (candidates.isEmpty()) return { }
+        val chosen = candidates.random()
+        candidates.forEach { (v, set) ->
+            v.visibility = if (v === chosen.first) View.VISIBLE else View.GONE
+            set(0)
+        }
+        return chosen.second
     }
 
     private fun inflate(activity: Activity): View =
@@ -215,33 +219,30 @@ object UpdateUi {
                 status.text = "正在取消下载…"
                 return@setOnClickListener
             }
+            val cached = cachedApk(activity, info)
+            if (cached != null) {
+                dialog.dismiss()
+                showFreshDialog(activity, info.version, cached)
+                return@setOnClickListener
+            }
             progressBox.visibility = View.VISIBLE
             percent.text = "0%"
             speed.text = "0 KB/s"
             val setProgress = pickProgressView(view)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "取消下载"
-            askArchiveChoice(activity)
             download(activity, info, setProgress, percent, speed, status) { ok, msg ->
                 progressBox.visibility = View.GONE
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "立即更新"
                 if (ok) {
                     dialog.dismiss()
-                    onDownloaded(activity, info)
+                    onDownloaded(activity, info, archive = false)
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
             }
         }
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(activity)
-                .setTitle("忽略这个版本？")
-                .setMessage("将不再提示 v${info.version} 的更新，之后仍可在设置里手动检查。")
-                .setPositiveButton("忽略此版本") { _, _ ->
-                    skipVersion(activity, info.version)
-                    dialog.dismiss()
-                }
-                .setNegativeButton("仅本次不更新", null)
-                .show()
+            dialog.dismiss()
         }
     }
 
@@ -337,6 +338,7 @@ object UpdateUi {
         }
 
         fun onSourceSettled(src: RaceSource) {
+            src.settled = true
             src.failed?.let { errors.add("${src.label}：$it") }
             if (remaining.decrementAndGet() == 0 && !winnerTaken.get()) {
                 val err = if (downloadCancelled.get()) null
@@ -354,6 +356,8 @@ object UpdateUi {
                     .build()
             )
             synchronized(activeCalls) { if (!finished.get()) activeCalls.add(call) }
+            src.call = call
+            src.lastChangeAt = System.currentTimeMillis()
             call.enqueue(object : Callback {
                 override fun onFailure(c: Call, e: IOException) {
                     part.delete()
@@ -410,6 +414,22 @@ object UpdateUi {
             while (!finished.get() && !activity.isFinishing && !activity.isDestroyed) {
                 Thread.sleep(250)
                 if (finished.get()) break
+                // 10 秒没有新字节进账的源直接掐掉：它已经半死了，把连接和带宽让给别的源
+                val tick = System.currentTimeMillis()
+                candidates.forEach { s ->
+                    if (s.settled || s.failed != null) return@forEach
+                    val seen = s.downloaded.get()
+                    when {
+                        seen != s.lastBytes -> {
+                            s.lastBytes = seen
+                            s.lastChangeAt = tick
+                        }
+                        tick - s.lastChangeAt > 10_000L -> {
+                            s.failed = "10 秒没有速度，已切走"
+                            s.call?.cancel()
+                        }
+                    }
+                }
                 val running = candidates.filter { it.failed == null }
                 val leader = running.maxByOrNull { it.downloaded.get() } ?: break
                 val d = leader.downloaded.get()
@@ -518,7 +538,7 @@ object UpdateUi {
                 dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).text = "开始下载"
                 if (ok) {
                     dialog.dismiss()
-                    onDownloaded(activity, info)
+                    onDownloaded(activity, info, archive = true)
                 } else if (msg != null) {
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
@@ -544,7 +564,7 @@ object UpdateUi {
         return true
     }
 
-    /** 下载第一次开始前问一次：安装包存到内部储存根目录，还是免权限的下载子目录 */
+    /** 第一次从历史版本下载前问一次：存档放内部储存根目录，还是免权限的下载子目录 */
     private fun askArchiveChoice(activity: Activity) {
         val store = com.lingxi.chat.data.ConfigStore(activity)
         if (store.archiveLocation != "ask") return
@@ -559,9 +579,9 @@ object UpdateUi {
             return
         }
         androidx.appcompat.app.AlertDialog.Builder(activity)
-            .setTitle("安装包存到哪里")
+            .setTitle("历史安装包存到哪里")
             .setMessage(
-                "每次下载都会在本机留一份安装包，方便你以后查看或重装。\n\n" +
+                "从「历史版本」下载的安装包会在本机留一份，方便以后查看或重装（普通更新不存档）。\n\n" +
                         "· 内部储存/历史记录：目录最直观，需要授予一次「所有文件访问」权限（仅用于写这个文件夹）\n" +
                         "· 内部储存/下载/历史记录：不用授权，但会混在下载文件里"
             )
@@ -574,14 +594,23 @@ object UpdateUi {
     }
 
     /**
-     * 下载完成后只存档，不自动跳安装：
-     * 存进「历史记录」成功后删掉缓存副本，避免同一份 2.6MB 存两处；
-     * 装不装由用户在提示里决定，之后还能从 设置 → 历史安装包 里装。
+     * 下载完成后分两条路：
+     * · 历史版本下载（archive = true）：往内部储存「历史记录」放一份，装不装由用户点，
+     *   存成功就删掉缓存副本，避免同一份 2.6MB 存两处；之后还能从 设置 → 历史安装包 里装。
+     * · 更新下载（archive = false）：不写历史记录，包只留在应用缓存里，装完即可。
      */
-    private fun onDownloaded(activity: Activity, info: UpdateChecker.ReleaseInfo) {
+    private fun onDownloaded(
+        activity: Activity,
+        info: UpdateChecker.ReleaseInfo,
+        archive: Boolean
+    ) {
         val cacheApk = File(activity.cacheDir, "updates/lingxi-v${info.version}.apk")
         if (!cacheApk.exists()) {
             Toast.makeText(activity, "下载显示完成但文件不见了，请重新下载", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!archive) {
+            showFreshDialog(activity, info.version, cacheApk)
             return
         }
         val history = com.lingxi.chat.data.HistoryStore
@@ -593,6 +622,41 @@ object UpdateUi {
         if (saved != null && saved.file?.exists() == true) cacheApk.delete()
         com.lingxi.chat.data.ConfigStore(activity).pendingInstallVersion = info.version
         showArchivedDialog(activity, info.version, saved)
+    }
+
+    /**
+     * 缓存里是否已有下全的这个包（上一次下载后选了「稍后再装」）：
+     * 结构校验过就直接进安装提示，不重复下载；校验失败就删掉脏文件。
+     */
+    private fun cachedApk(activity: Activity, info: UpdateChecker.ReleaseInfo): File? {
+        val apk = File(activity.cacheDir, "updates/lingxi-v${info.version}.apk")
+        if (!apk.exists()) return null
+        return try {
+            verifyApk(apk, 0L, info.sizeBytes)
+            apk
+        } catch (e: Exception) {
+            apk.delete()
+            null
+        }
+    }
+
+    /** 更新包：临时留在缓存，不进历史记录 */
+    private fun showFreshDialog(activity: Activity, version: String, apk: File) {
+        val upgrade = UpdateChecker.isNewer(version, BuildConfig.VERSION_NAME)
+        androidx.appcompat.app.AlertDialog.Builder(activity)
+            .setTitle("v$version 已下载，还没安装")
+            .setMessage(
+                "这份是更新包，只临时放在应用缓存里，不会写进内部储存的「历史记录」——" +
+                        "那个文件夹是留给历史版本存档的。\n\n" +
+                        "· 想现在换版本：点「立即安装」\n" +
+                        "· 暂时不装：包会留在缓存里，但系统清理缓存后就没有了，届时重新检查更新再下一次即可\n" +
+                        (if (upgrade) "" else "\n注意：这是旧版本，安装前需要先卸载当前版本，本机会话和配置会被清空，建议先到 设置 → 数据备份 备份。")
+            )
+            .setPositiveButton("立即安装") { _, _ -> installApk(activity, apk) }
+            .setNegativeButton("稍后再装") { _, _ ->
+                Toast.makeText(activity, "没安装，包先留在缓存里", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     /** 存档完成的提示：说清楚「还没安装」以及之后怎么装 */
