@@ -1,10 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 弹窗统一：圆角 22dp 面板底 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/dialog_bg" />
-    <stroke
-        android:width="0.5dp"
-        android:color="@color/card_stroke" />
-    <corners android:radius="22dp" />
-</shape>
+<!-- 弹窗统一：圆角 24dp 面板 + 发丝描边 + 顶缘高光 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:endColor="@color/surface_dim"
+                android:startColor="@color/dialog_bg"
+                android:type="linear" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/card_stroke" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <item
+        android:gravity="top"
+        android:height="1dp"
+        android:left="26dp"
+        android:right="26dp"
+        android:top="1.5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card_highlight" />
+            <corners android:radius="1dp" />
+        </shape>
+    </item>
+</layer-list>

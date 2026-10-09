@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 进度条：中性实心，不用主色抢视觉 -->
+<!-- 进度条：底槽带发丝描边，进度用实心微渐变 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <solid android:color="@color/code_bg" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/card_stroke" />
             <corners android:radius="5dp" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <solid android:color="@color/btn_solid" />
+                <gradient
+                    android:angle="0"
+                    android:endColor="@color/btn_solid"
+                    android:startColor="@color/user_bubble_end"
+                    android:type="linear" />
                 <corners android:radius="5dp" />
             </shape>
         </clip>

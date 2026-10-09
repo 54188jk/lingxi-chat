@@ -80,6 +80,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
+                android:paddingBottom="19dp"
                 android:padding="14dp">
 
                 <LinearLayout
@@ -274,6 +275,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
                     android:orientation="vertical"
+                    android:paddingBottom="19dp"
                     android:padding="14dp">
 
                     <TextView
@@ -311,6 +313,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
                     android:orientation="vertical"
+                    android:paddingBottom="19dp"
                     android:padding="14dp">
 
                     <TextView
@@ -358,6 +361,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
+                android:paddingBottom="19dp"
                 android:padding="14dp">
 
                 <LinearLayout

@@ -53,7 +53,7 @@
                 android:maxLines="1"
                 android:text="新会话"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -84,7 +84,7 @@
                     android:maxLines="1"
                     android:text="--:--:--"
                     android:textColor="@color/text_tertiary"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -199,12 +199,11 @@
                     android:background="@drawable/bg_suggest"
                     android:drawableEnd="@drawable/ic_chevron_right"
                     android:drawableTint="@color/text_tertiary"
-                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:paddingStart="16dp"
                     android:paddingEnd="14dp"
                     android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
+                    android:paddingBottom="16dp"
                     android:text="帮我写周报"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
@@ -217,12 +216,11 @@
                     android:background="@drawable/bg_suggest"
                     android:drawableEnd="@drawable/ic_chevron_right"
                     android:drawableTint="@color/text_tertiary"
-                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:paddingStart="16dp"
                     android:paddingEnd="14dp"
                     android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
+                    android:paddingBottom="16dp"
                     android:text="解释一段代码"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
@@ -235,12 +233,11 @@
                     android:background="@drawable/bg_suggest"
                     android:drawableEnd="@drawable/ic_chevron_right"
                     android:drawableTint="@color/text_tertiary"
-                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:paddingStart="16dp"
                     android:paddingEnd="14dp"
                     android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
+                    android:paddingBottom="16dp"
                     android:text="推荐三本科幻小说"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
@@ -278,6 +275,7 @@
             android:layout_height="64dp"
             android:scaleType="centerCrop"
             android:background="@drawable/bg_card"
+            android:paddingBottom="5dp"
             android:clipToOutline="true"
             android:padding="2dp" />
 
@@ -320,7 +318,7 @@
             android:paddingStart="12dp"
             android:paddingEnd="4dp"
             android:paddingTop="8dp"
-            android:paddingBottom="8dp">
+            android:paddingBottom="13dp">
 
             <ImageView
                 android:layout_width="16dp"
@@ -369,7 +367,6 @@
             android:background="@drawable/bg_mode_chip"
             android:drawableStart="@drawable/ic_search"
             android:drawablePadding="5dp"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:paddingStart="11dp"
             android:paddingEnd="11dp"
@@ -387,7 +384,6 @@
             android:background="@drawable/bg_mode_chip"
             android:drawableStart="@drawable/ic_control"
             android:drawablePadding="5dp"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:paddingStart="11dp"
             android:paddingEnd="11dp"
@@ -408,7 +404,7 @@
             android:alpha="0.7"
             android:text="点胶囊可关闭"
             android:textColor="@color/text_secondary"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- ============ 输入栏：只剩 + · 输入框 · 语音 · 发送 ============ -->
@@ -425,7 +421,7 @@
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
         android:paddingTop="5dp"
-        android:paddingBottom="5dp">
+        android:paddingBottom="10dp">
 
         <ImageButton
             android:id="@+id/btnAttach"

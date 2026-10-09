@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 欢迎页提示词胶囊：卡片底 + 描边 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/chip_bg" />
-    <stroke
-        android:width="0.5dp"
-        android:color="@color/chip_stroke" />
-    <corners android:radius="18dp" />
-</shape>
+<!-- 胶囊（欢迎页提示词、文件页地点、深层搜索入口等）：白底渐淡 + 描边 + 按压涟漪 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/ripple_soft">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/chip_bg" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/chip_stroke" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</ripple>

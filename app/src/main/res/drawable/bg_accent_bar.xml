@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 列表左侧强调竖条：中性近黑，不再用渐变 -->
+<!-- 列表左侧强调竖条：竖向主色渐变，从上到下由亮到深 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/text_primary" />
+    <gradient
+        android:angle="270"
+        android:endColor="@color/accent_deep"
+        android:startColor="@color/accent"
+        android:type="linear" />
     <corners android:radius="2dp" />
 </shape>

@@ -42,6 +42,7 @@
 
             <TextView
                 android:id="@+id/tvPath"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -101,6 +102,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/surface_dim"
+        android:foreground="?attr/selectableItemBackground"
         android:paddingStart="16dp"
         android:paddingTop="8dp"
         android:paddingEnd="16dp"
@@ -127,12 +129,14 @@
             android:hint="在当前文件夹里筛选名字"
             android:imeOptions="actionSearch"
             android:inputType="text"
+            android:paddingBottom="15dp"
             android:padding="10dp"
             android:textColor="@color/text_primary"
             android:textSize="13sp" />
 
         <TextView
             android:id="@+id/tvSearchDeep"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"

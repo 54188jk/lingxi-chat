@@ -18,7 +18,7 @@
         android:paddingTop="2dp"
         android:paddingBottom="2dp"
         android:textColor="@color/text_secondary"
-        android:textSize="10sp"
+        android:textSize="11sp"
         android:visibility="gone" />
 
     <LinearLayout
@@ -55,11 +55,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_ai_bubble"
-                android:foreground="?attr/selectableItemBackground"
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp"
                 android:paddingTop="11dp"
-                android:paddingBottom="11dp">
+                android:paddingBottom="16dp">
 
                 <TextView
                     android:id="@+id/tvMsg"
@@ -86,7 +85,7 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="4dp"
                 android:textColor="@color/text_tertiary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 

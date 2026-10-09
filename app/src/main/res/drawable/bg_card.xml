@@ -1,17 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 卡片：白底 + 描边 + 一层极淡投影，浅色下不再是白纸贴白墙 -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:left="1dp" android:top="1.5dp">
+<!-- 卡片：按下去有墨色涟漪；面板抬离底面 5dp，靠「近影 + 远影」两层做厚度，顶缘一条高光做玻璃感 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/ripple_soft">
+    <item
+        android:id="@android:id/mask"
+        android:bottom="5dp">
         <shape android:shape="rectangle">
-            <solid android:color="@color/card_shadow" />
-            <corners android:radius="15dp" />
+            <solid android:color="#FFFFFFFF" />
+            <corners android:radius="16dp" />
         </shape>
     </item>
     <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/surface" />
-            <stroke android:width="0.5dp" android:color="@color/card_stroke" />
-            <corners android:radius="14dp" />
-        </shape>
+        <layer-list>
+            <item
+                android:left="5dp"
+                android:right="5dp"
+                android:top="5dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/card_shadow" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+            <item
+                android:bottom="3dp"
+                android:left="2dp"
+                android:right="2dp"
+                android:top="2dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/card_shadow_near" />
+                    <corners android:radius="17dp" />
+                </shape>
+            </item>
+            <item android:bottom="5dp">
+                <shape android:shape="rectangle">
+                    <gradient
+                        android:angle="270"
+                        android:endColor="@color/surface_dim"
+                        android:startColor="@color/surface"
+                        android:type="linear" />
+                    <stroke
+                        android:width="0.5dp"
+                        android:color="@color/card_stroke" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+            <item
+                android:bottom="5dp"
+                android:gravity="top"
+                android:height="1dp"
+                android:left="16dp"
+                android:right="16dp"
+                android:top="1dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/card_highlight" />
+                    <corners android:radius="1dp" />
+                </shape>
+            </item>
+        </layer-list>
     </item>
-</layer-list>
+</ripple>

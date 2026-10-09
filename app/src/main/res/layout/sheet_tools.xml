@@ -38,11 +38,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -66,11 +65,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -94,11 +92,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -122,11 +119,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -150,11 +146,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -178,11 +173,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -206,11 +200,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -234,11 +227,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -262,11 +254,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -290,11 +281,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -318,11 +308,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
@@ -346,11 +335,10 @@
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
             android:background="@drawable/bg_tool_cell"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:paddingBottom="18dp">
 
             <ImageView
                 android:layout_width="22dp"
