@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面小组件：更淡的一块玻璃面 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/desk_tile" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/desk_line" />
+    <corners android:radius="18dp" />
+</shape>

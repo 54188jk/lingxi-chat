@@ -39,4 +39,12 @@
     <color name="file_doc">#FF9AA6B8</color>
     <color name="ripple_soft">#22FFFFFF</color>
     <color name="ripple_accent">#26FB7185</color>
+    <color name="desk_bezi">#FF000000</color>
+    <color name="desk_wall_top">#FF341622</color>
+    <color name="desk_wall_bottom">#FF000000</color>
+    <color name="desk_tile">#2EFFFFFF</color>
+    <color name="desk_tile_press">#47FFFFFF</color>
+    <color name="desk_fg">#FFFFFFFF</color>
+    <color name="desk_fg_dim">#BFFFFFFF</color>
+    <color name="desk_line">#22FFFFFF</color>
 </resources>

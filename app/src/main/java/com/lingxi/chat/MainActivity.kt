@@ -175,6 +175,10 @@ class MainActivity : BaseActivity() {
     /** 从文件页或操控台带过来的任务草稿 */
     /** 文件页 / 操控台交回来的草稿：要动手的先点亮操控开关，免得发出去变成普通聊天 */
     private fun applyPrefill(i: Intent?) {
+        if (i != null && i.getBooleanExtra("new_session", false)) {
+            i.removeExtra("new_session")
+            newSession()
+        }
         val text = i?.getStringExtra("prefill_text") ?: return
         if (text.isBlank()) return
         val asTask = i.getBooleanExtra("prefill_control", false)

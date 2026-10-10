@@ -43,4 +43,13 @@
     <!-- 按压反馈：墨色用于白卡片，主色用于强调控件；深色主题下自动改白 -->
     <color name="ripple_soft">#14000000</color>
     <color name="ripple_accent">#1AD6123F</color>
+    <!-- 仿手机桌面专用：手机屏幕无论主题都偏暗，靠这套 token 而不是硬写 -->
+    <color name="desk_bezi">#FF08080A</color>
+    <color name="desk_wall_top">#FF2A121C</color>
+    <color name="desk_wall_bottom">#FF0C0C10</color>
+    <color name="desk_tile">#24FFFFFF</color>
+    <color name="desk_tile_press">#3DFFFFFF</color>
+    <color name="desk_fg">#FFFFFFFF</color>
+    <color name="desk_fg_dim">#B3FFFFFF</color>
+    <color name="desk_line">#1FFFFFFF</color>
 </resources>

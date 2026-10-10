@@ -108,6 +108,11 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_CTRL_FS, true)
         set(v) = sp.edit().putBoolean(KEY_CTRL_FS, v).apply()
 
+    /** 打开应用先落到手机桌面；关掉它就直接进聊天页 */
+    var homeDesktop: Boolean
+        get() = sp.getBoolean(KEY_HOME_DESKTOP, true)
+        set(v) = sp.edit().putBoolean(KEY_HOME_DESKTOP, v).apply()
+
     /** 文件页的排序方式：0 名字 / 1 时间 / 2 大小 */
     var fileSort: Int
         get() = sp.getInt(KEY_FILE_SORT, 0)
@@ -186,6 +191,7 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_ON = "ctrl_enabled"
         private const val KEY_CTRL_FS = "ctrl_file_ops"
         private const val KEY_FILE_SORT = "file_sort"
+        private const val KEY_HOME_DESKTOP = "home_desktop"
         private const val KEY_ARCHIVE_LOC = "archive_location"
         private const val KEY_ARCHIVE_PATH = "archive_last_path"
         private const val KEY_ARCHIVE_PENDING = "archive_pending_version"

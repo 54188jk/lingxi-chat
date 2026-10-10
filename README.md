@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.178**（支持 Android 7.0 及以上手机）
+当前版本：**v1.179**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -21,6 +21,7 @@
 - **手机操控**：点亮聊天页操控开关后，把要做的事说出来，AI 会自行读屏并替你点按、滑动、输入完成操作。前台模式接管屏幕边看边操作；后台模式不读屏不占屏，只发指令（拉起应用、打开链接、只读查询设备信息）。操控通道可在设置里选无 Root（默认，系统无障碍）/ Root / Shizuku；自带急停、默认拦截支付类按钮、密码框内容不回传、单任务步数上限
 - **打字机输出 + 随时停止**：回答逐字上屏，生成中点发送键即可打断
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
+- **手机桌面入口**：打开应用先落到一台仿手机的桌面（机身边框、状态栏时间与日期、真实电量、图标网格、返回 / 桌面 / 最近三键），桌面里只放糯叽自己的八个入口，点「糯叽」进聊天、按返回回桌面；设置里可关掉这一层，关掉后打开直接进聊天页
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
 - **应用内更新**：打开就能看有没有新版本，也能翻以前每个版本改了什么；下载时几条线路同时开跑，最先下完并检查没坏的那条算数，其余自动停；某条线路 10 秒没速度就当场换线，损坏的安装包绝不装
@@ -38,8 +39,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.178/lingxi-v1.178.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.178/糯叽-v1.178-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.179/lingxi-v1.179.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.179/糯叽-v1.179-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -49,6 +50,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.179 | 发布：2026-10-10 19:45:49。打开应用先落到一台仿手机的桌面：有机身边框、状态栏（时间 / 日期 / 真实电量 / 信号）、应用图标网格和返回 / 桌面 / 最近三个按键；桌面里只放糯叽自己的入口（糯叽、历史会话、设置、文件、操控台、免费模型、检查更新、新会话），中间卡片会提示当前有没有可聊的模型、点它直接去设置；进去后按手机的返回键或桌面 Home 键回到桌面；设置里可关掉这一层，关掉后打开直接进聊天页 |
 | v1.178 | 发布：2026-10-10 19:11:10。颜色换回原来的配色：强调色由系统蓝改回玫红小面积点缀、主体回到墨黑与白（深色模式同步）；发出的气泡恢复黑底白字（深色为白底黑字）、收入恢复白底；卡片 / 胶囊 / 圆牌 / 弹窗重新带发丝描边，页面底恢复冷白渐变；顶部图标与下载进度条回到中性色；苹果风版的排版全部保留（分组列表、气泡收角尾巴、大标题、字号刻度、按下变暗反馈、同一套圆角） |
 | v1.177 | 发布：2026-10-10 18:32:33。界面整体换成苹果风：底色改为浅灰分组面、卡片为纯白圆角块、强调色改为系统蓝（深色改为纯黑底 + 深灰卡片）；聊天气泡按 iMessage 重做（发出蓝底白字、收入浅灰底，各收小一角做尾巴）；设置页 / 历史会话 / 文件列表改为分组列表，一组共用一块圆角面板、条目间用缩进发丝细线分隔；顶栏改为大字标题、图标按钮用系统蓝；按钮 / 输入框 / 弹窗 / 进度条统一为 iOS 圆角与留白，取消投影，改为按下变暗；字号与 iOS 对齐（正文与列表标题 17、说明 13、时间戳 11，欢迎页大标题 30）；上一版为投影补的底部留白已退回，卡片内边距重新对称 |
 | v1.176 | 发布：2026-10-09 13:13:35。界面整体再打磨一轮：卡片与气泡按真实厚度重新分层（旧版那层投影被面板自己盖住了，等于没生效），边缘补发丝细线与顶缘高光；所有可点区域补齐按下反馈（设置卡片、文件条目、面板功能格、模式胶囊、圆牌按钮、头像、气泡共二十多处），不再有点了没反应的地方；页面底加两片极淡柔光，深色主题单独调过；弹窗、更新弹窗头部、进度条底槽、实心按钮统一换新；文字大小收敛成一套刻度，看不清的 10 号小字全部提到 11 号；顺手清掉三个早就没在用的旧样式文件 |
@@ -115,16 +117,19 @@ gradle assembleDebug
 
 ## 自测结果
 
-- v1.178 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
-- v1.178 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.179 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.179 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
 - v1.177 苹果风改造：`values/colors.xml` 与 `values-night/colors.xml` 全量换成 iOS 系统色板（light: systemGroupedBackground #F2F2F7 / cell #FFF / tint #007AFF / label #1C1C1E；dark: 页面底 #000 / cell #1C1C1E / 气泡 #2C2C2E / tint #0A84FF），token 名与数量两端保持一一对应；21 个 `bg_*` drawable 重写为平面（去掉 layer-list 双层投影与顶缘高光，圆角收敛为 cell 13 / 气泡 18+6 尾巴 / 胶囊 18 / 输入栏 20 / 按钮 12 / 弹窗与抽屉 14），交互层统一保留 `<ripple>` + `@android:id/mask` 做按下变暗；`glow_*`、`card_shadow*`、`card_highlight` 降到全透明保留 token 以免外部引用断裂；新增 `bg_group`（分组面板）与 `bg_icon_tile`（单元格图标底）；`item_file.xml` 重构为「行 + 缩进 58dp 发丝」的分组单元格并挂到 `rvFiles` 的圆角容器上；`values-night/themes.xml` 新建，深色下 `windowLightStatusBar=false`；`code_bg` 由 #EFF0F2 改为 #FFFFFF 以保证代码块在浅灰气泡上仍可辨
 - v1.177 已把上一轮为投影内收补的 37 处 `paddingBottom` 退回（17 处整行删除、20 处回值），卡片上下内边距恢复对称
 - v1.176 视觉改造清单：29 个 `bg_*` drawable 里重写 19 个（真实投影几何：面板内收 5dp / 阴影层下探，`<ripple>` + `@android:id/mask` 圆角蒙版，`card_shadow` / `card_shadow_near` / `card_highlight` / `glow_accent` / `glow_cool` 五个 token 在 `values` 与 `values-night` 同步新增）；因面板内收 5dp，39 处卡片的 `paddingBottom` 同步 +5dp 补偿；21 处「背景已带 ripple 又叠 `?attr/selectableItemBackground`」的双重反馈删除；删除 0 引用死文件 `bg_tag` / `bg_section_bar` / `bg_search_toggle`
+- v1.179 手机桌面：新增 `PhoneActivity` + `activity_phone.xml`（机身 `bg_phone_bezi` / 壁纸 `bg_desk_wall` / 图标底 `bg_desk_tile` / 小组件 `bg_desk_widget` / 三键 `bg_nav_key`，导航与状态栏图标 `ic_nav_*`、`ic_stat_*`），8 个新增 `desk_*` 颜色 token 已同步进 `values` 与 `values-night`（44 / 44 对齐，桌面屏幕在两套主题下都偏深，避免半透明白图标底失去对比）；清单里 LAUNCHER intent-filter 从 `MainActivity` 迁到 `PhoneActivity`，`MainActivity` 改为 `exported="false"`（仅进程内启动，无外部调用方，`onNewIntent` / `applyPrefill` 仍在桌面→聊天路径上生效）；新增 `ConfigStore.homeDesktop`（默认开）与设置页 `swHomeDesktop` 开关；`MainActivity.applyPrefill` 现识别 `new_session` extra 以支持桌面「新会话」图标；时钟用 `View.postDelayed` 自循环并在 `onPause` 撤掉，电量走 `ACTION_BATTERY_CHANGED` 粘性广播只读不注册接收器
+- v1.179 静态校验：`lintRelease` 首轮报 13 个 `UseAppTint` Error（ImageView 上用 `android:tint`），已加 `xmlns:app` 并改为 `app:tint` 后重跑通过；全部 layout / drawable / values 逐文件 parse 通过；`aapt2 dump badging` 确认 `launchable-activity: com.lingxi.chat.PhoneActivity`、label 糯叽、47 / 1.179
 - v1.178 静态校验（配色回退）：`values/colors.xml` 与 `values-night/colors.xml` 用 `git show HEAD~1:` 整体退回 v1.176 的玫红黑白色板，并删除此轮引入后已零引用的 7 个 token（`card_shadow` / `card_shadow_near` / `card_highlight` / `glow_accent` / `glow_cool` / `surface_dim` / `accent_deep`），两端 token 数量仍一一对应（36 / 36）；21 个 `bg_*` 保留 v1.177 的 iOS 几何（cell 13 / 气泡 18+6 尾巴 / 胶囊 18 / 输入栏 20 / 按钮 12 / 弹窗与抽屉 14）与 `<ripple>` 按压层，只把填充与描边语义换回白面 + `card_stroke` 发丝、用户气泡恢复 `user_bubble_start→end` 墨黑渐变、进度条填充换回 `btn_solid` 中性、`bg_app` 恢复 `bg_top→bg_bottom` 冷白渐变（不带柔光）
 - v1.177 静态校验：全部 layout / drawable / values 逐文件 XML parse 通过，并额外扫描「同一元素重复属性」（首轮曾把 `android:letterSpacing` 与 `android:textSize` 各写重一次，已合并）；`assembleRelease` 与 `lintRelease` 无 Error/Fatal；`aapt2 dump badging` 确认 `application-label:'糯叽'`、`com.lingxi.chat`、45 / 1.177
+- v1.179 尚未在设备上安装验证：桌面布局在不同屏宽 / 刘海 / 手势条上的适配（尤其是机身与三键在窄屏会不会挤压图标网格）、点图标进聊天后返回是否落回桌面、关掉桌面开关后是否直达聊天页，都要真机确认；`overridePendingTransition` 在 Android 14 上已废弃，若转场异常改为删除该调用即可
 - v1.178 尚未在设备上安装验证：本轮只做配色回退，排版 / 圆角 / 分组列表沿用 v1.177；白面对白底页面在低亮度屏上的区分度、深色模式下白底黑字气泡的可读性需真机目测
 - v1.177 尚未在设备上安装验证：本轮只换视觉语言（配色 / 圆角 / 气泡 / 分组列表 / 字号），未动任何业务逻辑与接口；iOS 色板在真机屏上的对比度、蓝底白字气泡的可读性、分组容器圆角与列表滚动的贴合度都需真机目测。回退方式：revert 本轮提交即可整体退回 v1.176 的黑白极简风；颜色 token 未增删（仅新增 `bg_group` / `bg_icon_tile` 两个 drawable），不会留下悬空引用
 - 此前已发布版本的安装流程已完成验证

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面壁纸：斜向深红到近黑，左上留一点主色光 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:endColor="@color/desk_wall_bottom"
+                android:startColor="@color/desk_wall_top"
+                android:type="linear" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.18"
+                android:centerY="0.12"
+                android:endColor="@android:color/transparent"
+                android:gradientRadius="240dp"
+                android:startColor="@color/chip_active_bg"
+                android:type="radial" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+</layer-list>

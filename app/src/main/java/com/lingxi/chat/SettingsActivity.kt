@@ -97,6 +97,12 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "回车将直接发送" else "回车改为换行")
         }
 
+        b.swHomeDesktop.isChecked = store.homeDesktop
+        b.swHomeDesktop.setOnCheckedChangeListener { _, checked ->
+            store.homeDesktop = checked
+            toast(if (checked) "下次打开先进手机桌面" else "下次打开直接进聊天页")
+        }
+
         b.btnFreeModel.setOnClickListener {
             startActivity(android.content.Intent(this, FreeModelActivity::class.java))
         }
