@@ -173,10 +173,14 @@
                 android:background="@drawable/bg_divider" />
 
             <LinearLayout
+                android:id="@+id/rowDesk"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -187,22 +191,23 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="打开应用先进手机桌面"
+                        android:text="手机桌面"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="关掉后打开糯叽直接进聊天页，桌面仍然可以在这里打开"
+                        android:text="另一套打开方式：整屏壁纸、能换壁纸、应用商店和已装应用一键启动。平时用不到，想玩可以进来看"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/swHomeDesktop"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right" />
             </LinearLayout>
         </LinearLayout>
 

@@ -35,12 +35,12 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.LingxiChat">
 
-        <!-- 入口做成手机桌面；关掉「启动进桌面」时它会直接把聊天页顶上去 -->
+        <!-- 一打开就是聊天主界面；手机桌面退成可选页面，只能在设置里打开 -->
         <activity
-            android:name=".PhoneActivity"
+            android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.LingxiChat.Desk">
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -48,10 +48,10 @@
         </activity>
 
         <activity
-            android:name=".MainActivity"
-            android:launchMode="singleTop"
+            android:name=".PhoneActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:label="@string/app_name"
+            android:theme="@style/Theme.LingxiChat.Desk" />
 
         <activity android:name=".SessionsActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />

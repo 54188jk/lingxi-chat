@@ -80,79 +80,50 @@ class PhoneActivity : BaseActivity() {
     private val ticker = object : Runnable {
         override fun run() {
             renderClock()
-            b.tvDeskClock.postDelayed(this, 15_000L)
+            b.tvBigClock.postDelayed(this, 15_000L)
         }
     }
 
     private var density = 1f
-    private var drawerOpen = false
     private var recentsOpen = false
+
+    /** 小组件那行末尾的电量文字，读不到就留空 */
+    private var battery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!store.homeDesktop) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-            return
-        }
         b = ActivityPhoneBinding.inflate(layoutInflater)
         setContentView(b.root)
         density = resources.displayMetrics.density
 
-        buildDrawerGrid()
+        buildDeskGrid()
         b.appNuoji.setOnClickListener { launch("chat", it) }
         b.dockHistory.setOnClickListener { launch("sessions", it) }
         b.dockSettings.setOnClickListener { launch("settings", it) }
         b.dockFiles.setOnClickListener { launch("files", it) }
         b.dockControl.setOnClickListener { launch("control", it) }
         b.cardDeskWidget.setOnClickListener { launch("settings", it) }
-        b.drawerHandle.setOnClickListener { openDrawer(true) }
 
         applyWallpaper()
         b.deskRoot.setOnLongClickListener { askWallpaper(); true }
         b.btnNavBack.setOnClickListener {
-            when {
-                recentsOpen -> openRecents(false)
-                drawerOpen -> openDrawer(false)
-                else -> moveTaskToBack(true)
-            }
+            if (recentsOpen) openRecents(false) else moveTaskToBack(true)
         }
         b.btnNavHome.setOnClickListener {
             openRecents(false)
-            openDrawer(false)
             bounce(it)
             renderStatus()
         }
         b.btnNavRecent.setOnClickListener { openRecents(!recentsOpen) }
 
-        // 桌面本体支持上滑开抽屉，抽屉支持下滑关，跟真机一样
-        b.deskContent.setOnTouchListener { _, e ->
-            if (e.action == MotionEvent.ACTION_UP) {
-                val dy = e.rawY - touchDownY
-                if (dy < -48 * density) openDrawer(true)
-            }
-            false
-        }
-        b.panelDrawer.setOnTouchListener { _, e ->
-            if (e.action == MotionEvent.ACTION_UP && e.rawY - touchDownY > 48 * density) openDrawer(false)
-            false
-        }
-        b.panelDrawer.setOnClickListener { openDrawer(false) }
         b.panelRecents.setOnClickListener { openRecents(false) }
-    }
-
-    private var touchDownY = 0f
-
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.action == MotionEvent.ACTION_DOWN) touchDownY = ev.rawY
-        return super.dispatchTouchEvent(ev)
     }
 
     override fun onResume() {
         super.onResume()
         if (!::b.isInitialized) return
         renderStatus()
-        b.tvDeskClock.post(ticker)
+        b.tvBigClock.post(ticker)
         if (!enteredOnce) {
             enteredOnce = true
             playEntry()
@@ -160,7 +131,7 @@ class PhoneActivity : BaseActivity() {
     }
 
     override fun onPause() {
-        if (::b.isInitialized) b.tvDeskClock.removeCallbacks(ticker)
+        if (::b.isInitialized) b.tvBigClock.removeCallbacks(ticker)
         super.onPause()
     }
 
@@ -168,7 +139,7 @@ class PhoneActivity : BaseActivity() {
 
     /** 图标一次依次浮起；轻量档或系统关掉动画就直接给到位 */
     private fun playEntry() {
-        val views = listOf(b.appNuoji, b.cardDeskWidget, b.dock, b.navBar)
+        val views = listOf(b.cardDeskWidget, b.appNuoji, b.llDeskGrid, b.dock, b.navBar)
         if (!animationsEnabled() || DevicePerf.lowEnd(this)) {
             views.forEach { it.alpha = 1f; it.translationY = 0f }
             return
@@ -180,63 +151,59 @@ class PhoneActivity : BaseActivity() {
         }
     }
 
-    private fun buildDrawerGrid() {
-        b.llDrawerGrid.removeAllViews()
+    /** 桌面网格：除「糯叽」大图标外的全部入口，四个一行，摆成像真桌面那样 */
+    private fun buildDeskGrid() {
+        b.llDeskGrid.removeAllViews()
+        val items = entries.filter { it.key != "chat" }
         val rowLp = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        rowLp.topMargin = (10 * density).toInt()
-        entries.chunked(3).forEach { row ->
-            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        rowLp.topMargin = (6 * density).toInt()
+        items.chunked(4).forEach { row ->
+            val line = LinearLayout(this)
+            line.orientation = LinearLayout.HORIZONTAL
             line.layoutParams = rowLp
             row.forEach { entry ->
-                line.addView(drawerTile(entry), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                line.addView(deskTile(entry), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             }
-            // 不满一行时补空位，保持格子对齐
-            repeat(3 - row.size) {
+            repeat(4 - row.size) {
                 line.addView(View(this), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             }
-            b.llDrawerGrid.addView(line)
+            b.llDeskGrid.addView(line)
         }
     }
 
-    private fun drawerTile(entry: Entry): View {
+    private fun deskTile(entry: Entry): View {
         val tile = LinearLayout(this)
         tile.orientation = LinearLayout.VERTICAL
         tile.gravity = Gravity.CENTER_HORIZONTAL
+        tile.background = ContextCompat.getDrawable(this, R.drawable.bg_nav_key)
 
-        val holder = android.widget.FrameLayout(this)
-        holder.layoutParams = LinearLayout.LayoutParams((78 * density).toInt(), (86 * density).toInt())
-        holder.background = ContextCompat.getDrawable(this, R.drawable.bg_nav_key)
-
+        val plate = android.widget.FrameLayout(this)
+        plate.layoutParams = android.widget.FrameLayout.LayoutParams(
+            (50 * density).toInt(), (50 * density).toInt(), Gravity.CENTER)
+        plate.background = ContextCompat.getDrawable(this, R.drawable.bg_desk_tile)
         val icon = ImageView(this)
         icon.contentDescription = entry.label
         icon.setImageResource(entry.icon)
-        if (entry.key == "chat") {
-            holder.addView(icon, android.widget.FrameLayout.LayoutParams(
-                (62 * density).toInt(), (62 * density).toInt(), Gravity.CENTER))
-        } else {
-            val plate = android.widget.FrameLayout(this)
-            plate.layoutParams = android.widget.FrameLayout.LayoutParams(
-                (62 * density).toInt(), (62 * density).toInt(), Gravity.CENTER)
-            plate.background = ContextCompat.getDrawable(this, R.drawable.bg_desk_tile)
-            icon.setColorFilter(ContextCompat.getColor(this, R.color.desk_fg))
-            plate.addView(icon, android.widget.FrameLayout.LayoutParams(
-                (26 * density).toInt(), (26 * density).toInt(), Gravity.CENTER))
-            holder.addView(plate)
-        }
+        icon.setColorFilter(ContextCompat.getColor(this, R.color.desk_fg))
+        plate.addView(icon, android.widget.FrameLayout.LayoutParams(
+            (22 * density).toInt(), (22 * density).toInt(), Gravity.CENTER))
+        tile.addView(plate)
 
         val label = TextView(this)
         label.text = entry.label
         label.setTextColor(ContextCompat.getColor(this, R.color.desk_fg))
-        label.textSize = 11f
+        label.textSize = 10f
         label.isSingleLine = true
         label.gravity = Gravity.CENTER
-        label.setPadding(0, (6 * density).toInt(), 0, 0)
-
-        tile.addView(holder)
+        label.setPadding(0, (4 * density).toInt(), 0, 0)
         tile.addView(label)
-        tile.setOnClickListener { launch(entry.key, holder) }
+
+        tile.setOnClickListener { launch(entry.key, plate) }
+        tile.setOnLongClickListener {
+            if (entry.key == "wallpaper") { askWallpaper(); true } else false
+        }
         return tile
     }
 
@@ -263,7 +230,6 @@ class PhoneActivity : BaseActivity() {
         val i = Intent(this, target)
         if (newSession) i.putExtra("new_session", true)
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        openDrawer(false)
         openRecents(false)
         startActivity(i)
         if (animationsEnabled()) overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
@@ -280,31 +246,12 @@ class PhoneActivity : BaseActivity() {
         }.start()
     }
 
-    private fun openDrawer(open: Boolean) {
-        if (drawerOpen == open) return
-        drawerOpen = open
-        val panel = b.panelDrawer
-        if (open) {
-            recentsOpen = false
-            b.panelRecents.visibility = View.GONE
-            panel.visibility = View.VISIBLE
-            panel.translationY = panel.height.toFloat().takeIf { it > 0 } ?: (1f * density * 600)
-            panel.alpha = 0f
-            panel.animate().translationY(0f).alpha(1f).setDuration(if (animationsEnabled()) 260 else 0).start()
-        } else {
-            panel.animate().translationY(panel.height.toFloat().coerceAtLeast(600f * density)).alpha(0f)
-                .setDuration(if (animationsEnabled()) 200 else 0).withEndAction { panel.visibility = View.GONE }.start()
-        }
-    }
-
     private fun openRecents(open: Boolean) {
         if (recentsOpen == open) return
         recentsOpen = open
         val panel = b.panelRecents
         if (open) {
             buildRecents()
-            drawerOpen = false
-            b.panelDrawer.visibility = View.GONE
             panel.visibility = View.VISIBLE
             panel.alpha = 0f
             panel.animate().alpha(1f).setDuration(if (animationsEnabled()) 200 else 0).start()
@@ -317,7 +264,9 @@ class PhoneActivity : BaseActivity() {
     private fun buildRecents() {
         b.llRecents.removeAllViews()
         val keys = store.deskRecents.ifEmpty { listOf("chat") }
-        keys.filter { it != "wallpaper" }.forEach { key ->
+        // 多任务里只留真正能回去的页面
+        val backable = setOf("chat", "newchat", "sessions", "settings", "files", "control", "free", "store")
+        keys.filter { it in backable }.forEach { key ->
             val entry = entries.firstOrNull { it.key == key } ?: return@forEach
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -357,9 +306,8 @@ class PhoneActivity : BaseActivity() {
     private fun renderClock() {
         val now = Date()
         val hm = SimpleDateFormat("HH:mm", Locale.CHINA).format(now)
-        b.tvDeskClock.text = hm
         b.tvBigClock.text = hm
-        b.tvDeskDate.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA).format(now)
+        b.tvDeskDate.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA).format(now) + battery
     }
 
     private fun renderStatus() {
@@ -372,11 +320,11 @@ class PhoneActivity : BaseActivity() {
         val state = sticky?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
         val charging = state == BatteryManager.BATTERY_STATUS_CHARGING ||
                 state == BatteryManager.BATTERY_STATUS_FULL
-        b.tvDeskBattery.text = if (level < 0 || scale <= 0) {
-            "电量未知"
+        battery = if (level < 0 || scale <= 0) {
+            ""
         } else {
             val pct = level * 100 / scale
-            if (charging) "$pct% 充电中" else "$pct%"
+            " · 电量 $pct%" + if (charging) "（充电中）" else ""
         }
         val model = store.getActiveModel()
         b.tvWidgetNote.text = if (model == null) {

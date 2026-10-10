@@ -27,64 +27,6 @@
         android:fitsSystemWindows="true"
         android:orientation="vertical">
 
-        <!-- 状态栏：时间与真实电量 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="22dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="22dp">
-
-            <TextView
-                android:id="@+id/tvDeskClock"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:letterSpacing="-0.01"
-                android:text="09:41"
-                android:textColor="@color/desk_fg"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <ImageView
-                android:layout_width="15dp"
-                android:layout_height="15dp"
-                android:contentDescription="信号"
-                android:src="@drawable/ic_stat_signal"
-                app:tint="@color/desk_fg_dim" />
-
-            <ImageView
-                android:layout_width="15dp"
-                android:layout_height="15dp"
-                android:layout_marginStart="6dp"
-                android:contentDescription="无线局域网"
-                android:src="@drawable/ic_stat_wifi"
-                app:tint="@color/desk_fg_dim" />
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="15dp"
-                android:layout_marginStart="6dp"
-                android:contentDescription="电量"
-                android:src="@drawable/ic_stat_battery"
-                app:tint="@color/desk_fg_dim" />
-
-            <TextView
-                android:id="@+id/tvDeskBattery"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="78%"
-                android:textColor="@color/desk_fg_dim"
-                android:textSize="12sp" />
-        </LinearLayout>
-
         <!-- 时钟小组件：顺便说清现在能不能聊 -->
         <LinearLayout
             android:id="@+id/cardDeskWidget"
@@ -110,10 +52,10 @@
 
             <TextView
                 android:id="@+id/tvDeskDate"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="10月10日 周五"
+                android:text="10月10日 周五 · 电量 78%"
                 android:textColor="@color/desk_fg_dim"
                 android:textSize="13sp" />
 
@@ -144,14 +86,14 @@
             android:padding="10dp">
 
             <FrameLayout
-                android:layout_width="86dp"
-                android:layout_height="86dp"
+                android:layout_width="74dp"
+                android:layout_height="74dp"
                 android:background="@drawable/bg_desk_app">
 
                 <ImageView
                     android:id="@+id/ivNuojiIcon"
-                    android:layout_width="68dp"
-                    android:layout_height="68dp"
+                    android:layout_width="58dp"
+                    android:layout_height="58dp"
                     android:layout_gravity="center"
                     android:contentDescription="糯叽"
                     android:src="@mipmap/ic_launcher" />
@@ -172,33 +114,15 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- 抽屉把手 -->
+        <!-- 桌面上直接摆着的入口（代码按条目生成，四个一行） -->
         <LinearLayout
-            android:id="@+id/drawerHandle"
-            android:layout_width="wrap_content"
+            android:id="@+id/llDeskGrid"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <ImageView
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:contentDescription="上滑"
-                android:rotation="270"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="@color/desk_fg_dim" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="上滑查看全部"
-                android:textColor="@color/desk_fg_dim"
-                android:textSize="11sp" />
-        </LinearLayout>
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="8dp"
+            android:orientation="vertical" />
 
         <!-- Dock：四个最常用的去处 -->
         <LinearLayout
@@ -331,51 +255,6 @@
                 android:src="@drawable/ic_nav_recent"
                 app:tint="@color/desk_fg_dim" />
         </LinearLayout>
-    </LinearLayout>
-
-    <!-- 应用抽屉：糯叽自己的全部页面 -->
-    <LinearLayout
-        android:id="@+id/panelDrawer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/bg_desk_scrim"
-        android:clickable="true"
-        android:focusable="true"
-        android:orientation="vertical"
-        android:paddingTop="44dp"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="22dp"
-            android:paddingEnd="22dp"
-            android:text="全部 · 这台手机里只有糯叽自己的页面"
-            android:textColor="@color/desk_fg_dim"
-            android:textSize="13sp" />
-
-        <LinearLayout
-            android:id="@+id/llDrawerGrid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginTop="18dp"
-            android:layout_marginEnd="14dp"
-            android:orientation="vertical" />
-
-        <Space
-            android:layout_width="1dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="30dp"
-            android:gravity="center"
-            android:text="下滑，或按返回键关掉"
-            android:textColor="@color/desk_fg_dim"
-            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- 多任务：最近打开过的页面 -->

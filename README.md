@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.180**（支持 Android 7.0 及以上手机）
+当前版本：**v1.181**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -21,9 +21,8 @@
 - **手机操控**：点亮聊天页操控开关后，把要做的事说出来，AI 会自行读屏并替你点按、滑动、输入完成操作。前台模式接管屏幕边看边操作；后台模式不读屏不占屏，只发指令（拉起应用、打开链接、只读查询设备信息）。操控通道可在设置里选无 Root（默认，系统无障碍）/ Root / Shizuku；自带急停、默认拦截支付类按钮、密码框内容不回传、单任务步数上限
 - **打字机输出 + 随时停止**：回答逐字上屏，生成中点发送键即可打断
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
-- **手机桌面入口**：打开应用先落到一台手机的真桌面——整屏壁纸、贴顶状态栏（时间 / 日期 / 真实电量与充电状态）、贴底三键；桌面上只摆「糯叽」一个应用，点它进聊天，其余页面收在上滑抽屉里，Dock 常驻四个常用去处；壁纸可以换（6 款内置，或长按桌面从相册挑一张），随时恢复默认；返回键优先关浮层、再退后台，桌面键回桌面，最近键拉起多任务卡片点一下就回到刚才那页；设置里可关掉这一层直接进聊天页
-- **应用商店与侧载**：商店页可把你信任的安装包直链添加进来，下载实时显示进度，装之前先校验大小、包结构与关键文件，不合格的直接扔掉不交安装；也能扫内部储存里已有的安装包一键交给系统安装；还会列出手机上已装的应用并可一键启动（卸载请到系统设置）
-- **桌面动效**：壁纸上三团柔光缓慢漂移、图标依次浮起入场、点图标先缩一下再进入，全部共用同一条刷新节拍；轻量档机器或系统关闭动画时自动静止
+- **一打开就是聊天页**：启动直接进主界面，不需要多走一步
+- **手机桌面（可选）**：设置 → 手机桌面，可以切到一台「手机」的桌面玩法——整屏壁纸、6 款内置壁纸或从相册自选一张、入口图标直接摆在桌面上、底部返回 / 桌面 / 最近三键真能用（返回关浮层或退后台、桌面回桌面、最近拉起多任务卡片）；不想要就留在设置里，不影响日常使用
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
 - **应用内更新**：打开就能看有没有新版本，也能翻以前每个版本改了什么；下载时几条线路同时开跑，最先下完并检查没坏的那条算数，其余自动停；某条线路 10 秒没速度就当场换线，损坏的安装包绝不装
@@ -41,8 +40,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.180/lingxi-v1.180.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.180/糯叽-v1.180-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.181/lingxi-v1.181.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.181/糯叽-v1.181-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -52,6 +51,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.181 | 发布：2026-10-10 22:20:15。打开糯叽直接进聊天主界面，不再先经过桌面那一层；手机桌面退成设置 → 手机桌面的可选入口；桌面内部也收拾干净：去掉自绘的假状态栏小图标（系统本来就有真的时间与电量，画两份会露馅），入口图标全部直接摆在桌面上并取消上滑抽屉；顺手删掉三个不再被引用的图标素材 |
 | v1.180 | 发布：2026-10-10 21:49:20。桌面放大到整屏（壁纸铺满、状态栏贴顶、三键贴底），中间只留「糯叽」一个大图标、其余页面收进上滑抽屉，Dock 常驻四个常用去处；可换壁纸（6 款内置 + 从相册自选 + 恢复默认）；新增应用商店：可添加自己的安装包直链下载（带进度与完整性校验，坏包不交安装）、扫本机安装包直接装、列出并一键启动手机上已装的应用；三键按真机手感工作；加了壁纸呼吸光、图标依次浮起、点按缩放等动效，轻量档与系统关闭动画时自动静止 |
 | v1.179 | 发布：2026-10-10 19:45:49。打开应用先落到一台仿手机的桌面：有机身边框、状态栏（时间 / 日期 / 真实电量 / 信号）、应用图标网格和返回 / 桌面 / 最近三个按键；桌面里只放糯叽自己的入口（糯叽、历史会话、设置、文件、操控台、免费模型、检查更新、新会话），中间卡片会提示当前有没有可聊的模型、点它直接去设置；进去后按手机的返回键或桌面 Home 键回到桌面；设置里可关掉这一层，关掉后打开直接进聊天页 |
 | v1.178 | 发布：2026-10-10 19:11:10。颜色换回原来的配色：强调色由系统蓝改回玫红小面积点缀、主体回到墨黑与白（深色模式同步）；发出的气泡恢复黑底白字（深色为白底黑字）、收入恢复白底；卡片 / 胶囊 / 圆牌 / 弹窗重新带发丝描边，页面底恢复冷白渐变；顶部图标与下载进度条回到中性色；苹果风版的排版全部保留（分组列表、气泡收角尾巴、大标题、字号刻度、按下变暗反馈、同一套圆角） |
@@ -120,8 +120,8 @@ gradle assembleDebug
 
 ## 自测结果
 
-- v1.180 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
-- v1.180 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.181 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.181 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -129,6 +129,9 @@ gradle assembleDebug
 - v1.177 已把上一轮为投影内收补的 37 处 `paddingBottom` 退回（17 处整行删除、20 处回值），卡片上下内边距恢复对称
 - v1.176 视觉改造清单：29 个 `bg_*` drawable 里重写 19 个（真实投影几何：面板内收 5dp / 阴影层下探，`<ripple>` + `@android:id/mask` 圆角蒙版，`card_shadow` / `card_shadow_near` / `card_highlight` / `glow_accent` / `glow_cool` 五个 token 在 `values` 与 `values-night` 同步新增）；因面板内收 5dp，39 处卡片的 `paddingBottom` 同步 +5dp 补偿；21 处「背景已带 ripple 又叠 `?attr/selectableItemBackground`」的双重反馈删除；删除 0 引用死文件 `bg_tag` / `bg_section_bar` / `bg_search_toggle`
 - v1.179 手机桌面：新增 `PhoneActivity` + `activity_phone.xml`（机身 `bg_phone_bezi` / 壁纸 `bg_desk_wall` / 图标底 `bg_desk_tile` / 小组件 `bg_desk_widget` / 三键 `bg_nav_key`，导航与状态栏图标 `ic_nav_*`、`ic_stat_*`），8 个新增 `desk_*` 颜色 token 已同步进 `values` 与 `values-night`（44 / 44 对齐，桌面屏幕在两套主题下都偏深，避免半透明白图标底失去对比）；清单里 LAUNCHER intent-filter 从 `MainActivity` 迁到 `PhoneActivity`，`MainActivity` 改为 `exported="false"`（仅进程内启动，无外部调用方，`onNewIntent` / `applyPrefill` 仍在桌面→聊天路径上生效）；新增 `ConfigStore.homeDesktop`（默认开）与设置页 `swHomeDesktop` 开关；`MainActivity.applyPrefill` 现识别 `new_session` extra 以支持桌面「新会话」图标；时钟用 `View.postDelayed` 自循环并在 `onPause` 撤掉，电量走 `ACTION_BATTERY_CHANGED` 粘性广播只读不注册接收器
+- v1.181 入口回退：`AndroidManifest` 的 LAUNCHER intent-filter 从 `PhoneActivity` 迁回 `MainActivity`（`exported="true"`），`PhoneActivity` 改回 `exported="false"` 且删掉「未开启桌面就转发到聊天页」的自转发逻辑，入口由 `SettingsActivity` 的 `rowDesk` 行提供；`ConfigStore.homeDesktop` 与 `KEY_HOME_DESKTOP` 一并删除（不再有这个开关），`activity_settings.xml` 里那行 SwitchCompat 换成带 chevron 的入口行；`activity_phone.xml` 删掉自绘状态栏行（`tvDeskClock` / 三个 `ic_stat_*` / `tvDeskBattery`）与抽屉面板与把手，电量并进时钟小组件的日期行（`PhoneActivity.battery`），入口网格 `llDeskGrid` 由 `buildDeskGrid()` 按 `entries` 每行 4 个生成，`deskTile()` 长按「换壁纸」格子也能直接换；`ic_stat_battery`/`ic_stat_signal`/`ic_stat_wifi` 三个素材随假状态栏一起删除
+- v1.181 构建验证：`assembleRelease` + `lintRelease` 无 Error/Fatal；全部 layout / values XML 逐文件 parse；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、49 / 1.181
+- v1.181 尚未在设备上安装验证：桌面页现在只能通过设置进入，需确认真机上进出该页与聊天页的返回栈是否正常（桌面里点「糯叽」进聊天后按返回应回到桌面，再按返回退出应用），以及删除自绘状态栏后各厂商机型的系统状态栏在深色壁纸上的可读性
 - v1.180 桌面与商店：`PhoneActivity` 改为全屏桌面（`deskWall` 壁纸层 + `DeskGlowView` 呼吸光 + 上滑抽屉 + 多任务浮层，图标由代码排 3 列网格），新增 `StoreActivity` + `activity_store.xml`（可下载应用 / 本机安装包 / 已装应用三段）；`ConfigStore` 新增 `wallpaperKey` 与 `storeApps`（JSON 数组）；`UpdateUi` 开放 `installFile(activity, apk)` 与 `checkApk(apk, expectedSize)`，商店因此复用更新流程里同一套「授权引导 + 调起安装」和「大小 / ZIP 结构 / manifest / dex」三重校验，不另写一份；6 个 `bg_wall_*` 作为画面素材固定深色（保证桌面白字对比，不跟主题走），`Theme.LingxiChat.Desk` 的 `windowBackground` 与默认壁纸统一成 `bg_wall_crimson` 并删掉过渡用的 `bg_desk_wall`；`AndroidManifest` 注册 `StoreActivity`（exported=false）；自定义壁纸按屏宽 2 倍采样存 `filesDir/wallpaper/custom.img`
 - v1.180 构建坑：新增 `StoreActivity` 时漏写 `import com.lingxi.chat.databinding.ActivityStoreBinding`，Kotlin 报的是一串「Unresolved reference 'llInstalled' / 'btnBack'」而不是「找不到 binding」，容易误判成 ViewBinding 没生成、白清一次构建缓存；另一处是 `lifecycleScope.launch { val x = withContext(IO) { … } }` 之后误用 `return@withContext`，应为 `return@launch`
 - v1.179 静态校验：`lintRelease` 首轮报 13 个 `UseAppTint` Error（ImageView 上用 `android:tint`），已加 `xmlns:app` 并改为 `app:tint` 后重跑通过；全部 layout / drawable / values 逐文件 parse 通过；`aapt2 dump badging` 确认 `launchable-activity: com.lingxi.chat.PhoneActivity`、label 糯叽、47 / 1.179

@@ -108,11 +108,6 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_CTRL_FS, true)
         set(v) = sp.edit().putBoolean(KEY_CTRL_FS, v).apply()
 
-    /** 打开应用先落到手机桌面；关掉它就直接进聊天页 */
-    var homeDesktop: Boolean
-        get() = sp.getBoolean(KEY_HOME_DESKTOP, true)
-        set(v) = sp.edit().putBoolean(KEY_HOME_DESKTOP, v).apply()
-
     /** 桌面「最近」键要显示的页面，最新的排前面，只留四个 */
     var deskRecents: List<String>
         get() = (sp.getString(KEY_DESK_RECENTS, "") ?: "").split(',').filter { it.isNotBlank() }
@@ -206,7 +201,6 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_ON = "ctrl_enabled"
         private const val KEY_CTRL_FS = "ctrl_file_ops"
         private const val KEY_FILE_SORT = "file_sort"
-        private const val KEY_HOME_DESKTOP = "home_desktop"
         private const val KEY_DESK_RECENTS = "desk_recents"
         private const val KEY_WALLPAPER = "desk_wallpaper"
         private const val KEY_STORE_APPS = "store_apps"
