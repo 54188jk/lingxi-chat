@@ -11,6 +11,14 @@
         <item name="alertDialogTheme">@style/AlertDialog.Lingxi</item>
     </style>
 
+    <!-- 手机桌面：整屏就是手机屏，系统栏透明让壁纸透出来，状态栏图标固定用浅色 -->
+    <style name="Theme.LingxiChat.Desk" parent="Theme.LingxiChat">
+        <item name="android:windowBackground">@drawable/bg_wall_crimson</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
     <style name="AlertDialog.Lingxi" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="colorSurface">@color/dialog_bg</item>
         <item name="colorOnSurface">@color/text_primary</item>

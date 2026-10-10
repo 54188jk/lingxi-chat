@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 玻璃浮层：半透明深面 + 一道高光描边 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/desk_glass" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/desk_line" />
+    <corners android:radius="22dp" />
+</shape>

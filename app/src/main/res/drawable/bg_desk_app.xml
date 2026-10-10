@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 唯一应用图标背后的那圈光垫 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/desk_tile_press">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/desk_tile" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/desk_line" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</ripple>

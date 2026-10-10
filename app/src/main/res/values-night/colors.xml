@@ -47,4 +47,8 @@
     <color name="desk_fg">#FFFFFFFF</color>
     <color name="desk_fg_dim">#BFFFFFFF</color>
     <color name="desk_line">#22FFFFFF</color>
+    <color name="desk_glass">#4D16161E</color>
+    <color name="desk_glass_strong">#8A0E0E14</color>
+    <color name="desk_dot_off">#59FFFFFF</color>
+    <color name="desk_scrim">#A6000000</color>
 </resources>

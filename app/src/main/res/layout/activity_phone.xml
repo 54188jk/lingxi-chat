@@ -1,497 +1,425 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/deskRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_app"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    android:paddingStart="14dp"
-    android:paddingTop="10dp"
-    android:paddingEnd="14dp"
-    android:paddingBottom="10dp">
+    android:layout_height="match_parent">
 
-    <TextView
+    <!-- 壁纸：内置渐变或用户自己选的一张图，光晕叠在它上面 -->
+    <ImageView
+        android:id="@+id/deskWall"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:letterSpacing="0.02"
-        android:text="糯叽手机 · 里面只有这一个软件"
-        android:textColor="@color/text_tertiary"
-        android:textSize="11sp" />
+        android:layout_height="match_parent"
+        android:contentDescription="壁纸"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_wall_crimson" />
 
-    <!-- 机身：深色壳包住屏幕与三键 -->
-    <FrameLayout
+    <!-- 壁纸光晕：底色由机桌主题给，这里只画漂移的柔光 -->
+    <com.lingxi.chat.DeskGlowView
+        android:id="@+id/glowDesk"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:background="@drawable/bg_phone_bezi"
-        android:padding="8dp">
+        android:layout_height="match_parent" />
 
+    <LinearLayout
+        android:id="@+id/deskContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:orientation="vertical">
+
+        <!-- 状态栏：时间与真实电量 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="22dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="22dp">
 
-            <!-- 屏幕 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_desk_wall"
-                android:orientation="vertical"
-                android:paddingStart="14dp"
-                android:paddingTop="12dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="12dp">
+            <TextView
+                android:id="@+id/tvDeskClock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="-0.01"
+                android:text="09:41"
+                android:textColor="@color/desk_fg"
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
-                <!-- 状态栏 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-                    <TextView
-                        android:id="@+id/tvDeskClock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="09:41"
-                        android:textColor="@color/desk_fg"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:contentDescription="信号"
+                android:src="@drawable/ic_stat_signal"
+                app:tint="@color/desk_fg_dim" />
 
-                    <TextView
-                        android:id="@+id/tvDeskDate"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="10月10日 周五"
-                        android:textColor="@color/desk_fg_dim"
-                        android:textSize="11sp" />
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_marginStart="6dp"
+                android:contentDescription="无线局域网"
+                android:src="@drawable/ic_stat_wifi"
+                app:tint="@color/desk_fg_dim" />
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1" />
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="15dp"
+                android:layout_marginStart="6dp"
+                android:contentDescription="电量"
+                android:src="@drawable/ic_stat_battery"
+                app:tint="@color/desk_fg_dim" />
 
-                    <ImageView
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:contentDescription="信号"
-                        android:src="@drawable/ic_stat_signal"
-                        app:tint="@color/desk_fg_dim" />
+            <TextView
+                android:id="@+id/tvDeskBattery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="78%"
+                android:textColor="@color/desk_fg_dim"
+                android:textSize="12sp" />
+        </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:layout_marginStart="5dp"
-                        android:contentDescription="无线局域网"
-                        android:src="@drawable/ic_stat_wifi"
-                        app:tint="@color/desk_fg_dim" />
+        <!-- 时钟小组件：顺便说清现在能不能聊 -->
+        <LinearLayout
+            android:id="@+id/cardDeskWidget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="18dp"
+            android:background="@drawable/bg_desk_glass"
+            android:foreground="?attr/selectableItemBackground"
+            android:orientation="vertical"
+            android:padding="18dp">
 
-                    <ImageView
-                        android:layout_width="17dp"
-                        android:layout_height="15dp"
-                        android:layout_marginStart="5dp"
-                        android:contentDescription="电量"
-                        android:src="@drawable/ic_stat_battery"
-                        app:tint="@color/desk_fg_dim" />
+            <TextView
+                android:id="@+id/tvBigClock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="-0.03"
+                android:text="09:41"
+                android:textColor="@color/desk_fg"
+                android:textSize="42sp"
+                android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvDeskBattery"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="78%"
-                        android:textColor="@color/desk_fg_dim"
-                        android:textSize="11sp" />
-                </LinearLayout>
+            <TextView
+                android:id="@+id/tvDeskDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="10月10日 周五"
+                android:textColor="@color/desk_fg_dim"
+                android:textSize="13sp" />
 
-                <!-- 小组件：一眼看清现在能不能直接聊 -->
-                <LinearLayout
-                    android:id="@+id/cardDeskWidget"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_desk_widget"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
-                    <TextView
-                        android:id="@+id/tvWidgetTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:letterSpacing="-0.01"
-                        android:text="糯叽已经就绪"
-                        android:textColor="@color/desk_fg"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvWidgetNote"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="当前模型：还没配置"
-                        android:textColor="@color/desk_fg_dim"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- 图标网格：两行四列，全是糯叽自己的页面 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:id="@+id/appChat"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <ImageView
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:contentDescription="糯叽"
-                            android:src="@mipmap/ic_launcher" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="糯叽"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appSessions"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="历史会话"
-                                android:src="@drawable/ic_history"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="历史会话"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appSettings"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="设置"
-                                android:src="@drawable/ic_settings"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="设置"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appFiles"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="文件"
-                                android:src="@drawable/ic_folder"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="文件"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:id="@+id/appControl"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="操控台"
-                                android:src="@drawable/ic_control"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="操控台"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appFreeModel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="免费模型"
-                                android:src="@drawable/ic_sparkle"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="免费模型"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appUpdate"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="检查更新"
-                                android:src="@drawable/ic_update"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="检查更新"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/appNewChat"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_nav_key"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:background="@drawable/bg_desk_tile">
-
-                            <ImageView
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="新会话"
-                                android:src="@drawable/ic_add_circle"
-                                app:tint="@color/desk_fg" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:singleLine="true"
-                            android:text="新会话"
-                            android:textColor="@color/desk_fg"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <Space
-                    android:layout_width="1dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/tvDeskHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="点「糯叽」进去聊天，按下面的返回键回到这里"
-                    android:textColor="@color/desk_fg_dim"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <!-- 三键：返回 / 桌面 / 最近 -->
-            <LinearLayout
+            <TextView
+                android:id="@+id/tvWidgetNote"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp">
-
-                <ImageView
-                    android:id="@+id/btnNavBack"
-                    android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_nav_key"
-                    android:contentDescription="返回"
-                    android:padding="6dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_nav_back"
-                    app:tint="@color/desk_fg_dim" />
-
-                <ImageView
-                    android:id="@+id/btnNavHome"
-                    android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/bg_nav_key"
-                    android:contentDescription="回到桌面"
-                    android:padding="6dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_nav_home"
-                    app:tint="@color/desk_fg_dim" />
-
-                <ImageView
-                    android:id="@+id/btnNavRecent"
-                    android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/bg_nav_key"
-                    android:contentDescription="最近使用"
-                    android:padding="7dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_nav_recent"
-                    app:tint="@color/desk_fg_dim" />
-            </LinearLayout>
+                android:layout_marginTop="12dp"
+                android:text="当前模型：还没配置"
+                android:textColor="@color/desk_fg_dim"
+                android:textSize="12sp" />
         </LinearLayout>
-    </FrameLayout>
-</LinearLayout>
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 这台「手机」上唯一的软件 -->
+        <LinearLayout
+            android:id="@+id/appNuoji"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_nav_key"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <FrameLayout
+                android:layout_width="86dp"
+                android:layout_height="86dp"
+                android:background="@drawable/bg_desk_app">
+
+                <ImageView
+                    android:id="@+id/ivNuojiIcon"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="糯叽"
+                    android:src="@mipmap/ic_launcher" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:singleLine="true"
+                android:text="@string/app_name"
+                android:textColor="@color/desk_fg"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 抽屉把手 -->
+        <LinearLayout
+            android:id="@+id/drawerHandle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="上滑"
+                android:rotation="270"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="@color/desk_fg_dim" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="上滑查看全部"
+                android:textColor="@color/desk_fg_dim"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Dock：四个最常用的去处 -->
+        <LinearLayout
+            android:id="@+id/dock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_desk_glass"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <FrameLayout
+                android:id="@+id/dockHistory"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_desk_tile">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="历史会话"
+                    android:src="@drawable/ic_history"
+                    app:tint="@color/desk_fg" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/dockSettings"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_desk_tile">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="设置"
+                    android:src="@drawable/ic_settings"
+                    app:tint="@color/desk_fg" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/dockFiles"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_desk_tile">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="文件与文件夹"
+                    android:src="@drawable/ic_folder"
+                    app:tint="@color/desk_fg" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/dockControl"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_desk_tile">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="操控台"
+                    android:src="@drawable/ic_control"
+                    app:tint="@color/desk_fg" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- 三键 -->
+        <LinearLayout
+            android:id="@+id/navBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_desk_nav"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="4dp">
+
+            <ImageView
+                android:id="@+id/btnNavBack"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_nav_key"
+                android:contentDescription="返回"
+                android:padding="7dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_nav_back"
+                app:tint="@color/desk_fg_dim" />
+
+            <ImageView
+                android:id="@+id/btnNavHome"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_nav_key"
+                android:contentDescription="回到桌面"
+                android:padding="7dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_nav_home"
+                app:tint="@color/desk_fg_dim" />
+
+            <ImageView
+                android:id="@+id/btnNavRecent"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_nav_key"
+                android:contentDescription="最近使用"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_nav_recent"
+                app:tint="@color/desk_fg_dim" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 应用抽屉：糯叽自己的全部页面 -->
+    <LinearLayout
+        android:id="@+id/panelDrawer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_desk_scrim"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:paddingTop="44dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:text="全部 · 这台手机里只有糯叽自己的页面"
+            android:textColor="@color/desk_fg_dim"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:id="@+id/llDrawerGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginEnd="14dp"
+            android:orientation="vertical" />
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="30dp"
+            android:gravity="center"
+            android:text="下滑，或按返回键关掉"
+            android:textColor="@color/desk_fg_dim"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- 多任务：最近打开过的页面 -->
+    <LinearLayout
+        android:id="@+id/panelRecents"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_desk_scrim"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="48dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最近使用"
+            android:textColor="@color/desk_fg_dim"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:id="@+id/llRecents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="26dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="26dp"
+            android:background="@drawable/bg_desk_glass_strong"
+            android:orientation="vertical"
+            android:padding="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="点卡片继续，点外面关掉"
+            android:textColor="@color/desk_fg_dim"
+            android:textSize="11sp" />
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</FrameLayout>

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 桌面小组件：更淡的一块玻璃面 -->
+<!-- 底部三键那条玻璃带：只有上沿两点圆角 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/desk_tile" />
+    <solid android:color="@color/desk_glass" />
     <stroke
         android:width="0.5dp"
         android:color="@color/desk_line" />
-    <corners android:radius="18dp" />
+    <corners
+        android:topLeftRadius="22dp"
+        android:topRightRadius="22dp" />
 </shape>

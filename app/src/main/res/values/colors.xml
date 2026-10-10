@@ -52,4 +52,9 @@
     <color name="desk_fg">#FFFFFFFF</color>
     <color name="desk_fg_dim">#B3FFFFFF</color>
     <color name="desk_line">#1FFFFFFF</color>
+    <!-- 桌面玻璃层：整屏都是手机屏，浮层靠半透明深玻璃而不是卡片 -->
+    <color name="desk_glass">#40101018</color>
+    <color name="desk_glass_strong">#730A0A10</color>
+    <color name="desk_dot_off">#4DFFFFFF</color>
+    <color name="desk_scrim">#9905050A</color>
 </resources>

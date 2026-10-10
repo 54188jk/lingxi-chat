@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面壁纸素材：斜向渐变，故意不跟主题变，保证桌面白字看得清 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:endColor="#FF202226"
+        android:startColor="#FF0B0C0E"
+        android:type="linear" />
+</shape>

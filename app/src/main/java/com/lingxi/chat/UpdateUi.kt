@@ -617,6 +617,19 @@ object UpdateUi {
 
     // ---------------- 安装 ----------------
 
+    /** 商店页与「本机 APK」共用这套「先讲权限、再调起安装」的流程 */
+    fun installFile(activity: Activity, apk: File) = installApk(activity, apk)
+
+    /** 装之前先验一遍：大小、包结构、manifest 与 dex；返回空串表示通过 */
+    fun checkApk(apk: File, expectedSize: Long): String =
+        try {
+            verifyApk(apk, expectedSize, 0)
+            ""
+        } catch (e: Exception) {
+            e.message ?: "安装包不完整"
+        }
+
+
     /** 供设置页/历史列表使用：走同一套「已存档版本 → 安装 + 授权引导」流程 */
     fun installFromHistory(activity: Activity, item: com.lingxi.chat.data.HistoryStore.Item): Boolean {
         val apk = item.installableFile(activity)
