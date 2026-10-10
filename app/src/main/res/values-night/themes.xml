@@ -1,4 +1,5 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 深色：状态栏与导航栏图标改为浅色，栏底沿用抬升灰面 -->
     <style name="Theme.LingxiChat" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/accent</item>
         <item name="colorSecondary">@color/accent</item>
@@ -7,15 +8,8 @@
         <item name="android:statusBarColor">@color/surface</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
         <item name="android:windowBackground">@drawable/bg_app</item>
         <item name="alertDialogTheme">@style/AlertDialog.Lingxi</item>
-    </style>
-
-    <style name="AlertDialog.Lingxi" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorSurface">@color/dialog_bg</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorAccent">@color/accent</item>
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:windowBackground">@drawable/bg_dialog</item>
     </style>
 </resources>

@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 已开启模式的胶囊：淡主色渐变 + 主色细描边 + 主色涟漪（点一下就关） -->
+<!-- 已开启模式的胶囊：淡蓝底 + 系统蓝细描边 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="@color/ripple_accent">
     <item android:id="@android:id/mask">
         <shape android:shape="rectangle">
             <solid android:color="#FFFFFFFF" />
-            <corners android:radius="14dp" />
+            <corners android:radius="16dp" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
-            <gradient
-                android:angle="0"
-                android:endColor="@color/badge_bg"
-                android:startColor="@color/chip_active_bg"
-                android:type="linear" />
+            <solid android:color="@color/chip_active_bg" />
             <stroke
                 android:width="0.5dp"
                 android:color="@color/accent_soft" />
-            <corners android:radius="14dp" />
+            <corners android:radius="16dp" />
         </shape>
     </item>
 </ripple>

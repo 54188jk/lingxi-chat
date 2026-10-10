@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 图标白圆牌：外圈发丝 + 内圈一道极淡主色环，按下有水波 -->
+<!-- 图标圆牌：浅灰填充圆，无描边 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="@color/ripple_soft">
     <item android:id="@android:id/mask">
@@ -8,30 +8,8 @@
         </shape>
     </item>
     <item>
-        <layer-list>
-            <item>
-                <shape android:shape="oval">
-                    <gradient
-                        android:angle="270"
-                        android:endColor="@color/surface_dim"
-                        android:startColor="@color/surface"
-                        android:type="linear" />
-                    <stroke
-                        android:width="0.5dp"
-                        android:color="@color/card_stroke" />
-                </shape>
-            </item>
-            <item
-                android:bottom="1.5dp"
-                android:left="1.5dp"
-                android:right="1.5dp"
-                android:top="1.5dp">
-                <shape android:shape="oval">
-                    <stroke
-                        android:width="0.5dp"
-                        android:color="@color/badge_bg" />
-                </shape>
-            </item>
-        </layer-list>
+        <shape android:shape="oval">
+            <solid android:color="@color/chip_bg" />
+        </shape>
     </item>
 </ripple>

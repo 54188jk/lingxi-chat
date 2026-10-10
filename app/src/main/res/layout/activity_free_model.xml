@@ -75,7 +75,6 @@
                 android:layout_marginTop="14dp"
                 android:background="@drawable/bg_card"
                 android:lineSpacingMultiplier="1.45"
-                android:paddingBottom="21dp"
                 android:padding="16dp"
                 android:text="没有 API Key 也能用起来\n\n下面这个站是 OpenAI 兼容的大模型聚合平台，注册后会送额度，一个 Key 可以调用站内几十个模型。糯叽不收集任何东西，Key 只存在你手机本机。"
                 android:textColor="@color/text_primary"
@@ -91,7 +90,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:lineSpacingMultiplier="1.4"
-                android:paddingBottom="19dp"
                 android:padding="14dp"
                 android:text="点下面的按钮，官网地址会立刻复制到剪贴板，并自动在浏览器里打开。到网页上注册一个账号即可。"
                 android:textColor="@color/text_secondary"
@@ -133,7 +131,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:lineSpacingMultiplier="1.45"
-                android:paddingBottom="19dp"
                 android:padding="14dp"
                 android:text="在官网的控制台里新建一个令牌，复制它以 sk- 开头的那串字符。\n\n这一串只贴到糯叽的设置里，不会写进应用、也不会上传到任何地方。"
                 android:textColor="@color/text_secondary"
@@ -149,7 +146,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:paddingBottom="19dp"
                 android:padding="14dp">
 
                 <LinearLayout

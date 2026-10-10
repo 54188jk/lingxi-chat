@@ -1,64 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 选中的卡片：抬起来 5dp + 强调色描边 + 内圈柔光，左上角一片主色光晕 -->
+<!-- 选中的单元格：面上加一圈系统蓝，内部淡蓝底 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="@color/ripple_accent">
-    <item
-        android:id="@android:id/mask"
-        android:bottom="5dp">
+    <item android:id="@android:id/mask">
         <shape android:shape="rectangle">
             <solid android:color="#FFFFFFFF" />
-            <corners android:radius="16dp" />
+            <corners android:radius="13dp" />
         </shape>
     </item>
     <item>
-        <layer-list>
-            <item
-                android:left="5dp"
-                android:right="5dp"
-                android:top="5dp">
-                <shape android:shape="rectangle">
-                    <solid android:color="@color/card_shadow" />
-                    <corners android:radius="18dp" />
-                </shape>
-            </item>
-            <item
-                android:bottom="3dp"
-                android:left="2dp"
-                android:right="2dp"
-                android:top="2dp">
-                <shape android:shape="rectangle">
-                    <solid android:color="@color/card_shadow_near" />
-                    <corners android:radius="17dp" />
-                </shape>
-            </item>
-            <item android:bottom="5dp">
-                <shape android:shape="rectangle">
-                    <solid android:color="@color/surface" />
-                    <stroke
-                        android:width="1.4dp"
-                        android:color="@color/accent" />
-                    <corners android:radius="16dp" />
-                </shape>
-            </item>
-            <item
-                android:bottom="7dp"
-                android:left="2dp"
-                android:right="2dp"
-                android:top="2dp">
-                <shape android:shape="rectangle">
-                    <gradient
-                        android:centerX="0.22"
-                        android:centerY="0.12"
-                        android:endColor="@android:color/transparent"
-                        android:gradientRadius="190dp"
-                        android:startColor="@color/glow_accent"
-                        android:type="radial" />
-                    <stroke
-                        android:width="0.5dp"
-                        android:color="@color/accent_soft" />
-                    <corners android:radius="14dp" />
-                </shape>
-            </item>
-        </layer-list>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/badge_bg" />
+            <stroke
+                android:width="1.5dp"
+                android:color="@color/accent" />
+            <corners android:radius="13dp" />
+        </shape>
     </item>
 </ripple>

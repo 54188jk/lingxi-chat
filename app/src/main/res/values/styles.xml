@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 设置页分节标题：小号灰字大字距，简约风 -->
+    <!-- 设置页分节标题：iOS 分组表头——13pt 灰字，不再拉字距 -->
     <style name="SettingsSection">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -8,8 +8,7 @@
         <item name="android:layout_marginTop">26dp</item>
         <item name="android:layout_marginBottom">8dp</item>
         <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.12</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 </resources>

@@ -6,7 +6,6 @@
     android:background="@drawable/bg_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingBottom="17dp"
     android:padding="12dp">
 
     <LinearLayout

@@ -1,35 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 页面底：纵向渐变 + 右上角冷光 + 左下角主色柔光，让白卡片浮在有色层的底上 -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:endColor="@color/bg_bottom"
-                android:startColor="@color/bg_top"
-                android:type="linear" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:centerX="0.9"
-                android:centerY="0.03"
-                android:endColor="@android:color/transparent"
-                android:gradientRadius="400dp"
-                android:startColor="@color/glow_cool"
-                android:type="radial" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:centerX="0.05"
-                android:centerY="0.98"
-                android:endColor="@android:color/transparent"
-                android:gradientRadius="360dp"
-                android:startColor="@color/glow_accent"
-                android:type="radial" />
-        </shape>
-    </item>
-</layer-list>
+<!-- 页面底：iOS 分组列表底，纯平面 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/bg" />
+</shape>

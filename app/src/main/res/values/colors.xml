@@ -1,54 +1,54 @@
 <resources>
     <!--
-      浅色（默认）配色：冷白底 + 纯白卡片 + 近黑文字，玫红只在小面积点缀。
+      浅色：iOS 系统分组底色（systemGroupedBackground）+ 白色单元格 + 系统蓝 tint。
       深色对应值在 values-night/colors.xml，两边同名 token 必须一一对应。
     -->
-    <color name="bg">#FFF2F3F6</color>
-    <color name="bg_top">#FFFBFBFD</color>
-    <color name="bg_bottom">#FFEEF0F4</color>
+    <color name="bg">#FFF2F2F7</color>
+    <color name="bg_top">#FFF2F2F7</color>
+    <color name="bg_bottom">#FFEDEDF2</color>
     <color name="surface">#FFFFFFFF</color>
-    <color name="surface_dim">#FFF7F8FA</color>
-    <color name="card_ai">#FFFFFFFF</color>
-    <color name="card_stroke">#FFE2E4EA</color>
-    <color name="card_shadow">#14000000</color>
-    <color name="card_shadow_near">#0D000000</color>
+    <color name="surface_dim">#FFFFFFFF</color>
+    <color name="card_ai">#FFE9E9EB</color>
+    <color name="card_stroke">#FFE4E4E9</color>
+    <color name="card_shadow">#00000000</color>
+    <color name="card_shadow_near">#00000000</color>
     <color name="input_bg">#FFFFFFFF</color>
-    <color name="chip_bg">#FFFFFFFF</color>
-    <color name="chip_stroke">#FFDDDFE6</color>
-    <color name="chip_active_bg">#1AE11D48</color>
-    <color name="badge_bg">#14E11D48</color>
-    <color name="divider">#FFE7E8ED</color>
-    <color name="hairline">#FFEFF0F3</color>
-    <color name="code_bg">#FFF3F4F7</color>
-    <color name="code_fg">#FF1B1C20</color>
-    <color name="accent">#FFD6123F</color>
-    <color name="accent_deep">#FFAE0E33</color>
-    <color name="accent_soft">#66D6123F</color>
-    <color name="text_primary">#FF141518</color>
-    <color name="text_secondary">#FF5C616B</color>
-    <color name="text_tertiary">#FF9A9FAA</color>
-    <!-- 用户气泡：墨黑底白字，浅色下靠描边和投影分层 -->
-    <color name="user_bubble_start">#FF16171B</color>
-    <color name="user_bubble_end">#FF232529</color>
+    <color name="chip_bg">#FFEBEBF0</color>
+    <color name="chip_stroke">#FFE0E0E6</color>
+    <color name="chip_active_bg">#1F007AFF</color>
+    <color name="badge_bg">#14007AFF</color>
+    <color name="divider">#FFDDE0E6</color>
+    <color name="hairline">#FFE5E5EA</color>
+    <color name="code_bg">#FFFFFFFF</color>
+    <color name="code_fg">#FF1C1C1E</color>
+    <color name="accent">#FF007AFF</color>
+    <color name="accent_deep">#FF0062CC</color>
+    <color name="accent_soft">#66007AFF</color>
+    <color name="text_primary">#FF1C1C1E</color>
+    <color name="text_secondary">#FF6C6C75</color>
+    <color name="text_tertiary">#FF98989F</color>
+    <!-- 用户气泡：系统蓝底白字，深浅两套都用白字 -->
+    <color name="user_bubble_start">#FF007AFF</color>
+    <color name="user_bubble_end">#FF0A84FF</color>
     <color name="user_bubble_fg">#FFFFFFFF</color>
-    <!-- 实心按钮（发送键等）：黑底白符号 -->
-    <color name="btn_solid">#FF16171B</color>
+    <!-- 实心按钮（发送键等）：系统蓝底白符号 -->
+    <color name="btn_solid">#FF007AFF</color>
     <color name="btn_solid_fg">#FFFFFFFF</color>
-    <color name="btn_solid_ripple">#26FFFFFF</color>
-    <!-- 描边按钮：白底细描边黑字 -->
-    <color name="btn_outline_fg">#FF141518</color>
-    <color name="icon_tint">#FF5A5F69</color>
+    <color name="btn_solid_ripple">#33FFFFFF</color>
+    <!-- 描边与文字按钮：iOS 用 tint 蓝做文字 -->
+    <color name="btn_outline_fg">#FF007AFF</color>
+    <color name="icon_tint">#FF007AFF</color>
     <color name="dialog_bg">#FFFFFFFF</color>
-    <color name="sheet_bg">#FFFFFFFF</color>
+    <color name="sheet_bg">#FFF2F2F7</color>
     <color name="hl_bg">#66FFC53D</color>
     <color name="hl_fg">#FF7A4B00</color>
-    <color name="file_folder">#FFE0A34A</color>
-    <color name="file_doc">#FF8A94A6</color>
-    <!-- 按压反馈：墨色用于白卡片，玫红用于强调控件；深色主题下自动改白 -->
+    <color name="file_folder">#FFCFA04C</color>
+    <color name="file_doc">#FF8E8E93</color>
+    <!-- 按压反馈：iOS 只用极淡的灰或 tint，不做水波扩散感 -->
     <color name="ripple_soft">#14000000</color>
-    <color name="ripple_accent">#1AD6123F</color>
-    <!-- 页面底的柔光与卡片顶缘高光 -->
-    <color name="glow_accent">#14D6123F</color>
-    <color name="glow_cool">#123E6B8A</color>
-    <color name="card_highlight">#66FFFFFF</color>
+    <color name="ripple_accent">#1F007AFF</color>
+    <!-- 苹果风是平面底色，柔光与高光全部降到几乎看不见 -->
+    <color name="glow_accent">#08007AFF</color>
+    <color name="glow_cool">#00000000</color>
+    <color name="card_highlight">#00FFFFFF</color>
 </resources>

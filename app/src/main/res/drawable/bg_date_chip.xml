@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 日期胶囊：中性细描边 + 微渐变底 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <gradient
-        android:angle="270"
-        android:endColor="@color/surface_dim"
-        android:startColor="@color/chip_bg"
-        android:type="linear" />
-    <corners android:radius="10dp" />
-    <stroke
-        android:width="0.5dp"
-        android:color="@color/card_stroke" />
+<!-- 时间戳：iOS 会话里时间是裸灰字，不给底 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
 </shape>

@@ -32,7 +32,8 @@
             android:layout_weight="1"
             android:text="操控台"
             android:textColor="@color/text_primary"
-            android:textSize="17sp"
+            android:letterSpacing="-0.02"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
@@ -80,7 +81,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:paddingBottom="19dp"
                 android:padding="14dp">
 
                 <LinearLayout
@@ -275,7 +275,6 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
                     android:orientation="vertical"
-                    android:paddingBottom="19dp"
                     android:padding="14dp">
 
                     <TextView
@@ -313,7 +312,6 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
                     android:orientation="vertical"
-                    android:paddingBottom="19dp"
                     android:padding="14dp">
 
                     <TextView
@@ -361,7 +359,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:paddingBottom="19dp"
                 android:padding="14dp">
 
                 <LinearLayout

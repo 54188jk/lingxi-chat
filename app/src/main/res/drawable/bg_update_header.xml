@@ -1,41 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 更新弹窗头部：面板底 + 右上角一片主色光晕 + 底边发丝收口 -->
+<!-- 更新弹窗头部：与面板同色，底边一条发丝收口 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:endColor="@color/surface_dim"
-                android:startColor="@color/surface"
-                android:type="linear" />
+            <solid android:color="@color/dialog_bg" />
             <corners
-                android:topLeftRadius="24dp"
-                android:topRightRadius="24dp" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:centerX="0.86"
-                android:centerY="0.08"
-                android:endColor="@android:color/transparent"
-                android:gradientRadius="210dp"
-                android:startColor="@color/glow_accent"
-                android:type="radial" />
-            <corners
-                android:topLeftRadius="24dp"
-                android:topRightRadius="24dp" />
+                android:topLeftRadius="14dp"
+                android:topRightRadius="14dp" />
         </shape>
     </item>
     <item android:gravity="bottom">
         <shape android:shape="rectangle">
-            <gradient
-                android:angle="0"
-                android:centerColor="@color/hairline"
-                android:endColor="@android:color/transparent"
-                android:startColor="@android:color/transparent"
-                android:type="linear" />
-            <size android:height="1dp" />
+            <solid android:color="@color/divider" />
+            <size android:height="0.5dp" />
         </shape>
     </item>
 </layer-list>
