@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 单元格图标底：iOS 式小方牌，浅灰填充 -->
+<!-- 单元格图标底：白圆牌 + 发丝描边 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/chip_bg" />
+    <solid android:color="@color/surface" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/card_stroke" />
     <corners android:radius="8dp" />
 </shape>

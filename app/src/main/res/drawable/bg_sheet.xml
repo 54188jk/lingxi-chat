@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 面板：iOS 抽屉——分组灰底 + 顶部大圆角，没有投影层 -->
+<!-- 面板：白底 + 顶部大圆角 + 发丝描边 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@color/sheet_bg" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/card_stroke" />
     <corners
         android:topLeftRadius="14dp"
         android:topRightRadius="14dp" />

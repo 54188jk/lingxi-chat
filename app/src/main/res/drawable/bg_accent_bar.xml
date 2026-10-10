@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 列表左侧竖条：iOS 用中性灰做安静标记，不再整列涂蓝 -->
+<!-- 列表左侧竖条：中性近黑 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/text_tertiary" />
+    <solid android:color="@color/text_primary" />
     <corners android:radius="2dp" />
 </shape>

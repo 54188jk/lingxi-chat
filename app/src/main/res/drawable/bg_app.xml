@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 页面底：iOS 分组列表底，纯平面 -->
+<!-- 页面底：冷白纵向渐变，平面不加柔光 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/bg" />
+    <gradient
+        android:angle="270"
+        android:endColor="@color/bg_bottom"
+        android:startColor="@color/bg_top"
+        android:type="linear" />
 </shape>

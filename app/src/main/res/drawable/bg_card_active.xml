@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 选中的单元格：面上加一圈系统蓝，内部淡蓝底 -->
+<!-- 选中的单元格：白面 + 一圈主色描边，里面铺一层极淡主色 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="@color/ripple_accent">
     <item android:id="@android:id/mask">
@@ -9,12 +9,26 @@
         </shape>
     </item>
     <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/badge_bg" />
-            <stroke
-                android:width="1.5dp"
-                android:color="@color/accent" />
-            <corners android:radius="13dp" />
-        </shape>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/surface" />
+                    <stroke
+                        android:width="1.4dp"
+                        android:color="@color/accent" />
+                    <corners android:radius="13dp" />
+                </shape>
+            </item>
+            <item
+                android:bottom="1.5dp"
+                android:left="1.5dp"
+                android:right="1.5dp"
+                android:top="1.5dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/badge_bg" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+        </layer-list>
     </item>
 </ripple>

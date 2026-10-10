@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 弹窗内的说明块：二级填充面 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/chip_bg" />
+<!-- 弹窗内的说明块：浅灰面板 + 发丝，与白底弹窗分层 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/code_bg" />
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/hairline" />
     <corners android:radius="10dp" />
 </shape>

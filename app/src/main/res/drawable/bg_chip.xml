@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 胶囊：浅灰填充，全圆角，无描边 -->
+<!-- 胶囊：白面 + 发丝描边，按下变暗 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="@color/ripple_soft">
     <item android:id="@android:id/mask">
@@ -11,6 +11,9 @@
     <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/chip_bg" />
+            <stroke
+                android:width="0.5dp"
+                android:color="@color/chip_stroke" />
             <corners android:radius="18dp" />
         </shape>
     </item>

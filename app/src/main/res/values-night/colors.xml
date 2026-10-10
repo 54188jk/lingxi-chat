@@ -1,49 +1,42 @@
 <resources>
     <!--
-      深色：iOS 暗色系统分组底（纯黑页面底 + #1C1C1E 单元格）+ 暗系蓝 tint。
+      深色配色：近黑底 + 深灰卡片 + 白字，用户气泡反转为白底黑字。
       token 与 values/colors.xml 一一对应，改一个就要改另一个。
     -->
-    <color name="bg">#FF000000</color>
-    <color name="bg_top">#FF000000</color>
-    <color name="bg_bottom">#FF000000</color>
-    <color name="surface">#FF1C1C1E</color>
-    <color name="surface_dim">#FF1C1C1E</color>
-    <color name="card_ai">#FF2C2C2E</color>
-    <color name="card_stroke">#FF3A3A3C</color>
-    <color name="card_shadow">#00000000</color>
-    <color name="card_shadow_near">#00000000</color>
-    <color name="input_bg">#FF1C1C1E</color>
-    <color name="chip_bg">#FF2C2C2E</color>
-    <color name="chip_stroke">#FF3A3A3C</color>
-    <color name="chip_active_bg">#330A84FF</color>
-    <color name="badge_bg">#1F0A84FF</color>
-    <color name="divider">#FF38383A</color>
-    <color name="hairline">#FF2C2C2E</color>
-    <color name="code_bg">#FF1C1C1E</color>
-    <color name="code_fg">#FFEDEDF0</color>
-    <color name="accent">#FF0A84FF</color>
-    <color name="accent_deep">#FF0062CC</color>
-    <color name="accent_soft">#800A84FF</color>
-    <color name="text_primary">#FFFFFFFF</color>
-    <color name="text_secondary">#FFB0B0B8</color>
-    <color name="text_tertiary">#FF8E8E93</color>
-    <color name="user_bubble_start">#FF0A84FF</color>
-    <color name="user_bubble_end">#FF0A84FF</color>
-    <color name="user_bubble_fg">#FFFFFFFF</color>
-    <color name="btn_solid">#FF0A84FF</color>
-    <color name="btn_solid_fg">#FFFFFFFF</color>
-    <color name="btn_solid_ripple">#33000000</color>
-    <color name="btn_outline_fg">#FF0A84FF</color>
-    <color name="icon_tint">#FF0A84FF</color>
-    <color name="dialog_bg">#FF2C2C2E</color>
-    <color name="sheet_bg">#FF1C1C1E</color>
+    <color name="bg">#FF0B0B0D</color>
+    <color name="bg_top">#FF121215</color>
+    <color name="bg_bottom">#FF08080A</color>
+    <color name="surface">#FF151517</color>
+    <color name="card_ai">#FF151517</color>
+    <color name="card_stroke">#20FFFFFF</color>
+    <color name="input_bg">#FF151517</color>
+    <color name="chip_bg">#FF151517</color>
+    <color name="chip_stroke">#2EFFFFFF</color>
+    <color name="chip_active_bg">#28FB7185</color>
+    <color name="badge_bg">#28FB7185</color>
+    <color name="divider">#22FFFFFF</color>
+    <color name="hairline">#1AFFFFFF</color>
+    <color name="code_bg">#FF1E1E22</color>
+    <color name="code_fg">#FFE4E4E7</color>
+    <color name="accent">#FFFB7185</color>
+    <color name="accent_soft">#80FB7185</color>
+    <color name="text_primary">#FFF4F4F5</color>
+    <color name="text_secondary">#FFA6A6AF</color>
+    <color name="text_tertiary">#FF767680</color>
+    <color name="user_bubble_start">#FFFFFFFF</color>
+    <color name="user_bubble_end">#FFF0F0F2</color>
+    <color name="user_bubble_fg">#FF16171B</color>
+    <color name="btn_solid">#FFFFFFFF</color>
+    <color name="btn_solid_fg">#FF16171B</color>
+    <color name="btn_solid_ripple">#26000000</color>
+    <color name="btn_outline_fg">#FFF4F4F5</color>
+    <color name="icon_tint">#FFA6A6AF</color>
+    <color name="dialog_bg">#FF151517</color>
+    <color name="sheet_bg">#FF101012</color>
     <color name="hl_bg">#4DFFB300</color>
     <color name="hl_fg">#FFFFD54F</color>
-    <color name="file_folder">#FFD9A85C</color>
-    <color name="file_doc">#FF98989F</color>
+    <color name="file_folder">#FFD2A65A</color>
+    <color name="file_doc">#FF9AA6B8</color>
     <color name="ripple_soft">#22FFFFFF</color>
-    <color name="ripple_accent">#260A84FF</color>
-    <color name="glow_accent">#0D0A84FF</color>
-    <color name="glow_cool">#00000000</color>
-    <color name="card_highlight">#00FFFFFF</color>
+    <color name="ripple_accent">#26FB7185</color>
 </resources>
