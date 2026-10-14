@@ -96,6 +96,11 @@ class PhoneActivity : BaseActivity() {
         setContentView(b.root)
         density = resources.displayMetrics.density
 
+        GlassBackdrop.attach(this, listOf(b.deskWall, b.glowDesk))
+        b.root.post {
+            GlassBackdrop.invalidate(this)
+            repaintGlass()
+        }
         buildDeskGrid()
         b.appNuoji.setOnClickListener { launch("chat", it) }
         b.dockHistory.setOnClickListener { launch("sessions", it) }
@@ -123,6 +128,7 @@ class PhoneActivity : BaseActivity() {
         super.onResume()
         if (!::b.isInitialized) return
         renderStatus()
+        refreshGlass()
         b.tvBigClock.post(ticker)
         if (!enteredOnce) {
             enteredOnce = true
@@ -348,11 +354,13 @@ class PhoneActivity : BaseActivity() {
                 val bmp = BitmapFactory.decodeFile(f.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
                 if (bmp != null) {
                     b.deskWall.setImageBitmap(bmp)
+                    refreshGlass()
                     return
                 }
             }
         }
         b.deskWall.setImageResource(wallRes(key))
+        refreshGlass()
     }
 
     private fun wallRes(key: String): Int = when (key) {
@@ -383,6 +391,19 @@ class PhoneActivity : BaseActivity() {
             }
             .setNegativeButton("不用改", null)
             .show()
+    }
+
+    /** 背景换了或尺寸变了：丢掉缓存，等下一次绘制重抓 */
+    private fun refreshGlass() {
+        GlassBackdrop.invalidate(this)
+        b.root.post { repaintGlass() }
+    }
+
+    private fun repaintGlass() {
+        b.cardDeskWidget.invalidate()
+        b.dock.invalidate()
+        b.navBar.invalidate()
+        b.llRecents.invalidate()
     }
 
     private fun bounce(v: View) {

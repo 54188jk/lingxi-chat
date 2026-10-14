@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.181**（支持 Android 7.0 及以上手机）
+当前版本：**v1.182**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -22,6 +22,7 @@
 - **打字机输出 + 随时停止**：回答逐字上屏，生成中点发送键即可打断
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
 - **一打开就是聊天页**：启动直接进主界面，不需要多走一步
+- **液态玻璃（手机桌面内）**：面板不是半透明色块，而是把身后的壁纸模糊一层贴进面板里，靠边一圈做折射般的放大带、上缘一道镜面高光、下沿一抹内阴影；按下去玻璃会鼓起、高光跟着手指走、松手带一点过冲回弹。时钟卡片、应用图标圆牌、Dock、三键条、多任务卡片都是这套玻璃；设置里可整体关掉，轻量档机器自动只画纯色底
 - **手机桌面（可选）**：设置 → 手机桌面，可以切到一台「手机」的桌面玩法——整屏壁纸、6 款内置壁纸或从相册自选一张、入口图标直接摆在桌面上、底部返回 / 桌面 / 最近三键真能用（返回关浮层或退后台、桌面回桌面、最近拉起多任务卡片）；不想要就留在设置里，不影响日常使用
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
@@ -40,8 +41,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.181/lingxi-v1.181.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.181/糯叽-v1.181-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.182/lingxi-v1.182.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.182/糯叽-v1.182-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -51,6 +52,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.182 | 发布：2026-10-14 20:12:42。手机桌面的面板换成真·液态玻璃：把身后壁纸模糊后贴进面板、边缘一圈折射放大带、上缘镜面高光、下沿内阴影；按下鼓起、高光跟随手指、松手过冲回弹；时钟卡片、应用图标圆牌、Dock、三键条、多任务卡片全部换装；设置新增「液态玻璃」开关，轻量档自动退化为半透明纯色底 |
 | v1.181 | 发布：2026-10-10 22:20:15。打开糯叽直接进聊天主界面，不再先经过桌面那一层；手机桌面退成设置 → 手机桌面的可选入口；桌面内部也收拾干净：去掉自绘的假状态栏小图标（系统本来就有真的时间与电量，画两份会露馅），入口图标全部直接摆在桌面上并取消上滑抽屉；顺手删掉三个不再被引用的图标素材 |
 | v1.180 | 发布：2026-10-10 21:49:20。桌面放大到整屏（壁纸铺满、状态栏贴顶、三键贴底），中间只留「糯叽」一个大图标、其余页面收进上滑抽屉，Dock 常驻四个常用去处；可换壁纸（6 款内置 + 从相册自选 + 恢复默认）；新增应用商店：可添加自己的安装包直链下载（带进度与完整性校验，坏包不交安装）、扫本机安装包直接装、列出并一键启动手机上已装的应用；三键按真机手感工作；加了壁纸呼吸光、图标依次浮起、点按缩放等动效，轻量档与系统关闭动画时自动静止 |
 | v1.179 | 发布：2026-10-10 19:45:49。打开应用先落到一台仿手机的桌面：有机身边框、状态栏（时间 / 日期 / 真实电量 / 信号）、应用图标网格和返回 / 桌面 / 最近三个按键；桌面里只放糯叽自己的入口（糯叽、历史会话、设置、文件、操控台、免费模型、检查更新、新会话），中间卡片会提示当前有没有可聊的模型、点它直接去设置；进去后按手机的返回键或桌面 Home 键回到桌面；设置里可关掉这一层，关掉后打开直接进聊天页 |
@@ -114,14 +116,22 @@ gradle assembleDebug
 # 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
 
+构建环境（2026-10-14 起整体搬到 D 盘，C 盘已接近满）：Gradle 8.13 解压在 `D:\gradle-8.13`，官方 `sha256 = 20f1b1176237254a6fc204d8434196fa11a4cfb387567519c61556e8710aed78`，与 services.gradle.org 的校验值一致（镜像取自 mirrors.cloud.tencent.com/gradle）；`GRADLE_USER_HOME=D:\gradle-home`（依赖与脚本缓存全在 D）；`D:\gradle-home\init.gradle` 沿用原来的国内镜像重定向；`D:\gradle-home\init.d\redirect-build.gradle` 在 `beforeProject` 里把每个工程的 `buildDir` 指到 `D:\nuoji-build\<项目名>`：
+
+```bash
+cd /c/Users/Administrator/Desktop/agent/LingxiChat
+GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRelease :app:lintRelease --no-daemon
+# 产物：D:\nuoji-build\_app\outputs\apk\release\app-release.apk
+```
+
 技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json，无第三方 UI 框架，最小依赖。仓库里的 Gradle 使用阿里云镜像加速。
 
 聊天界面异步约定：`lifecycleScope` 管理搜索、语音转写和定时任务；相关阻塞网络请求运行于 `Dispatchers.IO`；流式对话通过 `callbackFlow` 返回，取消收集即中断请求。其他模块仍保留原有异步实现。
 
 ## 自测结果
 
-- v1.181 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
-- v1.181 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.182 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.182 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -129,6 +139,10 @@ gradle assembleDebug
 - v1.177 已把上一轮为投影内收补的 37 处 `paddingBottom` 退回（17 处整行删除、20 处回值），卡片上下内边距恢复对称
 - v1.176 视觉改造清单：29 个 `bg_*` drawable 里重写 19 个（真实投影几何：面板内收 5dp / 阴影层下探，`<ripple>` + `@android:id/mask` 圆角蒙版，`card_shadow` / `card_shadow_near` / `card_highlight` / `glow_accent` / `glow_cool` 五个 token 在 `values` 与 `values-night` 同步新增）；因面板内收 5dp，39 处卡片的 `paddingBottom` 同步 +5dp 补偿；21 处「背景已带 ripple 又叠 `?attr/selectableItemBackground`」的双重反馈删除；删除 0 引用死文件 `bg_tag` / `bg_section_bar` / `bg_search_toggle`
 - v1.179 手机桌面：新增 `PhoneActivity` + `activity_phone.xml`（机身 `bg_phone_bezi` / 壁纸 `bg_desk_wall` / 图标底 `bg_desk_tile` / 小组件 `bg_desk_widget` / 三键 `bg_nav_key`，导航与状态栏图标 `ic_nav_*`、`ic_stat_*`），8 个新增 `desk_*` 颜色 token 已同步进 `values` 与 `values-night`（44 / 44 对齐，桌面屏幕在两套主题下都偏深，避免半透明白图标底失去对比）；清单里 LAUNCHER intent-filter 从 `MainActivity` 迁到 `PhoneActivity`，`MainActivity` 改为 `exported="false"`（仅进程内启动，无外部调用方，`onNewIntent` / `applyPrefill` 仍在桌面→聊天路径上生效）；新增 `ConfigStore.homeDesktop`（默认开）与设置页 `swHomeDesktop` 开关；`MainActivity.applyPrefill` 现识别 `new_session` extra 以支持桌面「新会话」图标；时钟用 `View.postDelayed` 自循环并在 `onPause` 撤掉，电量走 `ACTION_BATTERY_CHANGED` 粘性广播只读不注册接收器
+- v1.182 液态玻璃实现：`GlassBackdrop`（把 `deskWall` + `glowDesk` 两个源视图按 `getLocationInWindow` 的相对坐标抓成 0.5 倍 ARGB_8888 小图，按半径缓存两轮可分离盒模糊）+ `GlassSurfaceView`（`LinearLayout` 子类 + `setWillNotDraw(false)`；圆角裁剪后贴模糊图 → 靠边 9dp 用 `INVERSE_EVEN_ODD` 环带把背景按 1.09 倍重绘模拟折射 → `LinearGradient` 镜面高光与 0.9dp 描边 → 下沿 12dp 内阴影 → 按压值驱动圆角 +12%、底色加深、径向高光跟随手指，松手 `ValueAnimator(from→1.18→0)` 过冲回弹）；`res/values/attrs.xml` 新增 `GlassSurface`（`glassRadius` / `glassBlur` / `glassTint` / `glassRim`）；`ConfigStore.liquidGlass`（默认开）+ 设置页 `swLiquidGlass`；`DevicePerf.lowEnd` 或关掉开关时不抓背景，只画 tint 与描边
+- v1.182 编译踩坑（第一轮才暴露，之前误报过构建通过）：`View.getLocationInWindow` 只收 `IntArray`；`View.draw(Canvas, Paint)` 不是公开 API，只能 `draw(Canvas)`；`Bitmap.copyTo` 不存在，改用 `src.copy(Bitmap.Config.ARGB_8888, false)`；另外 Gradle 脚本缓存残留会让构建 16 秒内挂在「Could not move temporary workspace … groovy-dsl」，删掉 `D:\gradle-home\caches\8.13\groovy-dsl` 即恢复
+- v1.182 磁盘现状：C 盘仅剩约 540MB（`app/build` 已删、产物改落 D），D 盘装完依赖后剩约 2.6GB；下次构建前建议先删 `D:\gradle-8.13-bin.zip`（130MB）与 `D:
+uoji-build\_app\intermediates` 里的旧中间产物
 - v1.181 入口回退：`AndroidManifest` 的 LAUNCHER intent-filter 从 `PhoneActivity` 迁回 `MainActivity`（`exported="true"`），`PhoneActivity` 改回 `exported="false"` 且删掉「未开启桌面就转发到聊天页」的自转发逻辑，入口由 `SettingsActivity` 的 `rowDesk` 行提供；`ConfigStore.homeDesktop` 与 `KEY_HOME_DESKTOP` 一并删除（不再有这个开关），`activity_settings.xml` 里那行 SwitchCompat 换成带 chevron 的入口行；`activity_phone.xml` 删掉自绘状态栏行（`tvDeskClock` / 三个 `ic_stat_*` / `tvDeskBattery`）与抽屉面板与把手，电量并进时钟小组件的日期行（`PhoneActivity.battery`），入口网格 `llDeskGrid` 由 `buildDeskGrid()` 按 `entries` 每行 4 个生成，`deskTile()` 长按「换壁纸」格子也能直接换；`ic_stat_battery`/`ic_stat_signal`/`ic_stat_wifi` 三个素材随假状态栏一起删除
 - v1.181 构建验证：`assembleRelease` + `lintRelease` 无 Error/Fatal；全部 layout / values XML 逐文件 parse；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、49 / 1.181
 - v1.181 尚未在设备上安装验证：桌面页现在只能通过设置进入，需确认真机上进出该页与聊天页的返回栈是否正常（桌面里点「糯叽」进聊天后按返回应回到桌面，再按返回退出应用），以及删除自绘状态栏后各厂商机型的系统状态栏在深色壁纸上的可读性

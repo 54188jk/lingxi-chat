@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 液态玻璃面板：圆角、模糊强度、底色与描边亮度都可按位置微调 -->
+    <declare-styleable name="GlassSurface">
+        <attr name="glassRadius" format="dimension" />
+        <attr name="glassBlur" format="dimension" />
+        <attr name="glassTint" format="color" />
+        <attr name="glassRim" format="float" />
+    </declare-styleable>
+</resources>

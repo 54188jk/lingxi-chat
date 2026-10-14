@@ -101,6 +101,12 @@ class SettingsActivity : BaseActivity() {
             startActivity(android.content.Intent(this, PhoneActivity::class.java))
         }
 
+        b.swLiquidGlass.isChecked = store.liquidGlass
+        b.swLiquidGlass.setOnCheckedChangeListener { _, checked ->
+            store.liquidGlass = checked
+            toast(if (checked) "已打开液态玻璃" else "已关掉液态玻璃，面板退回纯色底")
+        }
+
         b.btnFreeModel.setOnClickListener {
             startActivity(android.content.Intent(this, FreeModelActivity::class.java))
         }

@@ -28,17 +28,18 @@
         android:orientation="vertical">
 
         <!-- 时钟小组件：顺便说清现在能不能聊 -->
-        <LinearLayout
+        <com.lingxi.chat.GlassSurfaceView
             android:id="@+id/cardDeskWidget"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="18dp"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="18dp"
-            android:background="@drawable/bg_desk_glass"
             android:foreground="?attr/selectableItemBackground"
             android:orientation="vertical"
-            android:padding="18dp">
+            android:padding="18dp"
+            app:glassBlur="26dp"
+            app:glassRadius="22dp">
 
             <TextView
                 android:id="@+id/tvBigClock"
@@ -67,7 +68,7 @@
                 android:text="当前模型：还没配置"
                 android:textColor="@color/desk_fg_dim"
                 android:textSize="12sp" />
-        </LinearLayout>
+        </com.lingxi.chat.GlassSurfaceView>
 
         <Space
             android:layout_width="1dp"
@@ -85,10 +86,15 @@
             android:orientation="vertical"
             android:padding="10dp">
 
-            <FrameLayout
+            <com.lingxi.chat.GlassSurfaceView
                 android:layout_width="74dp"
                 android:layout_height="74dp"
-                android:background="@drawable/bg_desk_app">
+                android:gravity="center"
+                android:orientation="vertical"
+                app:glassBlur="18dp"
+                app:glassRadius="22dp"
+                app:glassRim="1.25"
+                app:glassTint="@color/desk_tile">
 
                 <ImageView
                     android:id="@+id/ivNuojiIcon"
@@ -97,7 +103,7 @@
                     android:layout_gravity="center"
                     android:contentDescription="糯叽"
                     android:src="@mipmap/ic_launcher" />
-            </FrameLayout>
+            </com.lingxi.chat.GlassSurfaceView>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -125,7 +131,7 @@
             android:orientation="vertical" />
 
         <!-- Dock：四个最常用的去处 -->
-        <LinearLayout
+        <com.lingxi.chat.GlassSurfaceView
             android:id="@+id/dock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -133,9 +139,10 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="18dp"
             android:layout_marginBottom="10dp"
-            android:background="@drawable/bg_desk_glass"
             android:orientation="horizontal"
-            android:padding="10dp">
+            android:padding="10dp"
+            app:glassBlur="30dp"
+            app:glassRadius="26dp">
 
             <FrameLayout
                 android:id="@+id/dockHistory"
@@ -203,14 +210,15 @@
                     android:src="@drawable/ic_control"
                     app:tint="@color/desk_fg" />
             </FrameLayout>
-        </LinearLayout>
+        </com.lingxi.chat.GlassSurfaceView>
 
         <!-- 三键 -->
-        <LinearLayout
+        <com.lingxi.chat.GlassSurfaceView
             android:id="@+id/navBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_desk_nav"
+            app:glassBlur="20dp"
+            app:glassRadius="20dp"
             android:orientation="horizontal"
             android:paddingStart="24dp"
             android:paddingTop="4dp"
@@ -254,7 +262,7 @@
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_nav_recent"
                 app:tint="@color/desk_fg_dim" />
-        </LinearLayout>
+        </com.lingxi.chat.GlassSurfaceView>
     </LinearLayout>
 
     <!-- 多任务：最近打开过的页面 -->
@@ -277,16 +285,18 @@
             android:textColor="@color/desk_fg_dim"
             android:textSize="13sp" />
 
-        <LinearLayout
+        <com.lingxi.chat.GlassSurfaceView
             android:id="@+id/llRecents"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="26dp"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="26dp"
-            android:background="@drawable/bg_desk_glass_strong"
             android:orientation="vertical"
-            android:padding="8dp" />
+            android:padding="8dp"
+            app:glassBlur="34dp"
+            app:glassRadius="24dp"
+            app:glassTint="@color/desk_glass_strong" />
 
         <TextView
             android:layout_width="wrap_content"
