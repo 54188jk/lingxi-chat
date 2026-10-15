@@ -268,8 +268,6 @@ class MainActivity : BaseActivity() {
             b.etInput.requestFocus()
         }
         b.chip1.setOnClickListener(chipListener)
-        b.chip2.setOnClickListener(chipListener)
-        b.chip3.setOnClickListener(chipListener)
 
         b.etInput.setOnFocusChangeListener { _, hasFocus ->
             b.llInputBar.setGlassFocused(hasFocus)
@@ -499,6 +497,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        b.root.removeCallbacks(glassTick)
+        GlassBackdrop.detach(this)
         tts?.shutdown()
         speechRecognizer?.destroy()
         // 协程随生命周期自动取消，这里只需释放录音资源

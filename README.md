@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.183**（支持 Android 7.0 及以上手机）
+当前版本：**v1.184**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -41,8 +41,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.183/lingxi-v1.183.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.183/糯叽-v1.183-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.184/lingxi-v1.184.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.184/糯叽-v1.184-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -52,6 +52,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.184 | 发布：2026-10-15 12:48:56。修掉上一版一打开就退出去的闪退：玻璃抓身后那一层的时机从「画面画到一半」挪到「画面空下来那一刻」，并固定复用两块小图不再反复申请；某台机器抓不动时玻璃自动退回半透明底并把开关关掉，不再重复踩坑；聊天页第一屏建议只留一张卡、字号放大 |
 | v1.183 | 发布：2026-10-15 12:17:08。删掉「模仿手机桌面」那层中间页，打开糯叽直接就是聊天主界面；液态玻璃搬进主界面——顶栏与输入栏透出并模糊正在滚动的聊天记录，滚动与流式输出时倒影实时跟随，焦点亮起主色描边，按住鼓起、松手回弹；应用商店与已装应用挪到设置里，功能不减；顺带清掉桌面遗留的壁纸素材、机桌主题与不再被引用的聚焦态输入框图 |
 | v1.182 | 发布：2026-10-14 20:12:42。手机桌面的面板换成真·液态玻璃：把身后壁纸模糊后贴进面板、边缘一圈折射放大带、上缘镜面高光、下沿内阴影；按下鼓起、高光跟随手指、松手过冲回弹；时钟卡片、应用图标圆牌、Dock、三键条、多任务卡片全部换装；设置新增「液态玻璃」开关，轻量档自动退化为半透明纯色底 |
 | v1.181 | 发布：2026-10-10 22:20:15。打开糯叽直接进聊天主界面，不再先经过桌面那一层；手机桌面退成设置 → 手机桌面的可选入口；桌面内部也收拾干净：去掉自绘的假状态栏小图标（系统本来就有真的时间与电量，画两份会露馅），入口图标全部直接摆在桌面上并取消上滑抽屉；顺手删掉三个不再被引用的图标素材 |
@@ -131,8 +132,8 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
-- v1.183 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
-- v1.183 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.184 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.184 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -143,6 +144,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 - v1.183 手机桌面整体移除：`PhoneActivity.kt` / `activity_phone.xml` / `DeskGlowView.kt`，15 个桌面专用素材（6 张 `bg_wall_*`、`bg_desk_*`、`bg_nav_key`、`bg_input_bar_focused`）、`Theme.LingxiChat.Desk`、清单中的桌面声明、`ConfigStore.wallpaperKey` 与 `deskRecents` 全部删除；12 个 `desk_*` 颜色 token 收敛为 4 个 `glass_*`（`glass_tint` / `glass_top_light` / `glass_edge` / `glass_shade`，浅色白玻璃、深色烟灰玻璃，两端 40 / 40 对齐）；LAUNCHER 回到 `MainActivity`，设置页原桌面入口改为「应用商店与已装应用」
 - v1.183 玻璃改为主界面通用：`GlassBackdrop` 改为抓整页根视图（0.3 倍位图 + 两轮可分离盒模糊），抓之前把已注册的玻璃面板临时置 `INVISIBLE` 再还原，避免把上一轮模糊叠进下一轮；`MainActivity` 在 `setContentView` 后 `attach(this, b.root)` 并给 `rvMessages` 挂 `OnScrollListener` 标脏，`onResume` 起 240ms 的 `Runnable`，只在「滚动过 / 正在流式输出」时重抓重绘，`onPause` 撤掉；顶栏与输入栏改成 `GlassSurfaceView`（`app:glassRadius` / `glassBlur` / `glassRim`），输入框焦点由 `setBackgroundResource` 改为 `setGlassFocused`
 - v1.183 尚未在设备上安装验证：真机上要看三项——列表快速滚动时倒影的跟手度与功耗（240ms 节流够不够顺）、浅色主题下白玻璃与消息文字的对比、长会话大列表整屏抓图是否掉帧；轻量档走不抓屏的分支
+- v1.184 闪退定位与修复：`GlassSurfaceView.onDraw` 里的 `GlassBackdrop.snapshot()` 会在缓存为空时当场 `refresh(force=true)`，也就是在本次硬件绘制的调用栈里再 `root.draw(软件 Canvas)` 重入同一棵视图树——v1.183 的一打开即崩即来源于此。现在 `snapshot()` 退成纯读取，抓屏只允许 `MainActivity.glassTick`（`postDelayed` 240ms）与滚动标脏触发，且抓前先判 `isAttachedToWindow` 与 `windowVisibility`；`cap` / `blur` / `px` / `tmp` 四块缓冲按尺寸复用（v1.183 的 `boxBlur` 每帧 `src.copy()` 出新的 `blur` 却从不回收上一张，长时间聊天只会涨不会降）；抓屏包在 `try/catch(Throwable)` 内并计入 `fails`，连续两次即 `dead=true`、释放缓冲并把 `ConfigStore.liquidGlass` 写回 false，本机永久退回半透明底；面板 `onDraw` 的贴图段同样包 `try/finally`，用 `saves` 计数保证 canvas 栈平衡；`onDestroy` 补 `removeCallbacks(glassTick)` 与 `GlassBackdrop.detach(this)`（旧写法按 `activity.hashCode()` 存 `State` 且从不删，退出过一次聊天页的那两张位图加两条 `IntArray` 会一直留在进程里）
 - v1.182 液态玻璃实现：`GlassBackdrop`（把 `deskWall` + `glowDesk` 两个源视图按 `getLocationInWindow` 的相对坐标抓成 0.5 倍 ARGB_8888 小图，按半径缓存两轮可分离盒模糊）+ `GlassSurfaceView`（`LinearLayout` 子类 + `setWillNotDraw(false)`；圆角裁剪后贴模糊图 → 靠边 9dp 用 `INVERSE_EVEN_ODD` 环带把背景按 1.09 倍重绘模拟折射 → `LinearGradient` 镜面高光与 0.9dp 描边 → 下沿 12dp 内阴影 → 按压值驱动圆角 +12%、底色加深、径向高光跟随手指，松手 `ValueAnimator(from→1.18→0)` 过冲回弹）；`res/values/attrs.xml` 新增 `GlassSurface`（`glassRadius` / `glassBlur` / `glassTint` / `glassRim`）；`ConfigStore.liquidGlass`（默认开）+ 设置页 `swLiquidGlass`；`DevicePerf.lowEnd` 或关掉开关时不抓背景，只画 tint 与描边
 - v1.182 编译踩坑（第一轮才暴露，之前误报过构建通过）：`View.getLocationInWindow` 只收 `IntArray`；`View.draw(Canvas, Paint)` 不是公开 API，只能 `draw(Canvas)`；`Bitmap.copyTo` 不存在，改用 `src.copy(Bitmap.Config.ARGB_8888, false)`；另外 Gradle 脚本缓存残留会让构建 16 秒内挂在「Could not move temporary workspace … groovy-dsl」，删掉 `D:\gradle-home\caches\8.13\groovy-dsl` 即恢复
 - v1.182 磁盘现状：C 盘仅剩约 540MB（`app/build` 已删、产物改落 D），D 盘装完依赖后剩约 2.6GB；下次构建前建议先删 `D:\gradle-8.13-bin.zip`（130MB）与 `D:

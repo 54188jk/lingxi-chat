@@ -109,43 +109,51 @@ class GlassSurfaceView @JvmOverloads constructor(
         bodyPath.addRoundRect(outerRect, radius, radius, Path.Direction.CW)
 
         val act = context as? Activity
-        val bmp: Bitmap? = if (cheap || !glassOn()) null else act?.let { snapshot(it) }
+        val bmp: Bitmap? = if (cheap || !glassOn()) null else act?.let { GlassBackdrop.snapshot(it) }
         if (bmp != null) {
-            canvas.save()
-            canvas.clipPath(bodyPath)
-            getLocationInWindow(here)
-            act?.let { rootBase(it) }
-            val s = GlassBackdrop.scale()
-            src.left = max(0, ((here[0] - base[0]) * s).toInt())
-            src.top = max(0, ((here[1] - base[1]) * s).toInt())
-            src.right = min(bmp.width, src.left + (w * s).toInt().coerceAtLeast(1))
-            src.bottom = min(bmp.height, src.top + (h * s).toInt().coerceAtLeast(1))
-            dst.set(0f, 0f, w, h)
-            canvas.drawBitmap(bmp, src, dst, bgPaint)
+            var saves = 0
+            try {
+                canvas.save(); saves++
+                canvas.clipPath(bodyPath)
+                getLocationInWindow(here)
+                act?.let { rootBase(it) }
+                val s = GlassBackdrop.scale()
+                src.left = max(0, ((here[0] - base[0]) * s).toInt())
+                src.top = max(0, ((here[1] - base[1]) * s).toInt())
+                src.right = min(bmp.width, src.left + (w * s).toInt().coerceAtLeast(1))
+                src.bottom = min(bmp.height, src.top + (h * s).toInt().coerceAtLeast(1))
+                if (src.right > src.left && src.bottom > src.top) {
+                    dst.set(0f, 0f, w, h)
+                    canvas.drawBitmap(bmp, src, dst, bgPaint)
 
-            // 边缘折射带：贴着边一圈把背景略微放大重画，看着就是玻璃的厚度
-            val band = 8f * density
-            innerRect.set(band, band, w - band, h - band)
-            lensPath.reset()
-            lensPath.addRoundRect(outerRect, radius, radius, Path.Direction.CW)
-            lensPath.addRoundRect(innerRect, radius * 0.7f, radius * 0.7f, Path.Direction.CW)
-            lensPath.fillType = Path.FillType.INVERSE_EVEN_ODD
-            canvas.save()
-            canvas.clipPath(lensPath)
-            canvas.scale(1.08f, 1.08f, w / 2f, h / 2f)
-            canvas.drawBitmap(bmp, src, dst, bgPaint)
-            canvas.restore()
+                    // 边缘折射带：贴着边一圈把背景略微放大重画，看着就是玻璃的厚度
+                    val band = 8f * density
+                    innerRect.set(band, band, w - band, h - band)
+                    lensPath.reset()
+                    lensPath.addRoundRect(outerRect, radius, radius, Path.Direction.CW)
+                    lensPath.addRoundRect(innerRect, radius * 0.7f, radius * 0.7f, Path.Direction.CW)
+                    lensPath.fillType = Path.FillType.INVERSE_EVEN_ODD
+                    canvas.save(); saves++
+                    canvas.clipPath(lensPath)
+                    canvas.scale(1.08f, 1.08f, w / 2f, h / 2f)
+                    canvas.drawBitmap(bmp, src, dst, bgPaint)
+                    canvas.restore(); saves--
 
-            // 手指下的一团柔光
-            if (press > 0.02f && touchX >= 0f) {
-                glowPaint.shader = RadialGradientShaders.of(
-                    touchX, touchY, max(w, h) * 0.62f,
-                    blend(topLight, 0.9f), Color.TRANSPARENT
-                )
-                canvas.drawRect(0f, 0f, w, h, glowPaint)
-                glowPaint.shader = null
+                    // 手指下的一团柔光
+                    if (press > 0.02f && touchX >= 0f) {
+                        glowPaint.shader = RadialGradientShaders.of(
+                            touchX, touchY, max(w, h) * 0.62f,
+                            blend(topLight, 0.9f), Color.TRANSPARENT
+                        )
+                        canvas.drawRect(0f, 0f, w, h, glowPaint)
+                        glowPaint.shader = null
+                    }
+                }
+            } catch (t: Throwable) {
+                // 背景图哪一帧不对就只画半透明底，宁可少层玻璃也不能崩
+            } finally {
+                repeat(saves) { runCatching { canvas.restore() } }
             }
-            canvas.restore()
         }
 
         tintPaint.color = blend(tint, 0.82f + 0.18f * press)
@@ -179,11 +187,6 @@ class GlassSurfaceView @JvmOverloads constructor(
         shadePaint.shader = null
 
         super.onDraw(canvas)
-    }
-
-    private fun snapshot(act: Activity): Bitmap? {
-        GlassBackdrop.refresh(act, minIntervalMs = 110L)
-        return GlassBackdrop.snapshot(act)
     }
 
     private fun rootBase(act: Activity) {
