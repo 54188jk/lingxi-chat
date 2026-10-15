@@ -108,20 +108,10 @@ class ConfigStore(context: Context) {
         get() = sp.getBoolean(KEY_CTRL_FS, true)
         set(v) = sp.edit().putBoolean(KEY_CTRL_FS, v).apply()
 
-    /** 桌面「最近」键要显示的页面，最新的排前面，只留四个 */
-    var deskRecents: List<String>
-        get() = (sp.getString(KEY_DESK_RECENTS, "") ?: "").split(',').filter { it.isNotBlank() }
-        set(v) = sp.edit().putString(KEY_DESK_RECENTS, v.take(4).joinToString(",")).apply()
-
-    /** 是否启用液态玻璃面板；关掉后所有面板退回半透明纯色底 */
+    /** 是否启用液态玻璃：关掉后所有玻璃面板退回半透明纯色底 */
     var liquidGlass: Boolean
         get() = sp.getBoolean(KEY_LIQUID_GLASS, true)
         set(v) = sp.edit().putBoolean(KEY_LIQUID_GLASS, v).apply()
-
-    /** 手机桌面的壁纸：内置款的名字，或 custom（用户自己选的一张图） */
-    var wallpaperKey: String
-        get() = sp.getString(KEY_WALLPAPER, "crimson") ?: "crimson"
-        set(v) = sp.edit().putString(KEY_WALLPAPER, v).apply()
 
     /** 应用商店里用户自己添加的应用，JSON 数组 [{"name":..,"url":..,"size":..}] */
     var storeApps: String
@@ -206,8 +196,6 @@ class ConfigStore(context: Context) {
         private const val KEY_CTRL_ON = "ctrl_enabled"
         private const val KEY_CTRL_FS = "ctrl_file_ops"
         private const val KEY_FILE_SORT = "file_sort"
-        private const val KEY_DESK_RECENTS = "desk_recents"
-        private const val KEY_WALLPAPER = "desk_wallpaper"
         private const val KEY_LIQUID_GLASS = "liquid_glass"
         private const val KEY_STORE_APPS = "store_apps"
         private const val KEY_ARCHIVE_LOC = "archive_location"

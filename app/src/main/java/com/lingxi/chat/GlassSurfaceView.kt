@@ -23,9 +23,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 液态玻璃面板：贴一层身后内容的模糊图，边缘做透镜折射，外面包一圈镜面高光，
- * 按下去会鼓起来一点、高光跟着手指走、松手带过冲回弹——都是 iOS 那套做法。
- * 拿不到背景（页面没登记源视图）、或机器是轻量档、或用户关了玻璃时，退成半透明底 + 高光描边。
+ * 液态玻璃面板：把身后内容模糊后贴进自己这块圆角里，靠边一圈做折射般的放大带，
+ * 上缘一道镜面高光、下沿一抹内阴影；按下去会鼓起来、高光跟手指走、松手带过冲回弹。
+ * 轻量档机器或设置里关掉「液态玻璃」时，只画半透明底 + 高光描边，不抓屏幕。
  */
 class GlassSurfaceView @JvmOverloads constructor(
     context: Context,
@@ -33,180 +33,177 @@ class GlassSurfaceView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs) {
 
     private val density = resources.displayMetrics.density
-    private var radiusDp = 22f
-    private var blurDp = 22f
+    private var radiusDp = 18f
+    private var blurDp = 18f
     private var rimStrength = 1f
-    private var tintColor = ContextCompat.getColor(context, R.color.desk_glass)
+    private var tintFocus = false
 
-    private val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val backdropPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val lensPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val glossPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val shadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val tint = ContextCompat.getColor(context, R.color.glass_tint)
+    private val topLight = ContextCompat.getColor(context, R.color.glass_top_light)
+    private val edgeColor = ContextCompat.getColor(context, R.color.glass_edge)
+    private val shadeColor = ContextCompat.getColor(context, R.color.glass_shade)
 
-    private val outer = Path()
-    private val ring = Path()
+    private val bodyPath = Path()
+    private val lensPath = Path()
     private val outerRect = RectF()
     private val innerRect = RectF()
-    private val srcRect = Rect()
-    private val dstRect = RectF()
+    private val src = Rect()
+    private val dst = RectF()
+
+    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val glossPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val shadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private var press = 0f
     private var touchX = -1f
     private var touchY = -1f
-    private var anim: ValueAnimator? = null
+    private var spring: ValueAnimator? = null
+    private val cheap = DevicePerf.lowEnd(context)
+
+    private val here = IntArray(2)
+    private val base = IntArray(2)
 
     init {
         setWillNotDraw(false)
+        clipToOutline = false
         val a = context.obtainStyledAttributes(attrs, R.styleable.GlassSurface)
         radiusDp = a.getDimension(R.styleable.GlassSurface_glassRadius, radiusDp * density) / density
         blurDp = a.getDimension(R.styleable.GlassSurface_glassBlur, blurDp * density) / density
-        tintColor = a.getColor(R.styleable.GlassSurface_glassTint, tintColor)
         rimStrength = a.getFloat(R.styleable.GlassSurface_glassRim, 1f)
         a.recycle()
     }
 
-    /** 轻量档或用户在设置里关了玻璃时，只画半透明底 */
-    private fun glassAllowed(): Boolean {
-        if (!ConfigStore(context).liquidGlass) return false
-        return true
+    private fun glassOn(): Boolean = ConfigStore(context).liquidGlass
+
+    /** 输入框获得焦点时由代码点亮一圈主色 */
+    fun setGlassFocused(focused: Boolean) {
+        if (tintFocus == focused) return
+        tintFocus = focused
+        invalidate()
     }
 
-    private fun cheap(): Boolean = DevicePerf.lowEnd(context)
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (!cheap && glassOn()) GlassBackdrop.addPanel(this)
+    }
+
+    override fun onDetachedFromWindow() {
+        GlassBackdrop.removePanel(this)
+        spring?.cancel()
+        super.onDetachedFromWindow()
+    }
 
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
-        if (w <= 0f || h <= 0f) return
-        val r = (radiusDp * density * (1f + 0.12f * press))
+        if (w <= 0f || h <= 0f) {
+            super.onDraw(canvas)
+            return
+        }
+        val radius = radiusDp * density * (1f + 0.14f * press)
         outerRect.set(0f, 0f, w, h)
-        outer.reset()
-        outer.addRoundRect(outerRect, r, r, Path.Direction.CW)
+        bodyPath.reset()
+        bodyPath.addRoundRect(outerRect, radius, radius, Path.Direction.CW)
 
-        val bmp: Bitmap? = if (glassAllowed() && !cheap()) backdrop() else null
+        val act = context as? Activity
+        val bmp: Bitmap? = if (cheap || !glassOn()) null else act?.let { snapshot(it) }
         if (bmp != null) {
-            val scale = backdropScale
-            val here = IntArray(2)
-            getLocationInWindow(here)
-            val anchorHere = anchorLocation()
-            srcRect.set(
-                max(0, ((here[0] - anchorHere[0]) * scale).toInt()),
-                max(0, ((here[1] - anchorHere[1]) * scale).toInt()),
-                0, 0
-            )
-            srcRect.right = min(bmp.width, srcRect.left + (w * scale).toInt().coerceAtLeast(1))
-            srcRect.bottom = min(bmp.height, srcRect.top + (h * scale).toInt().coerceAtLeast(1))
-            dstRect.set(0f, 0f, w, h)
-
             canvas.save()
-            canvas.clipPath(outer)
-            canvas.drawBitmap(bmp, srcRect, dstRect, backdropPaint)
+            canvas.clipPath(bodyPath)
+            getLocationInWindow(here)
+            act?.let { rootBase(it) }
+            val s = GlassBackdrop.scale()
+            src.left = max(0, ((here[0] - base[0]) * s).toInt())
+            src.top = max(0, ((here[1] - base[1]) * s).toInt())
+            src.right = min(bmp.width, src.left + (w * s).toInt().coerceAtLeast(1))
+            src.bottom = min(bmp.height, src.top + (h * s).toInt().coerceAtLeast(1))
+            dst.set(0f, 0f, w, h)
+            canvas.drawBitmap(bmp, src, dst, bgPaint)
 
-            // 边缘透镜带：靠边一圈把背景略微放大重画，就是 iOS 那种边上看下去折射的感觉
-            if (!cheap()) {
-                val band = 9f * density
-                val inner = r * 0.72f
-                innerRect.set(band, band, w - band, h - band)
-                ring.reset()
-                ring.addRoundRect(outerRect, r, r, Path.Direction.CW)
-                ring.addRoundRect(innerRect, inner, inner, Path.Direction.CW)
-                ring.fillType = Path.FillType.INVERSE_EVEN_ODD
-                canvas.save()
-                canvas.clipPath(ring)
-                val push = 1.09f
-                canvas.scale(push, push, w / 2f, h / 2f)
-                canvas.drawBitmap(bmp, srcRect, dstRect, lensPaint)
-                canvas.restore()
-            }
+            // 边缘折射带：贴着边一圈把背景略微放大重画，看着就是玻璃的厚度
+            val band = 8f * density
+            innerRect.set(band, band, w - band, h - band)
+            lensPath.reset()
+            lensPath.addRoundRect(outerRect, radius, radius, Path.Direction.CW)
+            lensPath.addRoundRect(innerRect, radius * 0.7f, radius * 0.7f, Path.Direction.CW)
+            lensPath.fillType = Path.FillType.INVERSE_EVEN_ODD
+            canvas.save()
+            canvas.clipPath(lensPath)
+            canvas.scale(1.08f, 1.08f, w / 2f, h / 2f)
+            canvas.drawBitmap(bmp, src, dst, bgPaint)
+            canvas.restore()
 
-            // 手指位置的一团柔光
-            if (press > 0.01f && touchX >= 0f) {
-                val gr = max(w, h) * 0.6f
-                glossPaint.shader = radial(touchX, touchY, gr)
-                canvas.drawRect(0f, 0f, w, h, glossPaint)
-                glossPaint.shader = null
+            // 手指下的一团柔光
+            if (press > 0.02f && touchX >= 0f) {
+                glowPaint.shader = RadialGradientShaders.of(
+                    touchX, touchY, max(w, h) * 0.62f,
+                    blend(topLight, 0.9f), Color.TRANSPARENT
+                )
+                canvas.drawRect(0f, 0f, w, h, glowPaint)
+                glowPaint.shader = null
             }
             canvas.restore()
         }
 
-        // 玻璃底色：iOS 的玻璃不是纯透明，会压一层很淡的面
-        tintPaint.color = blend(tintColor, 0.55f + 0.45f * press)
-        canvas.drawPath(outer, tintPaint)
+        tintPaint.color = blend(tint, 0.82f + 0.18f * press)
+        canvas.drawPath(bodyPath, tintPaint)
 
-        // 上亮下暗的镜面渐变 + 一圈高光描边
         glossPaint.shader = LinearGradient(
             0f, 0f, 0f, h,
-            intArrayOf(argb(255 * 0.22f * rimStrength * (1f + press)), argb(255 * 0.04f * rimStrength), argb(0)),
-            floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP
+            intArrayOf(blend(topLight, rimStrength), blend(topLight, 0.12f * rimStrength), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.42f, 1f), Shader.TileMode.CLAMP
         )
-        canvas.drawPath(outer, glossPaint)
+        canvas.drawPath(bodyPath, glossPaint)
         glossPaint.shader = null
 
-        rimPaint.strokeWidth = 0.9f * density
-        rimPaint.shader = LinearGradient(
-            0f, 0f, w, h,
-            intArrayOf(argb(255 * 0.75f * rimStrength), argb(255 * 0.18f * rimStrength)),
-            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP
-        )
-        canvas.drawPath(outer, rimPaint)
-        rimPaint.shader = null
+        edgePaint.strokeWidth = 0.8f * density
+        edgePaint.color = if (tintFocus) accent() else edgeColor
+        canvas.drawPath(bodyPath, edgePaint)
+        if (tintFocus) {
+            edgePaint.strokeWidth = 1.6f * density
+            edgePaint.color = blend(accent(), 0.45f)
+            canvas.drawPath(bodyPath, edgePaint)
+        }
 
-        // 下沿一道内阴影，让玻璃像浮在桌面上
         shadePaint.shader = LinearGradient(
-            0f, h - 12f * density, 0f, h,
-            intArrayOf(argb(0), argb(46)), null, Shader.TileMode.CLAMP
+            0f, h - 14f * density, 0f, h,
+            intArrayOf(Color.TRANSPARENT, blend(shadeColor, 0.9f)), null, Shader.TileMode.CLAMP
         )
         canvas.save()
-        canvas.clipPath(outer)
-        canvas.drawRect(0f, h - 12f * density, w, h, shadePaint)
+        canvas.clipPath(bodyPath)
+        canvas.drawRect(0f, h - 14f * density, w, h, shadePaint)
         canvas.restore()
         shadePaint.shader = null
 
         super.onDraw(canvas)
     }
 
-    private var backdropScale = 0.5f
-
-    private fun backdrop(): Bitmap? {
-        val act = context as? Activity ?: return null
-        val pair = GlassBackdrop.blurred(act, blurDp)
-        backdropScale = pair.second
-        return pair.first
+    private fun snapshot(act: Activity): Bitmap? {
+        GlassBackdrop.refresh(act, minIntervalMs = 110L)
+        return GlassBackdrop.snapshot(act)
     }
 
-    private val at = IntArray(2)
-
-    private fun anchorLocation(): IntArray {
-        val act = context as? Activity ?: return ZERO
-        val a = GlassBackdrop.anchor(act) ?: return ZERO
-        if (a === this) return ZERO
-        a.getLocationInWindow(at)
-        return at
+    private fun rootBase(act: Activity) {
+        val root = GlassBackdrop.rootOf(act) ?: return
+        root.getLocationInWindow(base)
     }
 
-    private fun argb(v: Int) = (v and 0xFF) shl 24
-
-    private fun argb(v: Float) = argb((v * 255f).toInt())
+    private fun accent() = ContextCompat.getColor(context, R.color.accent)
 
     private fun blend(color: Int, factor: Float): Int {
         val a = (Color.alpha(color) * factor).toInt().coerceIn(0, 255)
         return (a shl 24) or (color and 0x00FFFFFF)
     }
 
-    private fun radial(cx: Float, cy: Float, radius: Float): Shader =
-        android.graphics.RadialGradient(
-            cx, cy, radius,
-            intArrayOf(argb(255 * 0.20f), argb(0)), null, Shader.TileMode.CLAMP
-        )
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchX = event.x
                 touchY = event.y
-                animatePress(1f, 90L, 0f)
+                animateTo(1f, 90L, false)
             }
             MotionEvent.ACTION_MOVE -> {
                 touchX = event.x
@@ -214,41 +211,37 @@ class GlassSurfaceView @JvmOverloads constructor(
                 invalidate()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                animatePress(0f, 260L, 0.18f)
                 touchX = -1f
+                animateTo(0f, 300L, true)
             }
         }
         return super.onTouchEvent(event)
     }
 
-    /** 松手时带一点过冲，像被按下去的玻璃弹回来 */
-    private fun animatePress(to: Float, duration: Long, overshoot: Float) {
-        anim?.cancel()
+    /** 松手时冲过零点再回来，玻璃才有「弹」的感觉 */
+    private fun animateTo(target: Float, duration: Long, overshoot: Boolean) {
+        spring?.cancel()
         val from = press
-        if (overshoot <= 0f) {
-            anim = ValueAnimator.ofFloat(from, to).apply {
+        spring = if (overshoot && !cheap) {
+            ValueAnimator.ofFloat(from, 0f, min(1f, from + 0.18f), 0f).apply {
                 this.duration = duration
-                interpolator = DecelerateInterpolator(1.6f)
                 addUpdateListener { press = it.animatedValue as Float; invalidate() }
-                start()
             }
         } else {
-            val peak = min(1f, to + overshoot)
-            anim = ValueAnimator.ofFloat(from, peak, to).apply {
+            ValueAnimator.ofFloat(from, target).apply {
                 this.duration = duration
+                interpolator = DecelerateInterpolator(1.5f)
                 addUpdateListener { press = it.animatedValue as Float; invalidate() }
-                start()
             }
         }
+        spring?.start()
     }
 
-    /** 允许代码里改玻璃强度（比如轻量档自动减模糊） */
-    fun setBlurDp(value: Float) {
-        blurDp = value
-        invalidate()
-    }
+    /** 外部滚动了身后内容时叫一声，让玻璃里的倒影跟上 */
+    fun invalidateGlass() = invalidate()
 
-    private companion object {
-        val ZERO = IntArray(2)
+    private object RadialGradientShaders {
+        fun of(cx: Float, cy: Float, r: Float, inner: Int, outer: Int): Shader =
+            android.graphics.RadialGradient(cx, cy, r, inner, outer, Shader.TileMode.CLAMP)
     }
 }

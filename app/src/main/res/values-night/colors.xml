@@ -39,16 +39,9 @@
     <color name="file_doc">#FF9AA6B8</color>
     <color name="ripple_soft">#22FFFFFF</color>
     <color name="ripple_accent">#26FB7185</color>
-    <color name="desk_bezi">#FF000000</color>
-    <color name="desk_wall_top">#FF341622</color>
-    <color name="desk_wall_bottom">#FF000000</color>
-    <color name="desk_tile">#2EFFFFFF</color>
-    <color name="desk_tile_press">#47FFFFFF</color>
-    <color name="desk_fg">#FFFFFFFF</color>
-    <color name="desk_fg_dim">#BFFFFFFF</color>
-    <color name="desk_line">#22FFFFFF</color>
-    <color name="desk_glass">#4D16161E</color>
-    <color name="desk_glass_strong">#8A0E0E14</color>
-    <color name="desk_dot_off">#59FFFFFF</color>
-    <color name="desk_scrim">#A6000000</color>
+    <!-- 液态玻璃：深色下是烟灰玻璃，同一组 token -->
+    <color name="glass_tint">#D9202026</color>
+    <color name="glass_top_light">#1AFFFFFF</color>
+    <color name="glass_edge">#33FFFFFF</color>
+    <color name="glass_shade">#4D000000</color>
 </resources>

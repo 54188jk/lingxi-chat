@@ -97,8 +97,8 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "回车将直接发送" else "回车改为换行")
         }
 
-        b.rowDesk.setOnClickListener {
-            startActivity(android.content.Intent(this, PhoneActivity::class.java))
+        b.rowStore.setOnClickListener {
+            startActivity(android.content.Intent(this, StoreActivity::class.java))
         }
 
         b.swLiquidGlass.isChecked = store.liquidGlass

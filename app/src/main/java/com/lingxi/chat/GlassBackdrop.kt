@@ -4,103 +4,91 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.view.View
+import java.lang.ref.WeakReference
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 玻璃面板「背后那层」的采集与模糊缓存。
- * 把指定的几个源视图（桌面的壁纸层）抓成半尺寸小图，按需模糊几档并缓存复用：
- * 面板每帧只是贴一张已经模糊好的小图，老机器也不会掉帧。
+ * 玻璃面板「身后那层」的采集与模糊缓存。
+ * 抓的是整个页面（壁纸 + 已经画好的列表内容），抓之前把所有玻璃面板自己隐藏掉，
+ * 否则每刷新一次就把上一次的模糊结果再糊一层，会越叠越脏。
  */
 object GlassBackdrop {
 
-    private class State {
-        var sources: List<Weak> = emptyList()
-        var raw: Bitmap? = null
-        val blurred = HashMap<Int, Bitmap>()
-        var scale = 0.5f
-    }
+    private const val SCALE = 0.3f
 
-    private class Weak(val ref: java.lang.ref.WeakReference<View>) {
-        val view: View? get() = ref.get()
+    private class State {
+        var root: WeakReference<View>? = null
+        var blur: Bitmap? = null
+        var lastAt = 0L
     }
 
     private val states = HashMap<Int, State>()
+    private val panels = ArrayList<WeakReference<View>>()
 
-    /** 页面里哪些视图属于「玻璃背后的东西」。换了壁纸或尺寸变化后调 invalidate。 */
-    fun attach(activity: Activity, sources: List<View>) {
+    fun attach(activity: Activity, root: View) {
         val st = states.getOrPut(activity.hashCode()) { State() }
-        st.sources = sources.map { Weak(java.lang.ref.WeakReference(it)) }
-        invalidate(activity)
+        st.root = WeakReference(root)
+        st.blur?.recycle()
+        st.blur = null
+        st.lastAt = 0L
     }
 
     fun detach(activity: Activity) {
-        states.remove(activity.hashCode())?.let { st ->
-            st.raw?.recycle()
-            st.blurred.values.forEach { it.recycle() }
-            st.blurred.clear()
-        }
+        states.remove(activity.hashCode())?.let { it.blur?.recycle() }
+        panels.clear()
     }
 
-    fun invalidate(activity: Activity) {
+    /** 玻璃面板自己注册进来，抓快照时跳过它们 */
+    fun addPanel(v: View) {
+        if (panels.none { it.get() === v }) panels.add(WeakReference(v))
+    }
+
+    fun removePanel(v: View) {
+        panels.removeAll { it.get() == null || it.get() === v }
+    }
+
+    /** 页面根视图，面板用它换算自己在快照里的位置 */
+    fun rootOf(activity: Activity): View? = states[activity.hashCode()]?.root?.get()
+
+    /** 抓一张并模糊；minIntervalMs 控制刷新频率，滚动时不要每帧都抓 */
+    fun refresh(activity: Activity, force: Boolean = false, minIntervalMs: Long = 110L) {
         val st = states[activity.hashCode()] ?: return
-        st.blurred.values.forEach { it.recycle() }
-        st.blurred.clear()
-        st.raw?.recycle()
-        st.raw = null
-    }
-
-    /** 面板取背景：返回已模糊的小图与它的缩放比（用来把面板坐标换算成图上坐标） */
-    fun blurred(activity: Activity, radiusDp: Float): Pair<Bitmap?, Float> {
-        val st = states[activity.hashCode()] ?: return null to 1f
-        val key = max(2, radiusDp.toInt())
-        st.blurred[key]?.let { if (!it.isRecycled) return it to st.scale }
-        val raw = st.raw?.takeIf { !it.isRecycled } ?: capture(st) ?: return null to st.scale
-        val made = boxBlur(raw, max(2, (key * raw.width / 420f).toInt()))
-        st.blurred[key] = made
-        return made to st.scale
-    }
-
-    fun sharp(activity: Activity): Pair<Bitmap?, Float> {
-        val st = states[activity.hashCode()] ?: return null to 1f
-        val raw = st.raw?.takeIf { !it.isRecycled } ?: capture(st) ?: return null to st.scale
-        return raw to st.scale
-    }
-
-    /** 参考视图取第一个源，用它的位置当坐标原点，面板再按相对位置裁自己的那块 */
-    fun anchor(activity: Activity): View? = states[activity.hashCode()]?.sources?.firstNotNullOfOrNull { it.view }
-
-    private fun capture(st: State): Bitmap? {
-        val live = st.sources.mapNotNull { it.view }.filter { it.width > 0 && it.height > 0 }
-        if (live.isEmpty()) return null
-        val first = live[0]
-        val sw = max(48, (first.width * st.scale).toInt())
-        val sh = max(48, (first.height * st.scale).toInt())
-        val bmp = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888)
-        st.raw = bmp
+        val now = System.currentTimeMillis()
+        if (!force && now - st.lastAt < minIntervalMs) return
+        val root = st.root?.get() ?: return
+        if (root.width <= 0 || root.height <= 0) return
+        val w = max(48, (root.width * SCALE).toInt())
+        val h = max(48, (root.height * SCALE).toInt())
+        val bmp = st.blur?.takeIf { it.width == w && it.height == h && !it.isRecycled }
+            ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { st.blur = it }
+        val hidden = panels.mapNotNull { it.get() }.filter { it.visibility == View.VISIBLE }
+        hidden.forEach { it.visibility = View.INVISIBLE }
         val canvas = Canvas(bmp)
-        val base = IntArray(2)
-        first.getLocationInWindow(base)
-        for (v in live) {
-            val p = IntArray(2)
-            v.getLocationInWindow(p)
-            canvas.save()
-            canvas.translate((p[0] - base[0]) * st.scale, (p[1] - base[1]) * st.scale)
-            canvas.scale(st.scale, st.scale)
-            v.draw(canvas)
-            canvas.restore()
-        }
-        return bmp
+        canvas.drawColor(Color.TRANSPARENT)
+        canvas.scale(SCALE, SCALE)
+        runCatching { root.draw(canvas) }
+        hidden.forEach { it.visibility = View.VISIBLE }
+        st.blur = boxBlur(bmp, max(4, w / 26))
+        st.lastAt = now
     }
 
-    /** 两轮可分离盒模糊：在小图上做，成本很低，视觉上和高斯基本一致 */
+    /** 面板取已经模糊好的整屏图；没有就顺手补抓一张 */
+    fun snapshot(activity: Activity): Bitmap? {
+        val st = states[activity.hashCode()] ?: return null
+        if (st.blur == null || st.blur?.isRecycled == true) refresh(activity, force = true)
+        return st.blur
+    }
+
+    fun scale(): Float = SCALE
+
+    /** 两轮可分离盒模糊：在小图上做，观感等同高斯，代价低得多 */
     private fun boxBlur(src: Bitmap, radius: Int): Bitmap {
         val w = src.width
         val h = src.height
         val out = src.copy(Bitmap.Config.ARGB_8888, false)
-            ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            ?: return src
         val px = IntArray(w * h)
         out.getPixels(px, 0, w, 0, 0, w, h)
         val r = max(2, min(radius, max(w, h) / 3))
@@ -114,42 +102,34 @@ object GlassBackdrop {
 
     private fun passHorizontal(px: IntArray, w: Int, h: Int, r: Int) {
         val div = 2 * r + 1
-        var y = 0
-        while (y < h) {
+        for (y in 0 until h) {
             val base = y * w
             var a = 0; var rr = 0; var g = 0; var b = 0
             for (i in 0..r) {
                 val c = px[base + min(i + r, w - 1)]
                 a += Color.alpha(c); rr += Color.red(c); g += Color.green(c); b += Color.blue(c)
             }
-            var x = 0
-            while (x < w) {
+            for (x in 0 until w) {
                 px[base + x] = Color.argb(a / div, rr / div, g / div, b / div)
-                if (x + r + 1 < w) {
-                    val add = px[base + min(x + r + 1, w - 1)]
-                    val sub = px[base + max(x - r, 0)]
-                    a += Color.alpha(add) - Color.alpha(sub)
-                    rr += Color.red(add) - Color.red(sub)
-                    g += Color.green(add) - Color.green(sub)
-                    b += Color.blue(add) - Color.blue(sub)
-                }
-                x++
+                val add = px[base + min(x + r + 1, w - 1)]
+                val sub = px[base + max(x - r, 0)]
+                a += Color.alpha(add) - Color.alpha(sub)
+                rr += Color.red(add) - Color.red(sub)
+                g += Color.green(add) - Color.green(sub)
+                b += Color.blue(add) - Color.blue(sub)
             }
-            y++
         }
     }
 
     private fun passVertical(px: IntArray, w: Int, h: Int, r: Int) {
         val div = 2 * r + 1
-        var x = 0
-        while (x < w) {
+        for (x in 0 until w) {
             var a = 0; var rr = 0; var g = 0; var b = 0
             for (i in 0..r) {
                 val c = px[min(i + r, h - 1) * w + x]
                 a += Color.alpha(c); rr += Color.red(c); g += Color.green(c); b += Color.blue(c)
             }
-            var y = 0
-            while (y < h) {
+            for (y in 0 until h) {
                 px[y * w + x] = Color.argb(a / div, rr / div, g / div, b / div)
                 val add = px[min(y + r + 1, h - 1) * w + x]
                 val sub = px[max(y - r, 0) * w + x]
@@ -157,9 +137,7 @@ object GlassBackdrop {
                 rr += Color.red(add) - Color.red(sub)
                 g += Color.green(add) - Color.green(sub)
                 b += Color.blue(add) - Color.blue(sub)
-                y++
             }
-            x++
         }
     }
 }

@@ -173,7 +173,7 @@
                 android:background="@drawable/bg_divider" />
 
             <LinearLayout
-                android:id="@+id/rowDesk"
+                android:id="@+id/rowStore"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
@@ -191,14 +191,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="手机桌面"
+                        android:text="应用商店与已装应用"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="另一套打开方式：整屏壁纸、能换壁纸、应用商店和已装应用一键启动。平时用不到，想玩可以进来看"
+                        android:text="把信任的安装包地址添加进来下载，装前先检查包是否完整；也能扫本机安装包直接装，或列出手机上已装的应用一键打开"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
                 </LinearLayout>

@@ -40,21 +40,11 @@
     <color name="hl_fg">#FF7A4B00</color>
     <color name="file_folder">#FFE0A34A</color>
     <color name="file_doc">#FF8A94A6</color>
-    <!-- 按压反馈：墨色用于白卡片，主色用于强调控件；深色主题下自动改白 -->
     <color name="ripple_soft">#14000000</color>
     <color name="ripple_accent">#1AD6123F</color>
-    <!-- 仿手机桌面专用：手机屏幕无论主题都偏暗，靠这套 token 而不是硬写 -->
-    <color name="desk_bezi">#FF08080A</color>
-    <color name="desk_wall_top">#FF2A121C</color>
-    <color name="desk_wall_bottom">#FF0C0C10</color>
-    <color name="desk_tile">#24FFFFFF</color>
-    <color name="desk_tile_press">#3DFFFFFF</color>
-    <color name="desk_fg">#FFFFFFFF</color>
-    <color name="desk_fg_dim">#B3FFFFFF</color>
-    <color name="desk_line">#1FFFFFFF</color>
-    <!-- 桌面玻璃层：整屏都是手机屏，浮层靠半透明深玻璃而不是卡片 -->
-    <color name="desk_glass">#40101018</color>
-    <color name="desk_glass_strong">#730A0A10</color>
-    <color name="desk_dot_off">#4DFFFFFF</color>
-    <color name="desk_scrim">#9905050A</color>
+    <!-- 液态玻璃：面板底色、上缘高光、边缘描边与内阴影（浅色下是白玻璃） -->
+    <color name="glass_tint">#C7FFFFFF</color>
+    <color name="glass_top_light">#30FFFFFF</color>
+    <color name="glass_edge">#2E2A2B33</color>
+    <color name="glass_shade">#1F000000</color>
 </resources>

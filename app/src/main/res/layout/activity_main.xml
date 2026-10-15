@@ -8,16 +8,19 @@
     android:fitsSystemWindows="true">
 
     <!-- ============ 顶栏：头像 · 标题 · 三个操作键 ============ -->
-    <LinearLayout
+    <com.lingxi.chat.GlassSurfaceView
+        android:id="@+id/glassHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingStart="14dp"
         android:paddingEnd="10dp"
         android:paddingTop="9dp"
-        android:paddingBottom="9dp">
+        android:paddingBottom="9dp"
+        app:glassBlur="16dp"
+        app:glassRadius="0dp"
+        app:glassRim="0.85">
 
         <FrameLayout
             android:id="@+id/flLogo"
@@ -117,7 +120,7 @@
             android:contentDescription="设置"
             android:padding="8dp"
             android:src="@drawable/ic_settings" />
-    </LinearLayout>
+    </com.lingxi.chat.GlassSurfaceView>
 
     <View
         android:layout_width="match_parent"
@@ -408,7 +411,7 @@
     </LinearLayout>
 
     <!-- ============ 输入栏：只剩 + · 输入框 · 语音 · 发送 ============ -->
-    <LinearLayout
+    <com.lingxi.chat.GlassSurfaceView
         android:id="@+id/llInputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -417,7 +420,8 @@
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
         android:layout_marginBottom="12dp"
-        android:background="@drawable/bg_input_bar"
+        app:glassBlur="20dp"
+        app:glassRadius="22dp"
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
         android:paddingTop="5dp"
@@ -468,6 +472,6 @@
             android:contentDescription="发送"
             android:padding="11dp"
             android:src="@drawable/ic_send" />
-    </LinearLayout>
+    </com.lingxi.chat.GlassSurfaceView>
 
 </LinearLayout>

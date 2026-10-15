@@ -218,6 +218,15 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
+        GlassBackdrop.attach(this, b.root)
+        b.rvMessages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrolled(
+                rv: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int
+            ) {
+                if (dx == 0 && dy == 0) return
+                glassDirty = true
+            }
+        })
 
         configStore = ConfigStore(this)
         sessionStore = SessionStore(this)
@@ -263,9 +272,7 @@ class MainActivity : BaseActivity() {
         b.chip3.setOnClickListener(chipListener)
 
         b.etInput.setOnFocusChangeListener { _, hasFocus ->
-            b.llInputBar.setBackgroundResource(
-                if (hasFocus) R.drawable.bg_input_bar_focused else R.drawable.bg_input_bar
-            )
+            b.llInputBar.setGlassFocused(hasFocus)
         }
         b.btnSend.setOnTouchListener { v, event ->
             when (event.action) {
@@ -460,6 +467,7 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        b.root.post(glassTick)
         refreshModelLabel()
         updateModeBar()
         UpdateUi.resumeInstallIfNeeded(this)
@@ -469,7 +477,22 @@ class MainActivity : BaseActivity() {
         reloadAfterRestoreIfNeeded()
     }
 
+    private var glassDirty = true
+    private val glassTick = object : Runnable {
+        override fun run() {
+            // 只在列表滚动过、回答正在往外冒字的时候重抓，安静时不占 CPU
+            if (glassDirty || streaming) {
+                glassDirty = false
+                GlassBackdrop.refresh(this@MainActivity, force = true)
+                b.glassHeader.invalidateGlass()
+                b.llInputBar.invalidateGlass()
+            }
+            b.root.postDelayed(this, 240L)
+        }
+    }
+
     override fun onPause() {
+        b.root.removeCallbacks(glassTick)
         super.onPause()
         clockJob?.cancel()
         AgentBus.listener = null

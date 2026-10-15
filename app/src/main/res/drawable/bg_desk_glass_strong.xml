@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 更实的一层玻璃：多任务卡片要用它压住壁纸 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/desk_glass_strong" />
-    <stroke
-        android:width="0.5dp"
-        android:color="@color/desk_line" />
-    <corners android:radius="24dp" />
-</shape>
