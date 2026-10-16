@@ -591,14 +591,14 @@ class SettingsActivity : BaseActivity() {
     private fun askEffectModel() {
         val has = com.lingxi.chat.data.EffectModel.find(this) != null
         if (!has) {
-            toast("还没下过：进「手指特效」那一格就会下")
+            toast("还没放好：进「手指特效」那一格会自动放好，不用下载")
             return
         }
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("手指特效的识别文件")
             .setMessage(
                 "已经在本机：" + com.lingxi.chat.data.EffectModel.statusText(this) +
-                    "。只给这个功能认手用，删掉后下次进特效会重新下一次。"
+                    "。只给这个功能认手用，删掉后下次进特效会从安装包里再放一份。"
             )
             .setPositiveButton("删掉") { _, _ ->
                 if (com.lingxi.chat.data.EffectModel.remove(this)) toast("已删掉") else toast("没删掉，可能被别的应用占着")

@@ -40,7 +40,7 @@ import kotlin.math.max
 
 /**
  * 手指特效页：摄像头预览 + 手部关键点 + 星河流光／握拳石化。
- * 三条硬约束：识别只在本机做（画面不联网、不上传）、缺文件时才下一次下载、
+ * 三条硬约束：识别只在本机做（画面不联网、不上传）、识别文件随包内置、用到时放一份到本机永久目录、
  * 任何一环拿不到（没权限／没摄像头／没下着文件）都用一句人话停住，不闪退也不假装能用。
  */
 class HandFxActivity : BaseActivity() {
@@ -130,9 +130,9 @@ class HandFxActivity : BaseActivity() {
             return
         }
         showState(
-            "先要一个小文件",
-            "第一次用需要下载一个约 7.5MB 的手部识别文件，下完就一直留在本机，以后不用再下。",
-            "下载"
+            "先把手部识别文件放好",
+            "这个文件已经在安装包里，放一次就一直留在手机本机，不用联网、也不用再下载。",
+            "现在就放"
         )
     }
 
@@ -141,7 +141,7 @@ class HandFxActivity : BaseActivity() {
         b.btnModel.alpha = 0.5f
         b.pbModel.visibility = View.VISIBLE
         b.tvModelPct.visibility = View.VISIBLE
-        b.tvModelPct.text = "正在开始下载…"
+        b.tvModelPct.text = "正在放到本机…"
         scope.launch {
             val got = withContext(Dispatchers.IO) {
                 EffectModel.ensure(this@HandFxActivity) { pct, _ -> runOnUiThread { setModelPct(pct) } }
@@ -150,8 +150,8 @@ class HandFxActivity : BaseActivity() {
             b.btnModel.alpha = 1f
             if (got == null) {
                 b.pbModel.visibility = View.GONE
-                b.tvModelPct.text = "几条线都没下成，连上网再点一次"
-                toast("没下着，稍后再试")
+                b.tvModelPct.text = "没能放好，可能是这块存储不让我写"
+                toast("没能放好，再点一次试试")
             } else {
                 b.pbModel.visibility = View.GONE
                 hideState()
@@ -181,13 +181,13 @@ class HandFxActivity : BaseActivity() {
             }
             val why = explain(outcome.exceptionOrNull())
             if (!retriedModel) {
-                // 第一次读不起来，先当作那份文件坏了：删掉自动重下一次，别再麻烦用户点
+                // 第一次读不起来，先当作那份文件坏了：删掉自动重放一次，别再麻烦用户点
                 retriedModel = true
                 runCatching { f.delete() }
-                showState("这份文件读不起来，正在重新下载", why, null)
+                showState("这份文件读不起来，正在重新放一份", why, null)
                 onModelButton()
             } else {
-                showState("这个文件读不起来", why, "删掉重下")
+                showState("这个文件读不起来", why, "重新放一份")
             }
         }
     }

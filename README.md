@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.187**（支持 Android 7.0 及以上手机）
+当前版本：**v1.188**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -36,14 +36,15 @@
 - **操控台**：现场实测「现在能不能动手、走的是哪条路」，一键试读屏幕自检，八件常见的事点一下就走，随时紧急停止，还能让糯叽直接整理手机文件
 - **改名说明**：v1.175 起「灵犀AI」更名为「糯叽」，桌面图标与列表里以新名字出现；包名、下载地址与已存配置保持不变，老版本可以直接覆盖升级
 - **深浅双主题 + 字号缩放**，全部设置项可导出/导入备份
+- **安装包大小**：26.0MB——手部特效的推理库两份架构约 17.1MB、内置识别文件打包后 5.6MB，其余才是聊天本体；嫌大可以说明，只留 64 位能小约 7MB
 - **动画**：新消息上浮淡入、流式光标闪烁、头像呼吸、页面滑动转场、发送触觉反馈（尊重系统「关闭动画」设置）
 
 ## 下载
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.187/lingxi-v1.187.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.187/糯叽-v1.187-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.188/lingxi-v1.188.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.188/糯叽-v1.188-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -53,6 +54,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.188 | 发布：2026-10-16 22:08:18。手指特效的手部识别文件改为随安装包内置（不再联网下载那 7.5MB），第一次用到时自动复制到本机永久目录「特效模型」并做内容核对，对不上自动重放；读失败时把「文件坏了」和「本机运行库加载不了」分开报。安装包 20.4MB → 26.0MB |
 | v1.187 | 发布：2026-10-16 21:43:52。手指特效那份识别文件下完后多加一道内容核对，对不上自动删掉重下；真读不起来时界面写清卡在「文件坏了」还是「本机运行库加载不了」。下载改成两条腿同时跑：支持分段的线路切块并发抓、缺哪块补哪块，不支持分段的线路整包竞速、12 秒没进账就换线，先下完整的一份先用；应用商店里下载自己添加的安装包也走这套 |
 | v1.186 | 发布：2026-10-16 20:53:30。新增手指特效：输入栏下方玻璃分段切换条（AI / 手指特效），摄像头实时看手——五指张开指间星河流光、指尖亮星跟手，握拳整只手石化带裂纹与落灰，可录 20 秒合成同一份画面存进相册；识别在手机本机完成、画面不上传，首次进入按需下载约 7.5MB 识别文件到内部储存「特效模型」，设置里可看状态与删除；为特效不卡与断网可用，安装包涨到约 20MB |
 | v1.185 | 发布：2026-10-16 19:16:41。设置里的「液态玻璃」开关从「外观与输入」那组的最末尾挪到「主题 / 字号」下面第一行，一路翻到底才能看到的毛病改掉；它的说明文字原来还在讲已经删掉的桌面，现在写的是聊天页顶栏和输入栏的实际效果 |
@@ -139,9 +141,9 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
-- v1.187 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.188 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
 - v1.187 成品包 21,423,579 字节（与 v1.186 同尺寸，只换代码）；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、versionCode 54；包内构成：`lib/arm64-v8a/libmediapipe_tasks_jni.so` 10.05MB + `lib/armeabi-v7a/…` 7.06MB（不压缩存储）+ `classes.dex` 1.76MB + `resources.arsc` 0.78MB
-- v1.187 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.188 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -153,6 +155,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 - v1.183 玻璃改为主界面通用：`GlassBackdrop` 改为抓整页根视图（0.3 倍位图 + 两轮可分离盒模糊），抓之前把已注册的玻璃面板临时置 `INVISIBLE` 再还原，避免把上一轮模糊叠进下一轮；`MainActivity` 在 `setContentView` 后 `attach(this, b.root)` 并给 `rvMessages` 挂 `OnScrollListener` 标脏，`onResume` 起 240ms 的 `Runnable`，只在「滚动过 / 正在流式输出」时重抓重绘，`onPause` 撤掉；顶栏与输入栏改成 `GlassSurfaceView`（`app:glassRadius` / `glassBlur` / `glassRim`），输入框焦点由 `setBackgroundResource` 改为 `setGlassFocused`
 - v1.183 尚未在设备上安装验证：真机上要看三项——列表快速滚动时倒影的跟手度与功耗（240ms 节流够不够顺）、浅色主题下白玻璃与消息文字的对比、长会话大列表整屏抓图是否掉帧；轻量档走不抓屏的分支
 - v1.185 设置页 `activity_settings.xml`：以「空行 + `<View>` 分隔线 6 行 + 12 空格缩进的行容器」为单位整块交换 `swLiquidGlass` / `swEnterSend` / `rowStore` 三行（玻璃开关挪到 主题/字号 之后第一位），改完 minidom 解析通过、`git diff --stat` 26/26 行；第一次尝试把「最近的 `</LinearLayout>`」当行尾，命中了嵌套行的收尾，导致 `模型配置（必做）` 小标题被切进卡片内部——`</LinearLayout>` 总数不变、minidom 照样通过，只有读 diff 才发现结构变了，已 `git checkout --` 回退重做；结论：行尾必须按缩进层级精确匹配
+- v1.188 识别文件改内置：`app/src/main/assets/hand_landmarker.task`（7,819,105 字节，打包后 5.58MB，成品 27,277,492 字节）；`EffectModel.ensure()` 去掉网络分支，改成「本机永久目录里有且内容核对通过就用 → 否则从 assets 复制到 `.new` 临时名、核对通过再改名」（改名不成的机型整份拷一次），目录优先级仍是 有「所有文件访问」→ `/sdcard/特效模型/`，否则 `getExternalFilesDir(null)/特效模型/`；`HandFxActivity` 状态卡与设置页文案从「下载」改成「放一份 / 重放一份」，读失败仍是第一次自动重放、第二次才让用户点。注意：v1.186 挂在 Release 上的模型附件不要删——已装 v1.186/v1.187 的手机还会去那儿下，只有 v1.188 起才是内置。
 - v1.187 下载改道 `net/FastFetcher.kt`（更新包、识别文件、应用商店下载安装共用）：先对每条线发 `Range: bytes=0-1` 探测——回 206 的才算支持分段；支持分段的切成 ≥256KB 的段、4 条连接同时抓，某段失败换线重抓那一段；不支持分段的（实测 Gitee 附件最终落 `foruda.gitee.com`，带 Range 也回 200 整包）走整包竞速，12 秒无进账即 cancel 该线；两条腿各写 `.seg.dl` / `.one.dl` 临时文件，先通过大小校验的一方 `renameTo` 交付、另一方删除，`cleanup()` 兜底扫残留。本机对 7.46MB 实测：Gitee 单线 1.44MB/s、gh-proxy 单线 1.29MB/s、gh-proxy 四段 1.52MB/s，另一轮四段只跑出 0.51MB/s——本机出口抖动比分段收益更大，所以不拿这组数字当倍率承诺，改动拿到的是两条结构性收益：任何一条线半死都不会吊住整次下载、支持分段的线路可以多连接叠带宽。
 - v1.186 手指特效实现：`SegmentBar` 继承 `GlassSurfaceView`（因此把该类改成 `open`），选中胶囊在 `dispatchDraw` 之前画、由 `ValueAnimator` 推 `pos` 滑动，染色底 `chip_active_bg` + `accent_soft` 描边 + `accent` 粗体字，不用实心块以免压掉玻璃；`AuraField` 把 21 个归一化关键点 → 张合度 = 均值(指尖到腕 / 指根到腕)，<0.18 判握拳、>0.55 判张开，粒子与石面只画进调用方给的 Canvas，所以屏幕浮层与录制合成共用同一份代码，粒子池按 `DevicePerf.lowEnd` 降到 90
 

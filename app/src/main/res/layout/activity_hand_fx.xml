@@ -88,7 +88,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:letterSpacing="-0.02"
-            android:text="先要一个小文件"
+            android:text="先把手部识别文件放好"
             android:textColor="@color/text_primary"
             android:textSize="17sp"
             android:textStyle="bold" />
@@ -99,7 +99,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="第一次用需要下载一个约 7.5MB 的手部识别文件，下完就一直留在本机，以后不用再下。"
+            android:text="这个文件已经在安装包里，放一次就一直留在手机本机，不用联网、也不用再下载。"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -132,7 +132,7 @@
             android:paddingTop="11dp"
             android:paddingEnd="22dp"
             android:paddingBottom="11dp"
-            android:text="下载"
+            android:text="现在就放"
             android:textColor="@color/btn_solid_fg"
             android:textSize="14sp" />
     </LinearLayout>
