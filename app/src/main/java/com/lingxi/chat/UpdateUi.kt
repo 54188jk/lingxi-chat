@@ -48,17 +48,6 @@ object UpdateUi {
         .followSslRedirects(true)
         .build()
 
-    /** 一个下载候选源的状态：实时字节数、服务端声明总大小、失败原因 */
-    private class RaceSource(val url: String, val label: String) {
-        val downloaded = AtomicLong(0)
-        @Volatile var total: Long = -1
-        @Volatile var failed: String? = null
-        @Volatile var call: Call? = null
-        @Volatile var settled = false
-        @Volatile var lastBytes = 0L
-        @Volatile var lastChangeAt = System.currentTimeMillis()
-    }
-
     private val activeCalls = java.util.Collections.synchronizedList(mutableListOf<Call>())
     private val downloadCancelled = AtomicBoolean(false)
     private val downloadingNow = AtomicBoolean(false)
@@ -344,19 +333,12 @@ object UpdateUi {
         snapshot.forEach { it.cancel() }
     }
 
-    private fun briefError(e: Exception): String = when (e) {
+    private fun briefError(e: Throwable): String = when (e) {
         is java.net.SocketTimeoutException -> "连接或传输超时"
         is javax.net.ssl.SSLException -> "连接安全校验失败"
         else -> e.message?.take(40) ?: e.javaClass.simpleName
     }
 
-    /**
-     * 全源并行竞速下载：
-     * 1. 所有候选源（Gitee 直连 + 6 个加速镜像 + 官方源）同时发起，不再串行等待慢源
-     * 2. 任意源卡住 15 秒即被 OkHttp 超时判死，其余源不受影响
-     * 3. 第一个下载完成并通过完整性校验的源立即胜出，其余源全部取消
-     * 4. 进度、速度、剩余时间实时展示当前最快源
-     */
     private fun download(
         activity: Activity,
         info: UpdateChecker.ReleaseInfo,
@@ -373,9 +355,9 @@ object UpdateUi {
         val dir = File(activity.cacheDir, "updates").apply { mkdirs() }
         val apk = File(dir, "lingxi-v${info.version}.apk")
         apk.delete()
-        // 上一次下载留下的分片和其他版本残留都清掉，缓存不该越堆越大
+        // 上一次下载留下的分片和别的版本残留都清掉，缓存不该越堆越大
         dir.listFiles()?.forEach { stale ->
-            if (stale.name.endsWith(".part") || stale.name.contains(".part")) stale.delete()
+            if (stale != apk && stale.name.startsWith("lingxi-v${info.version}")) stale.delete()
         }
         // 检查阶段若 Gitee 胜出，downloadUrl 本身就是 Gitee 的准确资产直链；GitHub 官方链接按版本号可拼出
         val githubUrl = if (info.sourceName == "Gitee") {
@@ -385,154 +367,71 @@ object UpdateUi {
             githubUrl,
             info.version,
             giteeUrl = if (info.sourceName == "Gitee") info.downloadUrl else ""
-        ).distinctBy { it.first }.map { RaceSource(it.first, it.second) }
+        ).distinctBy { it.first }
 
         downloadCancelled.set(false)
-        synchronized(activeCalls) { activeCalls.clear() }
-        val finished = AtomicBoolean(false)
-        val winnerTaken = AtomicBoolean(false)
-        val remaining = AtomicInteger(candidates.size)
-        val errors = java.util.concurrent.ConcurrentLinkedQueue<String>()
+        val stop = { downloadCancelled.get() || activity.isFinishing || activity.isDestroyed }
 
-        fun finishOnce(ok: Boolean, err: String?) {
-            if (!finished.compareAndSet(false, true)) return
+        fun finish(ok: Boolean, err: String?) {
             downloadingNow.set(false)
-            cancelRunningCalls()
             activity.runOnUiThread {
                 if (!activity.isFinishing && !activity.isDestroyed) onEnd(ok, err)
             }
         }
 
-        fun onSourceSettled(src: RaceSource) {
-            src.settled = true
-            src.failed?.let { errors.add("${src.label}：$it") }
-            if (remaining.decrementAndGet() == 0 && !winnerTaken.get()) {
-                val err = if (downloadCancelled.get()) null
-                else "下载失败：" + (errors.toList().take(3).joinToString("；").ifBlank { "所有下载源均不可用" })
-                finishOnce(false, err)
-            }
-        }
-
-        fun startSource(idx: Int, src: RaceSource) {
-            val part = File(dir, "${apk.name}.part$idx")
-            part.delete()
-            val call = http.newCall(
-                Request.Builder().url(src.url)
-                    .header("User-Agent", "LingxiChat-Android")
-                    .build()
-            )
-            synchronized(activeCalls) { if (!finished.get()) activeCalls.add(call) }
-            src.call = call
-            src.lastChangeAt = System.currentTimeMillis()
-            call.enqueue(object : Callback {
-                override fun onFailure(c: Call, e: IOException) {
-                    part.delete()
-                    if (!downloadCancelled.get() && !c.isCanceled()) src.failed = briefError(e)
-                    onSourceSettled(src)
-                }
-
-                override fun onResponse(c: Call, resp: Response) {
-                    try {
-                        resp.use { r ->
-                            if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
-                            src.total = r.body?.contentLength() ?: -1L
-                            val input = r.body?.byteStream() ?: throw IOException("响应为空")
-                            FileOutputStream(part).use { out ->
-                                val buf = ByteArray(64 * 1024)
-                                var n: Int
-                                while (input.read(buf).also { n = it } != -1) {
-                                    out.write(buf, 0, n)
-                                    src.downloaded.addAndGet(n.toLong())
-                                }
-                            }
-                        }
-                        verifyApk(part, src.total.coerceAtLeast(0L), info.sizeBytes)
-                        if (winnerTaken.compareAndSet(false, true)) {
-                            if (apk.exists()) apk.delete()
-                            if (!part.renameTo(apk)) {
-                                winnerTaken.set(false)
-                                src.failed = "文件保存失败"
-                            }
-                        } else {
-                            part.delete()
-                        }
-                    } catch (e: CorruptedApkException) {
-                        part.delete()
-                        src.failed = "文件不完整（${e.message}）"
-                    } catch (e: Exception) {
-                        part.delete()
-                        if (!downloadCancelled.get() && !c.isCanceled()) src.failed = briefError(e)
-                    }
-                    if (winnerTaken.get() && src.failed == null) finishOnce(true, null)
-                    else onSourceSettled(src)
-                }
-            })
-        }
-
-        candidates.forEachIndexed(::startSource)
-
-        // UI 监视线程：每 250ms 汇报当前最快源的进度
         Thread {
-            val declaredTotal = info.sizeBytes
-            var lastBytes = 0L
-            var lastTime = System.currentTimeMillis()
-            var shownKbps = 0L
-            while (!finished.get() && !activity.isFinishing && !activity.isDestroyed) {
-                Thread.sleep(250)
-                if (finished.get()) break
-                // 10 秒没有新字节进账的源直接掐掉：它已经半死了，把连接和带宽让给别的源
-                val tick = System.currentTimeMillis()
-                candidates.forEach { s ->
-                    if (s.settled || s.failed != null) return@forEach
-                    val seen = s.downloaded.get()
-                    when {
-                        seen != s.lastBytes -> {
-                            s.lastBytes = seen
-                            s.lastChangeAt = tick
-                        }
-                        tick - s.lastChangeAt > 10_000L -> {
-                            s.failed = "10 秒没有速度，已切走"
-                            s.call?.cancel()
-                        }
-                    }
-                }
-                val running = candidates.filter { it.failed == null }
-                val leader = running.maxByOrNull { it.downloaded.get() } ?: break
-                val d = leader.downloaded.get()
-                val now = System.currentTimeMillis()
-                val dt = (now - lastTime).coerceAtLeast(1L)
-                val inst = (d - lastBytes) * 1000 / dt
-                lastBytes = d
-                lastTime = now
-                if (inst > 0) shownKbps = inst
-                val total = if (leader.total > 0) leader.total else declaredTotal
-                activity.runOnUiThread {
-                    if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
-                    if (d == 0L) {
-                        status.text = "正在同时连几条线路…"
-                    } else {
-                        if (total > 0) {
-                            val pct = (d * 100 / total).toInt().coerceAtMost(if (d >= total) 100 else 99)
-                            setProgress(pct)
-                            percent.text = "$pct%"
-                            val mb = "%.1f".format(Locale.US, d / 1024.0 / 1024.0)
-                            val totalMb = "%.1f".format(Locale.US, total / 1024.0 / 1024.0)
-                            val kbps = shownKbps / 1024
-                            val remain = if (kbps > 0) ((total - d) / 1024 / kbps) else -1L
-                            status.text = if (d >= total) "${leader.label} · 下载完成，正在校验…"
-                            else "${leader.label} · ${mb}/$totalMb MB" +
+            val declared = info.sizeBytes
+            try {
+                com.lingxi.chat.net.FastFetcher.fetch(
+                    candidates, apk, declared, http, connections = 4,
+                    onProgress = { got, total, sp, label ->
+                        val whole = if (total > 0) total else declared
+                        activity.runOnUiThread {
+                            if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
+                            if (got == 0L) {
+                                status.text = "正在同时连几条线路…"
+                            } else if (whole > 0) {
+                                val pct = (got * 100 / whole).toInt().coerceAtMost(99)
+                                setProgress(pct)
+                                percent.text = "$pct%"
+                                val mb = "%.1f".format(Locale.US, got / 1024.0 / 1024.0)
+                                val totalMb = "%.1f".format(Locale.US, whole / 1024.0 / 1024.0)
+                                val kbps = sp / 1024
+                                val remain = if (kbps > 0) ((whole - got) / 1024 / kbps) else -1L
+                                status.text = "$label · ${mb}/$totalMb MB" +
                                     (if (remain in 0..600) " · 约剩 ${remain}s" else "")
-                        } else {
-                            percent.text = "${d / 1024 / 1024} MB"
-                            status.text = "${leader.label} · 已下载 ${d / 1024} KB（服务器未给总大小）"
+                                speed.text = "$kbps KB/s"
+                            } else {
+                                percent.text = "${got / 1024 / 1024} MB"
+                                status.text = "$label · 已下载 ${got / 1024} KB（服务器未给总大小）"
+                                speed.text = "${sp / 1024} KB/s"
+                            }
                         }
-                        speed.text = "${shownKbps / 1024} KB/s"
-                    }
+                    },
+                    isCancelled = stop
+                )
+                if (stop()) {
+                    finish(false, null)
+                    return@Thread
                 }
+                statusRun(activity, status, "下载完成，正在检查安装包…")
+                verifyApk(apk, declared, declared)
+                setProgress(100)
+                percent.text = "100%"
+                finish(true, null)
+            } catch (e: CorruptedApkException) {
+                apk.delete()
+                finish(false, "文件不完整（${e.message}）")
+            } catch (e: Throwable) {
+                apk.delete()
+                finish(false, if (downloadCancelled.get()) null else "下载失败：${briefError(e)}")
             }
         }.start()
     }
 
+    private fun statusRun(activity: Activity, tv: TextView, text: String) {
+        activity.runOnUiThread { if (!activity.isFinishing) tv.text = text }
+    }
     private fun cancelRunningCalls() {
         val snapshot = synchronized(activeCalls) { activeCalls.toList() }
         snapshot.forEach { it.cancel() }

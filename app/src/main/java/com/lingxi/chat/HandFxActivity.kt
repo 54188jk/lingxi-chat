@@ -61,6 +61,7 @@ class HandFxActivity : BaseActivity() {
     private var openness = 0f
     private var analyzing = false
     private var recording = false
+    private var retriedModel = false
     @Volatile private var recorder: ClipRecorder? = null
     @Volatile private var recField: AuraField? = null
     @Volatile private var lastMarks: FloatArray? = null
@@ -166,28 +167,45 @@ class HandFxActivity : BaseActivity() {
 
     private fun load(f: File) {
         scope.launch {
-            val lm = withContext(Dispatchers.IO) {
-                runCatching { build(f) }.getOrNull()
-            }
-            if (lm == null) {
-                showState("这个文件读不起来", "删掉重下一次一般就好了。", "删掉重下")
+            val outcome: Result<HandLandmarker> = withContext(Dispatchers.IO) { runCatching { build(f) } }
+            val lm = outcome.getOrNull()
+            if (lm != null) {
+                landmarker?.close()
+                landmarker = lm
+                hideState()
+                startCamera()
+                b.aura.start()
+                analyzing = true
+                b.root.postDelayed(tick, 240L)
                 return@launch
             }
-            landmarker?.close()
-            landmarker = lm
-            hideState()
-            startCamera()
-            b.aura.start()
-            analyzing = true
-            b.root.postDelayed(tick, 240L)
+            val why = explain(outcome.exceptionOrNull())
+            if (!retriedModel) {
+                // 第一次读不起来，先当作那份文件坏了：删掉自动重下一次，别再麻烦用户点
+                retriedModel = true
+                runCatching { f.delete() }
+                showState("这份文件读不起来，正在重新下载", why, null)
+                onModelButton()
+            } else {
+                showState("这个文件读不起来", why, "删掉重下")
+            }
         }
     }
 
+    /** 把本机那份文件读进直接内存并交给推理库；读不满就直接报错，别拿半份去初始化 */
     private fun build(f: File): HandLandmarker {
-        val buf = ByteBuffer.allocateDirect(f.length().toInt())
-        FileInputStream(f).channel.use { ch: FileChannel ->
-            buf.clear()
-            while (ch.read(buf) > 0) { }
+        if (!EffectModel.isReady(f)) throw java.io.IOException("内容校验没过")
+        val size = f.length().toInt()
+        val buf = ByteBuffer.allocateDirect(size)
+        java.io.FileInputStream(f).channel.use { ch ->
+            var idle = 0
+            while (buf.hasRemaining()) {
+                if (ch.read(buf) > 0) {
+                    idle = 0
+                } else if (++idle > 64) {
+                    throw java.io.IOException("只读到 " + buf.position() + "/" + size + " 字节")
+                }
+            }
         }
         buf.rewind()
         val opts = HandLandmarker.HandLandmarkerOptions.builder()
@@ -198,7 +216,13 @@ class HandFxActivity : BaseActivity() {
             .build()
         return HandLandmarker.createFromOptions(this, opts)
     }
-
+    /** 把异常换成一句人话，同时留一点线索给用户报回来 */
+    private fun explain(e: Throwable?): String = when (e) {
+        null -> "不清楚卡在哪一步"
+        is UnsatisfiedLinkError, is NoClassDefFoundError, is ExceptionInInitializerError ->
+            "这台机器的运行库加载不起来（多为系统位数或 ROM 精简所致）：" + e.message?.take(90).orEmpty()
+        else -> "文件没能读全：" + e.javaClass.simpleName + " " + e.message?.take(90).orEmpty()
+    }
     // ---------------- 摄像头 ----------------
 
     private fun startCamera() {

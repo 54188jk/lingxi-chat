@@ -176,38 +176,28 @@ class StoreActivity : BaseActivity() {
         }
     }
 
-    /** 下到缓存目录，边下边把进度写在条目副标题上 */
+    /** 下到缓存目录，边下边把进度写在条目副标题上；线路肯给分段就几块同时抓，速度能叠起来 */
     private fun fetch(item: AppItem): Pair<File?, String> {
         val dir = File(cacheDir, "store").apply { if (!exists()) mkdirs() }
         val out = File(dir, safeName(item.name) + ".apk")
         runCatching { out.delete() }
         return runCatching {
-            val req = Request.Builder().url(item.url).header("User-Agent", "LingxiChat-Android").build()
-            http.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) return@runCatching null to "对方返回 ${resp.code}"
-                val body = resp.body ?: return@runCatching null to "对方没给内容"
-                val total = if (item.size > 0) item.size else body.contentLength()
-                body.byteStream().use { input ->
-                    out.outputStream().use { os ->
-                        val buf = ByteArray(64 * 1024)
-                        var done = 0L
-                        while (true) {
-                            val n = input.read(buf)
-                            if (n < 0) break
-                            os.write(buf, 0, n)
-                            done += n
-                            if (total > 0 && done % (512 * 1024L) < 64 * 1024L) {
-                                val pct = (done * 100 / total).toInt().coerceIn(0, 99)
-                                runOnUiThread { progress[item.url]?.text = "下载中 $pct%" }
-                            }
-                        }
+            com.lingxi.chat.net.FastFetcher.fetch(
+                listOf(item.url to "下载地址"), out, item.size, http, connections = 4,
+                onProgress = { got, total, _, _ ->
+                    if (total > 0 && got % (256 * 1024L) < 128 * 1024L) {
+                        val pct = (got * 100 / total).toInt().coerceIn(0, 99)
+                        runOnUiThread { progress[item.url]?.text = "下载中 $pct%" }
                     }
                 }
-                out to ""
-            }
-        }.getOrElse { null to (it.message ?: "网络断了") }
+            )
+            out to ""
+        }.getOrElse { e ->
+            runCatching { out.delete() }
+            if (e is java.io.InterruptedIOException) null to "网络断了"
+            else null to (e.message ?: "网络断了")
+        }
     }
-
     private fun safeName(raw: String): String =
         raw.trim().map { if (it.isLetterOrDigit() || it == '.' || it == '-' || it == '_') it else '_' }
             .joinToString("").ifBlank { "app" }
