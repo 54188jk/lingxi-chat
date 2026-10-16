@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.190**（支持 Android 7.0 及以上手机）
+当前版本：**v1.191**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -22,8 +22,8 @@
 - **打字机输出 + 随时停止**：回答逐字上屏，生成中点发送键即可打断
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
 - **一打开就是聊天页**：启动直接进主界面，不需要多走一步
-- **液态玻璃**：聊天页顶栏与输入栏是真正的玻璃——把身后正在滚的聊天记录模糊一层贴进面板，靠边一圈折射般的放大带、上缘镜面高光、下沿一抹内阴影；列表滚动或回答逐字输出时倒影实时跟上，焦点落到输入框会亮起主色描边，按住鼓起、高光跟手指、松手过冲回弹；设置里可整体关掉，轻量档机器自动只画半透明底
-- **手指特效**：输入栏下方一条玻璃切换条，「AI」与「手指特效」两格切换（选中那格有一块会滑的染色胶囊）。进特效先要摄像头权限，把手伸到镜头前：五指张开时指间浮出一条流动的星河、指尖各一颗亮星跟手走；握拳整只手石化（灰白石面 + 裂纹 + 指缝落灰），再张开又流回星河。底栏「录一段」最多 20 秒，合成同一份画面存进相册 Movies/糯叽。识别全部在手机本机完成，画面不联网、不上传；第一次进需要多下一个约 7.5MB 的手部识别文件（本机有就不再下），落在内部储存「特效模型」文件夹，设置 → 手指特效的识别文件 可看状态或删除
+- **液态玻璃**：聊天页顶栏、输入栏，以及手指特效页的上下两条栏，都是真正的玻璃——把身后正在滚的聊天记录模糊一层贴进面板，靠边一圈折射般的放大带、上缘镜面高光、下沿一抹内阴影；列表滚动或回答逐字输出时倒影实时跟上，焦点落到输入框会亮起主色描边，按住鼓起、高光跟手指、松手过冲回弹；设置里可整体关掉，轻量档机器自动只画半透明底
+- **手指特效**：输入栏下方一条玻璃切换条，「AI」与「手指特效」两格切换（选中那格有一块会滑的染色胶囊）。进特效先要摄像头权限，把手伸到镜头前：五指张开时指间浮出一条流动的星河、指尖各一颗亮星跟手走；握拳整只手石化（灰白石面 + 裂纹 + 指缝落灰），再张开又流回星河。底栏「录一段」最多 20 秒，合成同一份画面存进相册 Movies/糯叽；顶栏与底栏透出并模糊身后的相机画面。识别全部在手机本机完成，画面不联网、不上传；所需识别文件已随安装包内置，第一次进特效时自动放到内部储存「特效模型」文件夹，之后一直从那儿读，设置 → 手指特效的识别文件 可看状态或删除
 - **应用商店与侧载**（设置 → 应用商店与已装应用）：可把你信任的安装包直链添加进来下载，带实时进度，装前先校验大小、包结构与关键文件，不合格的包直接扔掉不交安装；也能扫内部储存里已有的安装包一键交给系统安装；还会列出手机上已装的应用并一键启动（卸载请到系统设置）
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
@@ -43,8 +43,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.190/lingxi-v1.190.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.190/糯叽-v1.190-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.191/lingxi-v1.191.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.191/糯叽-v1.191-release.apk |
 | CNB 镜像 | https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/v1.190/lingxi-v1.190.apk |
 
 
@@ -56,6 +56,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.191 | 发布：2026-10-16 23:51:17。手指特效页的顶栏和底栏换成真玻璃，透出相机里的画面，手移动时里面的光影跟着动 |
 | v1.190 | 发布：2026-10-16 23:09:00。安装包多挂一个国内镜像（只放发布版附件的镜像仓），更新时与其它线路一起竞速；下载线路清单合并成一处统一维护，加速站由 6 个扩到 7 个；应用商店里填 GitHub 发布直链的安装包也会自动走这几条加速线路 |
 | v1.189 | 发布：2026-10-16 22:41:55。修「更新一直停在正在连线路」：上一版逐条探测线路能力、探测全无声就把线路当成不存在导致下载没开始；现在拿到地址立即整包开跑，探测改在后台做，探到支持分段的线路再加入。失败原因留在页面上不再一闪而过；包完整性判定以线路自报长度为准 |
 | v1.188 | 发布：2026-10-16 22:08:18。手指特效的手部识别文件改为随安装包内置（不再联网下载那 7.5MB），第一次用到时自动复制到本机永久目录「特效模型」并做内容核对，对不上自动重放；读失败时把「文件坏了」和「本机运行库加载不了」分开报。安装包 20.4MB → 26.0MB |
@@ -146,9 +147,9 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
-- v1.190 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.191 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
 - v1.187 成品包 21,423,579 字节（与 v1.186 同尺寸，只换代码）；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、versionCode 54；包内构成：`lib/arm64-v8a/libmediapipe_tasks_jni.so` 10.05MB + `lib/armeabi-v7a/…` 7.06MB（不压缩存储）+ `classes.dex` 1.76MB + `resources.arsc` 0.78MB
-- v1.190 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.191 安装包扫描未发现内置仓库凭据（成品 27,277,556 字节）（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -160,6 +161,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 - v1.183 玻璃改为主界面通用：`GlassBackdrop` 改为抓整页根视图（0.3 倍位图 + 两轮可分离盒模糊），抓之前把已注册的玻璃面板临时置 `INVISIBLE` 再还原，避免把上一轮模糊叠进下一轮；`MainActivity` 在 `setContentView` 后 `attach(this, b.root)` 并给 `rvMessages` 挂 `OnScrollListener` 标脏，`onResume` 起 240ms 的 `Runnable`，只在「滚动过 / 正在流式输出」时重抓重绘，`onPause` 撤掉；顶栏与输入栏改成 `GlassSurfaceView`（`app:glassRadius` / `glassBlur` / `glassRim`），输入框焦点由 `setBackgroundResource` 改为 `setGlassFocused`
 - v1.183 尚未在设备上安装验证：真机上要看三项——列表快速滚动时倒影的跟手度与功耗（240ms 节流够不够顺）、浅色主题下白玻璃与消息文字的对比、长会话大列表整屏抓图是否掉帧；轻量档走不抓屏的分支
 - v1.185 设置页 `activity_settings.xml`：以「空行 + `<View>` 分隔线 6 行 + 12 空格缩进的行容器」为单位整块交换 `swLiquidGlass` / `swEnterSend` / `rowStore` 三行（玻璃开关挪到 主题/字号 之后第一位），改完 minidom 解析通过、`git diff --stat` 26/26 行；第一次尝试把「最近的 `</LinearLayout>`」当行尾，命中了嵌套行的收尾，导致 `模型配置（必做）` 小标题被切进卡片内部——`</LinearLayout>` 总数不变、minidom 照样通过，只有读 diff 才发现结构变了，已 `git checkout --` 回退重做；结论：行尾必须按缩进层级精确匹配
+- v1.191 手指特效页的真玻璃：`GlassBackdrop` 新增「相机帧模式」——`attachFrame(activity, texCam)` 登记提供画面的视图作为背景基准，`frameFrom(activity, bmp)` 由 `HandFxActivity.analyzeOnce()` 每帧把已经取到的相机小图（480 宽，顺手复用，不额外抓一帧）画进 `cap` 走同一套盒模糊；缩放仍固定 `SCALE=0.3`（与抓视图树那条路一致），面板改用 `scaleOf(activity)` 换算要贴的区块，两套来源共用一份绘制代码。相机帧不含玻璃自身，这条路上不需要「抓之前把面板藏掉」；`refresh()` 在帧模式直接返回，绝不重画视图树。`DevicePerf.lowEnd` 或关掉液态玻璃时 `glassFeed=false`，一帧都不喂，面板退回半透明纯色底。
 - v1.190 新增国内镜像：CNB 公开仓 `tuui.rrj/lingxi-chat-release` **只放发布版安装包附件**（README + 每版一个 tag + `lingxi-vX.Y.apk`，源码一个字节都不进，源码仍只推 Gitee/GitHub）。建仓 `POST https://api.cnb.cool/{namespace}/-/repos`；发版三步：git 推 tag → `POST /-/releases` `{tag_name,name,body,ref}` → `asset-upload-url` / PUT 原字节 / 确认接口（201/200/200）。匿名直链 `https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/{tag}/{file}` 实测 200 全量、SHA 与本地一致，且它回 206 支持分段。App 侧统一在 `net/Mirrors.kt`：`forAsset(gitee, github, cnb, extra)`，代理站 7 个；`UpdateUi.mirrorCandidates` 用 `Mirrors.CNB_FROM="1.190"` 门控，老版本不去撞不存在的地址；`StoreActivity.routes()` 只对 `github.com/.../releases/download/` 形式的用户链接展开加速线路，其它站点原样一条。
 - v1.189 `FastFetcher.fetch()` 结构改正：整包那条腿用 `sources` 直接构造 `Probe` 立刻启动，**探测结果不再决定某条线能不能用**（探测只用于挑出支持 Range 的线路和拿总大小），探测放进独立线程、总预算 5 秒（原来是逐条 `join(8_000)`，八条线最坏能耗 64 秒才开始下），探不到支持分段就安静退出；`probe()` 里去掉 `if (p.size > 0) out.add(p)` 这个丢线路的条件，改成每条线一律收录。`wholeRace` 的完成判定优先用响应自己的 `Content-Length`（`ownLen`），只有线路不自报长度时才回退到调用方给的期望大小。`UpdateUi` 两处下载回调失败分支把原因写回 `status` 并保持进度区可见（原来只有一条 Toast，用户只看见卡在「正在同时连几条线路…」）。
 - v1.188 识别文件改内置：`app/src/main/assets/hand_landmarker.task`（7,819,105 字节，打包后 5.58MB，成品 27,277,492 字节）；`EffectModel.ensure()` 去掉网络分支，改成「本机永久目录里有且内容核对通过就用 → 否则从 assets 复制到 `.new` 临时名、核对通过再改名」（改名不成的机型整份拷一次），目录优先级仍是 有「所有文件访问」→ `/sdcard/特效模型/`，否则 `getExternalFilesDir(null)/特效模型/`；`HandFxActivity` 状态卡与设置页文案从「下载」改成「放一份 / 重放一份」，读失败仍是第一次自动重放、第二次才让用户点。注意：v1.186 挂在 Release 上的模型附件不要删——已装 v1.186/v1.187 的手机还会去那儿下，只有 v1.188 起才是内置。
@@ -168,6 +170,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 - v1.186 摄像头与推理：Camera2 只挂预览一路输出到 TextureView，`applyTransform` = 先按摄像头原始尺寸还原比例 → 转 `SENSOR_ORIENTATION` → 等比放大铺满；识别帧取 `TextureView.getBitmap(480, h)`（480 宽在 1080p 屏上是 3 倍降采样，实测够认手又不至于拖住界面线程）；`BaseOptions.Builder` 只有 `setModelAssetPath/FileDescriptor/Buffer`，**没有 `setModelAssetFile`**，所以下载来的文件要读进 `ByteBuffer.allocateDirect(size)` 再用 `createFromOptions(..., RunningMode.VIDEO)`；`FileChannel.read(buffer)` 是循环读、返回值 0 或 -1 都要当结束处理（`allocateDirect(0)` 会抛 `IllegalArgumentException`）
 - v1.186 录制：`ClipRecorder` 自己做 RGBA→YUV420Planar（BT.601 全量程）喂 `MediaCodec` H.264 + `MediaMuxer`；两个 API 坑：`configure(fmt, null, flag)` 有重载歧义要写 `null as Surface?`，`MediaMuxer` 收尾是 `stop()` 不是 `finish()`；`HandLandmarkerResult` 没有 `close()`。抓帧只能在界面线程（`grabTick` 在 `b.root` 上 50ms 一跳），画特效与编码在 `recHandler`；录制**必须另起一份 `AuraField`** 并用 `@Volatile` 关键点快照喂它——和屏幕上那份共用粒子池会让两条线程同时改同一个 `ArrayList`（`ConcurrentModificationException`）；`stopRecord()` 把 `recorder.stop()` 也 post 回 `recHandler`，让收尾和最后一帧串行；成品先落 `cacheDir/record`，再按版本发 MediaStore（Q+ 走 `IS_PENDING`）或公共 `Movies/糯叽` + `MediaScannerConnection`；上限 20 秒自动停
+- v1.191 尚未在设备上安装验证：这一页还要看两项——顶栏/底栏的模糊是否跟着相机画面实时变化（识别取帧约 15fps，玻璃就最多这个更新率）、开玻璃后这一页的发热与耗电；
 - v1.186 尚未在设备上安装验证，真机要看六项：预览方向与「铺满」换算（后置镜头 + `screenOrientation="portrait"`）、`TextureView.getBitmap()` 是否已把 transform 烘进位图（没烘到则关键点与特效会错位）、CPU 手部推理的实际帧率与发热、录制成品在相册里的可播性与色彩偏差、`hand_landmarker.task` 五条下载线的可用性（`EffectModel.RELEASE_TAG=v1.186` 的附件，务必与本次 Release 同号）、以及 32 位老机器上 `armeabi-v7a` 那份 so 能否正常加载；轻量档（核数 ≤4）粒子减半，特效强度需肉眼再评
 - v1.184 闪退定位与修复：`GlassSurfaceView.onDraw` 里的 `GlassBackdrop.snapshot()` 会在缓存为空时当场 `refresh(force=true)`，也就是在本次硬件绘制的调用栈里再 `root.draw(软件 Canvas)` 重入同一棵视图树——v1.183 的一打开即崩即来源于此。现在 `snapshot()` 退成纯读取，抓屏只允许 `MainActivity.glassTick`（`postDelayed` 240ms）与滚动标脏触发，且抓前先判 `isAttachedToWindow` 与 `windowVisibility`；`cap` / `blur` / `px` / `tmp` 四块缓冲按尺寸复用（v1.183 的 `boxBlur` 每帧 `src.copy()` 出新的 `blur` 却从不回收上一张，长时间聊天只会涨不会降）；抓屏包在 `try/catch(Throwable)` 内并计入 `fails`，连续两次即 `dead=true`、释放缓冲并把 `ConfigStore.liquidGlass` 写回 false，本机永久退回半透明底；面板 `onDraw` 的贴图段同样包 `try/finally`，用 `saves` 计数保证 canvas 栈平衡；`onDestroy` 补 `removeCallbacks(glassTick)` 与 `GlassBackdrop.detach(this)`（旧写法按 `activity.hashCode()` 存 `State` 且从不删，退出过一次聊天页的那两张位图加两条 `IntArray` 会一直留在进程里）
 - v1.182 液态玻璃实现：`GlassBackdrop`（把 `deskWall` + `glowDesk` 两个源视图按 `getLocationInWindow` 的相对坐标抓成 0.5 倍 ARGB_8888 小图，按半径缓存两轮可分离盒模糊）+ `GlassSurfaceView`（`LinearLayout` 子类 + `setWillNotDraw(false)`；圆角裁剪后贴模糊图 → 靠边 9dp 用 `INVERSE_EVEN_ODD` 环带把背景按 1.09 倍重绘模拟折射 → `LinearGradient` 镜面高光与 0.9dp 描边 → 下沿 12dp 内阴影 → 按压值驱动圆角 +12%、底色加深、径向高光跟随手指，松手 `ValueAnimator(from→1.18→0)` 过冲回弹）；`res/values/attrs.xml` 新增 `GlassSurface`（`glassRadius` / `glassBlur` / `glassTint` / `glassRim`）；`ConfigStore.liquidGlass`（默认开）+ 设置页 `swLiquidGlass`；`DevicePerf.lowEnd` 或关掉开关时不抓背景，只画 tint 与描边

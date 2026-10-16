@@ -117,7 +117,7 @@ open class GlassSurfaceView @JvmOverloads constructor(
                 canvas.clipPath(bodyPath)
                 getLocationInWindow(here)
                 act?.let { rootBase(it) }
-                val s = GlassBackdrop.scale()
+                val s = if (act != null) GlassBackdrop.scaleOf(act) else GlassBackdrop.scale()
                 src.left = max(0, ((here[0] - base[0]) * s).toInt())
                 src.top = max(0, ((here[1] - base[1]) * s).toInt())
                 src.right = min(bmp.width, src.left + (w * s).toInt().coerceAtLeast(1))

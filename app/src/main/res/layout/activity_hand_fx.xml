@@ -20,6 +20,7 @@
 
     <!-- 顶栏：返回 + 标题 + 一句话说明 -->
     <com.lingxi.chat.GlassSurfaceView
+        android:id="@+id/glassTop"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
@@ -29,8 +30,9 @@
         android:paddingTop="8dp"
         android:paddingEnd="14dp"
         android:paddingBottom="8dp"
+        app:glassBlur="16dp"
         app:glassRadius="0dp"
-        app:glassRim="0.7">
+        app:glassRim="0.85">
 
         <ImageView
             android:id="@+id/btnBack"
@@ -152,6 +154,7 @@
         android:paddingTop="12dp"
         android:paddingEnd="12dp"
         android:paddingBottom="12dp"
+        app:glassBlur="20dp"
         app:glassRadius="22dp"
         android:baselineAligned="false"
         app:glassRim="0.9">

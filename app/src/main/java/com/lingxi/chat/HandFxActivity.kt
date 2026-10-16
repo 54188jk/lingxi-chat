@@ -60,6 +60,7 @@ class HandFxActivity : BaseActivity() {
     private var landmarker: HandLandmarker? = null
     private var openness = 0f
     private var analyzing = false
+    private var glassFeed = false
     private var recording = false
     private var retriedModel = false
     @Volatile private var recorder: ClipRecorder? = null
@@ -172,6 +173,10 @@ class HandFxActivity : BaseActivity() {
             if (lm != null) {
                 landmarker?.close()
                 landmarker = lm
+                // 顶栏和底栏要透出相机画面：把相机那块视图交给玻璃，之后每一帧喂它一张
+                glassFeed = !com.lingxi.chat.data.DevicePerf.lowEnd(this@HandFxActivity) &&
+                    com.lingxi.chat.data.ConfigStore(this@HandFxActivity).liquidGlass
+                if (glassFeed) GlassBackdrop.attachFrame(this@HandFxActivity, b.texCam)
                 hideState()
                 startCamera()
                 b.aura.start()
@@ -361,6 +366,11 @@ class HandFxActivity : BaseActivity() {
             return
         }
         bmp.recycle()
+        if (glassFeed) {
+            GlassBackdrop.frameFrom(this, bmp)
+            b.glassTop.invalidateGlass()
+            b.glassBottom.invalidateGlass()
+        }
         openness = if (marks == null) 0f else b.aura.field.openness(marks)
         lastMarks = marks
         lastOpen = openness
@@ -515,6 +525,7 @@ class HandFxActivity : BaseActivity() {
 
     override fun onDestroy() {
         analyzing = false
+        GlassBackdrop.detach(this)
         b.root.removeCallbacks(tick)
         recHandler.removeCallbacksAndMessages(null)
         runCatching { recField = null }

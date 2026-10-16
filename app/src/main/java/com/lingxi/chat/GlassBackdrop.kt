@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.RectF
 import android.view.View
 import com.lingxi.chat.data.ConfigStore
 import java.lang.ref.WeakReference
@@ -33,6 +34,10 @@ object GlassBackdrop {
 
         /** 这台机器上抓屏不可用，面板退回轻玻璃 */
         var dead = false
+        /** 相机帧模式：身后那层由页面一帧帧喂进来（视图树里根本没有那些像素），绝不去重画视图树 */
+        var frameMode = false
+        /** 背景图相对宿主视图的缩放：相机帧也糊成和抓视图树一样的大小，面板换算逻辑一套通吃 */
+        var frameScale = SCALE
         fun drop() {
             cap?.recycle(); cap = null
             blur?.recycle(); blur = null
@@ -54,6 +59,46 @@ object GlassBackdrop {
         st.root = WeakReference(root)
         st.lastAt = 0L
     }
+
+    /** 身后是相机画面这类「视图树里抓不到」的页面：把提供画面的那个视图交进来 */
+    fun attachFrame(activity: Activity, source: View) {
+        val st = states.getOrPut(activity.hashCode()) { State() }
+        if (!st.frameMode || st.root?.get() !== source) {
+            st.drop()
+            st.fails = 0
+            st.dead = false
+        }
+        st.frameMode = true
+        st.root = WeakReference(source)
+        st.lastAt = 0L
+    }
+
+    /** 喂一帧进去（只能在界面线程、onDraw 之外调用）：模糊的尺寸和抓视图树那套保持一致，相机帧再小也照这个尺寸糊 */
+    fun frameFrom(activity: Activity, src: Bitmap) {
+        val st = states[activity.hashCode()] ?: return
+        val host = st.root?.get() ?: return
+        if (st.dead || !st.frameMode || src.isRecycled || src.width <= 0 || host.width <= 0) return
+        st.capturing = true
+        try {
+            val w = max(48, (host.width * SCALE).toInt())
+            val h = max(48, min((host.height * SCALE).toInt(), (src.height * w / src.width)))
+            ensureBuffers(st, w, h)
+            val cap = st.cap ?: return
+            val canvas = Canvas(cap)
+            canvas.drawColor(Color.TRANSPARENT)
+            canvas.drawBitmap(src, null, RectF(0f, 0f, w.toFloat(), h.toFloat()), null)
+            boxBlur(st, w, h)
+            st.fails = 0
+            st.lastAt = System.currentTimeMillis()
+        } catch (t: Throwable) {
+            st.fails++
+            if (st.fails >= MAX_FAILS) giveUp(st, host)
+        } finally {
+            st.capturing = false
+        }
+    }
+    /** 这一页的背景图是按什么缩放画的，面板贴回去时要用同一个比例 */
+    fun scaleOf(activity: Activity): Float = states[activity.hashCode()]?.frameScale ?: SCALE
 
     fun detach(activity: Activity) {
         states.remove(activity.hashCode())?.drop()
@@ -78,7 +123,7 @@ object GlassBackdrop {
     /** 抓一张并模糊；必须在 onDraw 之外调用 */
     fun refresh(activity: Activity, force: Boolean = false, minIntervalMs: Long = 110L) {
         val st = states[activity.hashCode()] ?: return
-        if (st.dead || st.capturing) return
+        if (st.dead || st.capturing || st.frameMode) return
         val now = System.currentTimeMillis()
         if (!force && now - st.lastAt < minIntervalMs) return
         val root = st.root?.get() ?: return
