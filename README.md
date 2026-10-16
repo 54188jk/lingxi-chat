@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.189**（支持 Android 7.0 及以上手机）
+当前版本：**v1.190**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -43,10 +43,12 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.189/lingxi-v1.189.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.189/糯叽-v1.189-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.190/lingxi-v1.190.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.190/糯叽-v1.190-release.apk |
+| CNB 镜像 | https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/v1.190/lingxi-v1.190.apk |
 
-应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
+
+应用内「设置 → 检查更新」会同时试这几处地址和几个加速站，谁先把完整包下下来就用谁。
 
 ## 版本更新历史
 
@@ -54,6 +56,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.190 | 发布：2026-10-16 23:09:00。安装包多挂一个国内镜像（只放发布版附件的镜像仓），更新时与其它线路一起竞速；下载线路清单合并成一处统一维护，加速站由 6 个扩到 7 个；应用商店里填 GitHub 发布直链的安装包也会自动走这几条加速线路 |
 | v1.189 | 发布：2026-10-16 22:41:55。修「更新一直停在正在连线路」：上一版逐条探测线路能力、探测全无声就把线路当成不存在导致下载没开始；现在拿到地址立即整包开跑，探测改在后台做，探到支持分段的线路再加入。失败原因留在页面上不再一闪而过；包完整性判定以线路自报长度为准 |
 | v1.188 | 发布：2026-10-16 22:08:18。手指特效的手部识别文件改为随安装包内置（不再联网下载那 7.5MB），第一次用到时自动复制到本机永久目录「特效模型」并做内容核对，对不上自动重放；读失败时把「文件坏了」和「本机运行库加载不了」分开报。安装包 20.4MB → 26.0MB |
 | v1.187 | 发布：2026-10-16 21:43:52。手指特效那份识别文件下完后多加一道内容核对，对不上自动删掉重下；真读不起来时界面写清卡在「文件坏了」还是「本机运行库加载不了」。下载改成两条腿同时跑：支持分段的线路切块并发抓、缺哪块补哪块，不支持分段的线路整包竞速、12 秒没进账就换线，先下完整的一份先用；应用商店里下载自己添加的安装包也走这套 |
@@ -114,6 +117,7 @@
 - 联网搜索走 DuckDuckGo 公开页面，不需要 Key
 - 应用不收集、不上传任何用户数据，无广告、无统计 SDK
 - 手机操控：仅在用户点亮操控开关后才读屏；**前台模式**的屏幕文字（以及开启截图时的画面）会发送给用户自己配置的模型服务商，**后台模式**完全不读屏；密码输入框内容一律不回传，支付类按钮默认拦截
+- 安装包在三个平台各挂一份（Gitee / GitHub / 只放附件的 CNB 镜像仓），应用内更新会把它们和几个加速站一起竞速，任一家的地址抽风都不影响下载
 - 安装包下载完成后自动做完整性校验（大小比对 + 包结构检查），损坏文件不会交给系统安装
 - 手指特效：摄像头画面只在手机本机显示、本机识别、本机录制，不上传也不作为任何网络请求发出去；摄像头权限只在点进那一格时才申请，不进去就不会工作；识别文件下载后留在本机，可随时在设置里删掉
 
@@ -142,9 +146,9 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
-- v1.189 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.190 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
 - v1.187 成品包 21,423,579 字节（与 v1.186 同尺寸，只换代码）；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、versionCode 54；包内构成：`lib/arm64-v8a/libmediapipe_tasks_jni.so` 10.05MB + `lib/armeabi-v7a/…` 7.06MB（不压缩存储）+ `classes.dex` 1.76MB + `resources.arsc` 0.78MB
-- v1.189 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.190 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -156,6 +160,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 - v1.183 玻璃改为主界面通用：`GlassBackdrop` 改为抓整页根视图（0.3 倍位图 + 两轮可分离盒模糊），抓之前把已注册的玻璃面板临时置 `INVISIBLE` 再还原，避免把上一轮模糊叠进下一轮；`MainActivity` 在 `setContentView` 后 `attach(this, b.root)` 并给 `rvMessages` 挂 `OnScrollListener` 标脏，`onResume` 起 240ms 的 `Runnable`，只在「滚动过 / 正在流式输出」时重抓重绘，`onPause` 撤掉；顶栏与输入栏改成 `GlassSurfaceView`（`app:glassRadius` / `glassBlur` / `glassRim`），输入框焦点由 `setBackgroundResource` 改为 `setGlassFocused`
 - v1.183 尚未在设备上安装验证：真机上要看三项——列表快速滚动时倒影的跟手度与功耗（240ms 节流够不够顺）、浅色主题下白玻璃与消息文字的对比、长会话大列表整屏抓图是否掉帧；轻量档走不抓屏的分支
 - v1.185 设置页 `activity_settings.xml`：以「空行 + `<View>` 分隔线 6 行 + 12 空格缩进的行容器」为单位整块交换 `swLiquidGlass` / `swEnterSend` / `rowStore` 三行（玻璃开关挪到 主题/字号 之后第一位），改完 minidom 解析通过、`git diff --stat` 26/26 行；第一次尝试把「最近的 `</LinearLayout>`」当行尾，命中了嵌套行的收尾，导致 `模型配置（必做）` 小标题被切进卡片内部——`</LinearLayout>` 总数不变、minidom 照样通过，只有读 diff 才发现结构变了，已 `git checkout --` 回退重做；结论：行尾必须按缩进层级精确匹配
+- v1.190 新增国内镜像：CNB 公开仓 `tuui.rrj/lingxi-chat-release` **只放发布版安装包附件**（README + 每版一个 tag + `lingxi-vX.Y.apk`，源码一个字节都不进，源码仍只推 Gitee/GitHub）。建仓 `POST https://api.cnb.cool/{namespace}/-/repos`；发版三步：git 推 tag → `POST /-/releases` `{tag_name,name,body,ref}` → `asset-upload-url` / PUT 原字节 / 确认接口（201/200/200）。匿名直链 `https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/{tag}/{file}` 实测 200 全量、SHA 与本地一致，且它回 206 支持分段。App 侧统一在 `net/Mirrors.kt`：`forAsset(gitee, github, cnb, extra)`，代理站 7 个；`UpdateUi.mirrorCandidates` 用 `Mirrors.CNB_FROM="1.190"` 门控，老版本不去撞不存在的地址；`StoreActivity.routes()` 只对 `github.com/.../releases/download/` 形式的用户链接展开加速线路，其它站点原样一条。
 - v1.189 `FastFetcher.fetch()` 结构改正：整包那条腿用 `sources` 直接构造 `Probe` 立刻启动，**探测结果不再决定某条线能不能用**（探测只用于挑出支持 Range 的线路和拿总大小），探测放进独立线程、总预算 5 秒（原来是逐条 `join(8_000)`，八条线最坏能耗 64 秒才开始下），探不到支持分段就安静退出；`probe()` 里去掉 `if (p.size > 0) out.add(p)` 这个丢线路的条件，改成每条线一律收录。`wholeRace` 的完成判定优先用响应自己的 `Content-Length`（`ownLen`），只有线路不自报长度时才回退到调用方给的期望大小。`UpdateUi` 两处下载回调失败分支把原因写回 `status` 并保持进度区可见（原来只有一条 Toast，用户只看见卡在「正在同时连几条线路…」）。
 - v1.188 识别文件改内置：`app/src/main/assets/hand_landmarker.task`（7,819,105 字节，打包后 5.58MB，成品 27,277,492 字节）；`EffectModel.ensure()` 去掉网络分支，改成「本机永久目录里有且内容核对通过就用 → 否则从 assets 复制到 `.new` 临时名、核对通过再改名」（改名不成的机型整份拷一次），目录优先级仍是 有「所有文件访问」→ `/sdcard/特效模型/`，否则 `getExternalFilesDir(null)/特效模型/`；`HandFxActivity` 状态卡与设置页文案从「下载」改成「放一份 / 重放一份」，读失败仍是第一次自动重放、第二次才让用户点。注意：v1.186 挂在 Release 上的模型附件不要删——已装 v1.186/v1.187 的手机还会去那儿下，只有 v1.188 起才是内置。
 - v1.187 下载改道 `net/FastFetcher.kt`（更新包、识别文件、应用商店下载安装共用）：先对每条线发 `Range: bytes=0-1` 探测——回 206 的才算支持分段；支持分段的切成 ≥256KB 的段、4 条连接同时抓，某段失败换线重抓那一段；不支持分段的（实测 Gitee 附件最终落 `foruda.gitee.com`，带 Range 也回 200 整包）走整包竞速，12 秒无进账即 cancel 该线；两条腿各写 `.seg.dl` / `.one.dl` 临时文件，先通过大小校验的一方 `renameTo` 交付、另一方删除，`cleanup()` 兜底扫残留。本机对 7.46MB 实测：Gitee 单线 1.44MB/s、gh-proxy 单线 1.29MB/s、gh-proxy 四段 1.52MB/s，另一轮四段只跑出 0.51MB/s——本机出口抖动比分段收益更大，所以不拿这组数字当倍率承诺，改动拿到的是两条结构性收益：任何一条线半死都不会吊住整次下载、支持分段的线路可以多连接叠带宽。

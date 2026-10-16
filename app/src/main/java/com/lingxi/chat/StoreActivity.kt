@@ -183,7 +183,7 @@ class StoreActivity : BaseActivity() {
         runCatching { out.delete() }
         return runCatching {
             com.lingxi.chat.net.FastFetcher.fetch(
-                listOf(item.url to "下载地址"), out, item.size, http, connections = 4,
+                routes(item.url), out, item.size, http, connections = 4,
                 onProgress = { got, total, _, _ ->
                     if (total > 0 && got % (256 * 1024L) < 128 * 1024L) {
                         val pct = (got * 100 / total).toInt().coerceIn(0, 99)
@@ -197,6 +197,14 @@ class StoreActivity : BaseActivity() {
             if (e is java.io.InterruptedIOException) null to "网络断了"
             else null to (e.message ?: "网络断了")
         }
+    }
+    /**
+     * 用户自己填的地址只有一条；但如果他填的是 GitHub 的发布页直链，
+     * 就顺手把几个加速站也加上一起赛，国内会快很多。其它网站原样一条，不乱改别人的链接。
+     */
+    private fun routes(raw: String): List<Pair<String, String>> {
+        val isGithubAsset = raw.startsWith("https://github.com/") && raw.contains("/releases/download/")
+        return if (isGithubAsset) com.lingxi.chat.net.Mirrors.forAsset(github = raw) else listOf(raw to "下载地址")
     }
     private fun safeName(raw: String): String =
         raw.trim().map { if (it.isLetterOrDigit() || it == '.' || it == '-' || it == '_') it else '_' }

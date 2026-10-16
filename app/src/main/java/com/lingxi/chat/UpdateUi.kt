@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.lingxi.chat.net.Mirrors
 import com.lingxi.chat.net.UpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -132,18 +133,16 @@ object UpdateUi {
         }
         if (direct.isNotBlank()) {
             list.add(direct to "推荐线路")
+            // CNB 镜像只从 v1.190 起有，老版本别去撞一个不存在的地址
+            if (!UpdateChecker.isNewer(Mirrors.CNB_FROM, version)) {
+                list.add(Mirrors.cnbUrl("v$version", "lingxi-v$version.apk") to "国内备用线路")
+            }
             // 改名之前发布的那些版本，附件用的还是旧文件名，一起作为候选，别因为改了名下不到包
             if (version.isNotBlank()) {
                 list.add(com.lingxi.chat.net.UpdateChecker.giteeDownloadUrlLegacy(version) to "老版本线路")
             }
         }
-        list.add(("https://ghfast.top/$url") to "备用线路 1")
-        list.add(("https://gh-proxy.com/$url") to "备用线路 2")
-        list.add(("https://ghproxy.net/$url") to "备用线路 3")
-        list.add(("https://gh.ddlc.top/$url") to "备用线路 4")
-        list.add(("https://github.moeyy.xyz/$url") to "备用线路 5")
-        list.add(("https://mirror.ghproxy.com/$url") to "备用线路 6")
-        list.add(url to "官方线路")
+        list.addAll(com.lingxi.chat.net.Mirrors.forAsset(github = url).drop(1))
         return list
     }
 
