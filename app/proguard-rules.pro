@@ -37,3 +37,22 @@
 
 # ---- 无障碍服务：系统按类名绑定，方法由框架回调 ----
 -keep class com.lingxi.chat.control.ControlService { *; }
+
+# ---- MediaPipe 手部推理：C++ 侧按类名/方法名反射回调 Java，整包不能改名 ----
+-keep class com.google.mediapipe.** { *; }
+-keep interface com.google.mediapipe.** { *; }
+-keep class org.tensorflow.lite.** { *; }
+-keep class com.google.protobuf.** { *; }
+-dontwarn com.google.mediapipe.**
+-dontwarn com.google.common.**
+-dontwarn com.google.protobuf.**
+-dontwarn com.google.ar.**
+-dontwarn org.checkerframework.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+# 传递依赖里一堆只在服务端用的可选实现，Android 上没有，别让 R8 因为找不到而停住
+-dontwarn io.opentelemetry.**
+-dontwarn io.perfmark.**
+-dontwarn net.jodah.typetools.**
+-dontwarn com.google.api.**
+-dontwarn com.google.auth.**

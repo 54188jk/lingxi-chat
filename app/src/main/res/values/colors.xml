@@ -34,6 +34,8 @@
     <!-- 描边按钮：白底细描边黑字 -->
     <color name="btn_outline_fg">#FF141518</color>
     <color name="icon_tint">#FF5A5F69</color>
+    <!-- 手指特效页的底：摄像头铺不满时露出来的那层，两套主题都用近黑 -->
+    <color name="camera_bg">#FF101114</color>
     <color name="dialog_bg">#FFFFFFFF</color>
     <color name="sheet_bg">#FFFFFFFF</color>
     <color name="hl_bg">#66FFC53D</color>

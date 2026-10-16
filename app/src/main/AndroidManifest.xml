@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 手指特效要看手：画面只在本机处理和录制，不联网 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -54,6 +59,12 @@
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".ControlActivity" android:exported="false" />
         <activity android:name=".StoreActivity" android:exported="false" />
+
+        <!-- 手指特效：画面只在本机，方向锁住（预览的铺满换算按竖屏算） -->
+        <activity
+            android:name=".HandFxActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- 告诉 Shizuku 本应用走 V3（binder）协议，因此不必声明 API_V23 旧权限 -->
         <meta-data

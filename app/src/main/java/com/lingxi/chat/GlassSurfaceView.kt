@@ -27,7 +27,7 @@ import kotlin.math.min
  * 上缘一道镜面高光、下沿一抹内阴影；按下去会鼓起来、高光跟手指走、松手带过冲回弹。
  * 轻量档机器或设置里关掉「液态玻璃」时，只画半透明底 + 高光描边，不抓屏幕。
  */
-class GlassSurfaceView @JvmOverloads constructor(
+open class GlassSurfaceView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs) {

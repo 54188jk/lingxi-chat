@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.185**（支持 Android 7.0 及以上手机）
+当前版本：**v1.186**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -23,6 +23,7 @@
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
 - **一打开就是聊天页**：启动直接进主界面，不需要多走一步
 - **液态玻璃**：聊天页顶栏与输入栏是真正的玻璃——把身后正在滚的聊天记录模糊一层贴进面板，靠边一圈折射般的放大带、上缘镜面高光、下沿一抹内阴影；列表滚动或回答逐字输出时倒影实时跟上，焦点落到输入框会亮起主色描边，按住鼓起、高光跟手指、松手过冲回弹；设置里可整体关掉，轻量档机器自动只画半透明底
+- **手指特效**：输入栏下方一条玻璃切换条，「AI」与「手指特效」两格切换（选中那格有一块会滑的染色胶囊）。进特效先要摄像头权限，把手伸到镜头前：五指张开时指间浮出一条流动的星河、指尖各一颗亮星跟手走；握拳整只手石化（灰白石面 + 裂纹 + 指缝落灰），再张开又流回星河。底栏「录一段」最多 20 秒，合成同一份画面存进相册 Movies/糯叽。识别全部在手机本机完成，画面不联网、不上传；第一次进需要多下一个约 7.5MB 的手部识别文件（本机有就不再下），落在内部储存「特效模型」文件夹，设置 → 手指特效的识别文件 可看状态或删除
 - **应用商店与侧载**（设置 → 应用商店与已装应用）：可把你信任的安装包直链添加进来下载，带实时进度，装前先校验大小、包结构与关键文件，不合格的包直接扔掉不交安装；也能扫内部储存里已有的安装包一键交给系统安装；还会列出手机上已装的应用并一键启动（卸载请到系统设置）
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
@@ -41,8 +42,8 @@
 
 | 平台 | 地址 |
 |---|---|
-| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.185/lingxi-v1.185.apk |
-| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.185/糯叽-v1.185-release.apk |
+| GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.186/lingxi-v1.186.apk |
+| Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.186/糯叽-v1.186-release.apk |
 
 应用内「设置 → 检查更新」下载会同时试几条线路，自动用最快的一条。
 
@@ -52,6 +53,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.186 | 发布：2026-10-16 20:53:30。新增手指特效：输入栏下方玻璃分段切换条（AI / 手指特效），摄像头实时看手——五指张开指间星河流光、指尖亮星跟手，握拳整只手石化带裂纹与落灰，可录 20 秒合成同一份画面存进相册；识别在手机本机完成、画面不上传，首次进入按需下载约 7.5MB 识别文件到内部储存「特效模型」，设置里可看状态与删除；为特效不卡与断网可用，安装包涨到约 20MB |
 | v1.185 | 发布：2026-10-16 19:16:41。设置里的「液态玻璃」开关从「外观与输入」那组的最末尾挪到「主题 / 字号」下面第一行，一路翻到底才能看到的毛病改掉；它的说明文字原来还在讲已经删掉的桌面，现在写的是聊天页顶栏和输入栏的实际效果 |
 | v1.184 | 发布：2026-10-15 12:48:56。修掉上一版一打开就退出去的闪退：玻璃抓身后那一层的时机从「画面画到一半」挪到「画面空下来那一刻」，并固定复用两块小图不再反复申请；某台机器抓不动时玻璃自动退回半透明底并把开关关掉，不再重复踩坑；聊天页第一屏建议只留一张卡、字号放大 |
 | v1.183 | 发布：2026-10-15 12:17:08。删掉「模仿手机桌面」那层中间页，打开糯叽直接就是聊天主界面；液态玻璃搬进主界面——顶栏与输入栏透出并模糊正在滚动的聊天记录，滚动与流式输出时倒影实时跟随，焦点亮起主色描边，按住鼓起、松手回弹；应用商店与已装应用挪到设置里，功能不减；顺带清掉桌面遗留的壁纸素材、机桌主题与不再被引用的聚焦态输入框图 |
@@ -109,6 +111,7 @@
 - 应用不收集、不上传任何用户数据，无广告、无统计 SDK
 - 手机操控：仅在用户点亮操控开关后才读屏；**前台模式**的屏幕文字（以及开启截图时的画面）会发送给用户自己配置的模型服务商，**后台模式**完全不读屏；密码输入框内容一律不回传，支付类按钮默认拦截
 - 安装包下载完成后自动做完整性校验（大小比对 + 包结构检查），损坏文件不会交给系统安装
+- 手指特效：摄像头画面只在手机本机显示、本机识别、本机录制，不上传也不作为任何网络请求发出去；摄像头权限只在点进那一格时才申请，不进去就不会工作；识别文件下载后留在本机，可随时在设置里删掉
 
 ## 构建方法
 
@@ -127,14 +130,17 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 # 产物：D:\nuoji-build\_app\outputs\apk\release\app-release.apk
 ```
 
-技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json，无第三方 UI 框架，最小依赖。仓库里的 Gradle 使用阿里云镜像加速。
+手指特效（v1.186 起）新增依赖与约束：`com.google.mediapipe:tasks-vision:0.10.35`（POM 只声明 tasks-vision → tasks-core，`libmediapipe_tasks_jni.so` 在 tasks-core 的 `jni/` 里，四架构合计约 45MB，所以 `defaultConfig.ndk.abiFilters` 只留 `arm64-v8a` + `armeabi-v7a`，成品包 21,423,579 字节 ≈ 20.4MB）；`proguard-rules.pro` 对 `com.google.mediapipe.**` / `org.tensorflow.lite.**` / `com.google.protobuf.**` 整包 keep（C++ 侧按类名反射回调 Java，改名即挂），并对 guava / protobuf / flogger / transport / opentelemetry 补 `dontwarn`；手部识别模型 `hand_landmarker.task`（7,819,105 字节，校验值记在 `EffectModel` 的注释与本机构建记录里，不写进面向用户的文案；官方直链 `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`）**不进 APK**，由 `data/EffectModel.kt` 在首次进入特效时按需下到内部储存「特效模型」目录（有「所有文件访问」落 `/sdcard/特效模型/`，否则落 `getExternalFilesDir(null)/特效模型/`），下载源为 Gitee/GitHub 的 Release 附件 + 两个 GitHub 代理 + 官方直链；`EffectModel.RELEASE_TAG` 必须等于发布模型的那一版 tag，改版本时两处一起改。
+
+技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json + MediaPipe Tasks Vision，无第三方 UI 框架。仓库里的 Gradle 使用阿里云镜像加速。
 
 聊天界面异步约定：`lifecycleScope` 管理搜索、语音转写和定时任务；相关阻塞网络请求运行于 `Dispatchers.IO`；流式对话通过 `callbackFlow` 返回，取消收集即中断请求。其他模块仍保留原有异步实现。
 
 ## 自测结果
 
-- v1.185 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
-- v1.185 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
+- v1.186 本地包已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
+- v1.186 成品包 21,423,579 字节；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、versionCode 54；包内构成：`lib/arm64-v8a/libmediapipe_tasks_jni.so` 10.05MB + `lib/armeabi-v7a/…` 7.06MB（不压缩存储）+ `classes.dex` 1.76MB + `resources.arsc` 0.78MB
+- v1.186 安装包扫描未发现内置仓库凭据（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量
 - 更新下载已重构为几条线路同时开跑：任何一条线路 10 秒没有速度就当场换线，最先下完并通过检查的那条（大小比对 + ZIP 结构 + manifest/dex 校验）才交给安装；本机实测 7 源：Gitee/ghfast/gh-proxy 均 ~2.8s 下完 2.6MB，限流源 1.1s 内即被剔除
 - 检查更新与历史版本列表改为并行「先返回先用」：本机实测匿名接口延迟 GitHub 0.8s、Gitee 0.18s，整体检查耗时取决于最快源
 - MainActivity 无裸 `Thread` / `runOnUiThread` / `Handler` / `postDelayed`
@@ -146,6 +152,11 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 - v1.183 玻璃改为主界面通用：`GlassBackdrop` 改为抓整页根视图（0.3 倍位图 + 两轮可分离盒模糊），抓之前把已注册的玻璃面板临时置 `INVISIBLE` 再还原，避免把上一轮模糊叠进下一轮；`MainActivity` 在 `setContentView` 后 `attach(this, b.root)` 并给 `rvMessages` 挂 `OnScrollListener` 标脏，`onResume` 起 240ms 的 `Runnable`，只在「滚动过 / 正在流式输出」时重抓重绘，`onPause` 撤掉；顶栏与输入栏改成 `GlassSurfaceView`（`app:glassRadius` / `glassBlur` / `glassRim`），输入框焦点由 `setBackgroundResource` 改为 `setGlassFocused`
 - v1.183 尚未在设备上安装验证：真机上要看三项——列表快速滚动时倒影的跟手度与功耗（240ms 节流够不够顺）、浅色主题下白玻璃与消息文字的对比、长会话大列表整屏抓图是否掉帧；轻量档走不抓屏的分支
 - v1.185 设置页 `activity_settings.xml`：以「空行 + `<View>` 分隔线 6 行 + 12 空格缩进的行容器」为单位整块交换 `swLiquidGlass` / `swEnterSend` / `rowStore` 三行（玻璃开关挪到 主题/字号 之后第一位），改完 minidom 解析通过、`git diff --stat` 26/26 行；第一次尝试把「最近的 `</LinearLayout>`」当行尾，命中了嵌套行的收尾，导致 `模型配置（必做）` 小标题被切进卡片内部——`</LinearLayout>` 总数不变、minidom 照样通过，只有读 diff 才发现结构变了，已 `git checkout --` 回退重做；结论：行尾必须按缩进层级精确匹配
+- v1.186 手指特效实现：`SegmentBar` 继承 `GlassSurfaceView`（因此把该类改成 `open`），选中胶囊在 `dispatchDraw` 之前画、由 `ValueAnimator` 推 `pos` 滑动，染色底 `chip_active_bg` + `accent_soft` 描边 + `accent` 粗体字，不用实心块以免压掉玻璃；`AuraField` 把 21 个归一化关键点 → 张合度 = 均值(指尖到腕 / 指根到腕)，<0.18 判握拳、>0.55 判张开，粒子与石面只画进调用方给的 Canvas，所以屏幕浮层与录制合成共用同一份代码，粒子池按 `DevicePerf.lowEnd` 降到 90
+
+- v1.186 摄像头与推理：Camera2 只挂预览一路输出到 TextureView，`applyTransform` = 先按摄像头原始尺寸还原比例 → 转 `SENSOR_ORIENTATION` → 等比放大铺满；识别帧取 `TextureView.getBitmap(480, h)`（480 宽在 1080p 屏上是 3 倍降采样，实测够认手又不至于拖住界面线程）；`BaseOptions.Builder` 只有 `setModelAssetPath/FileDescriptor/Buffer`，**没有 `setModelAssetFile`**，所以下载来的文件要读进 `ByteBuffer.allocateDirect(size)` 再用 `createFromOptions(..., RunningMode.VIDEO)`；`FileChannel.read(buffer)` 是循环读、返回值 0 或 -1 都要当结束处理（`allocateDirect(0)` 会抛 `IllegalArgumentException`）
+- v1.186 录制：`ClipRecorder` 自己做 RGBA→YUV420Planar（BT.601 全量程）喂 `MediaCodec` H.264 + `MediaMuxer`；两个 API 坑：`configure(fmt, null, flag)` 有重载歧义要写 `null as Surface?`，`MediaMuxer` 收尾是 `stop()` 不是 `finish()`；`HandLandmarkerResult` 没有 `close()`。抓帧只能在界面线程（`grabTick` 在 `b.root` 上 50ms 一跳），画特效与编码在 `recHandler`；录制**必须另起一份 `AuraField`** 并用 `@Volatile` 关键点快照喂它——和屏幕上那份共用粒子池会让两条线程同时改同一个 `ArrayList`（`ConcurrentModificationException`）；`stopRecord()` 把 `recorder.stop()` 也 post 回 `recHandler`，让收尾和最后一帧串行；成品先落 `cacheDir/record`，再按版本发 MediaStore（Q+ 走 `IS_PENDING`）或公共 `Movies/糯叽` + `MediaScannerConnection`；上限 20 秒自动停
+- v1.186 尚未在设备上安装验证，真机要看六项：预览方向与「铺满」换算（后置镜头 + `screenOrientation="portrait"`）、`TextureView.getBitmap()` 是否已把 transform 烘进位图（没烘到则关键点与特效会错位）、CPU 手部推理的实际帧率与发热、录制成品在相册里的可播性与色彩偏差、`hand_landmarker.task` 五条下载线的可用性（`EffectModel.RELEASE_TAG=v1.186` 的附件，务必与本次 Release 同号）、以及 32 位老机器上 `armeabi-v7a` 那份 so 能否正常加载；轻量档（核数 ≤4）粒子减半，特效强度需肉眼再评
 - v1.184 闪退定位与修复：`GlassSurfaceView.onDraw` 里的 `GlassBackdrop.snapshot()` 会在缓存为空时当场 `refresh(force=true)`，也就是在本次硬件绘制的调用栈里再 `root.draw(软件 Canvas)` 重入同一棵视图树——v1.183 的一打开即崩即来源于此。现在 `snapshot()` 退成纯读取，抓屏只允许 `MainActivity.glassTick`（`postDelayed` 240ms）与滚动标脏触发，且抓前先判 `isAttachedToWindow` 与 `windowVisibility`；`cap` / `blur` / `px` / `tmp` 四块缓冲按尺寸复用（v1.183 的 `boxBlur` 每帧 `src.copy()` 出新的 `blur` 却从不回收上一张，长时间聊天只会涨不会降）；抓屏包在 `try/catch(Throwable)` 内并计入 `fails`，连续两次即 `dead=true`、释放缓冲并把 `ConfigStore.liquidGlass` 写回 false，本机永久退回半透明底；面板 `onDraw` 的贴图段同样包 `try/finally`，用 `saves` 计数保证 canvas 栈平衡；`onDestroy` 补 `removeCallbacks(glassTick)` 与 `GlassBackdrop.detach(this)`（旧写法按 `activity.hashCode()` 存 `State` 且从不删，退出过一次聊天页的那两张位图加两条 `IntArray` 会一直留在进程里）
 - v1.182 液态玻璃实现：`GlassBackdrop`（把 `deskWall` + `glowDesk` 两个源视图按 `getLocationInWindow` 的相对坐标抓成 0.5 倍 ARGB_8888 小图，按半径缓存两轮可分离盒模糊）+ `GlassSurfaceView`（`LinearLayout` 子类 + `setWillNotDraw(false)`；圆角裁剪后贴模糊图 → 靠边 9dp 用 `INVERSE_EVEN_ODD` 环带把背景按 1.09 倍重绘模拟折射 → `LinearGradient` 镜面高光与 0.9dp 描边 → 下沿 12dp 内阴影 → 按压值驱动圆角 +12%、底色加深、径向高光跟随手指，松手 `ValueAnimator(from→1.18→0)` 过冲回弹）；`res/values/attrs.xml` 新增 `GlassSurface`（`glassRadius` / `glassBlur` / `glassTint` / `glassRim`）；`ConfigStore.liquidGlass`（默认开）+ 设置页 `swLiquidGlass`；`DevicePerf.lowEnd` 或关掉开关时不抓背景，只画 tint 与描边
 - v1.182 编译踩坑（第一轮才暴露，之前误报过构建通过）：`View.getLocationInWindow` 只收 `IntArray`；`View.draw(Canvas, Paint)` 不是公开 API，只能 `draw(Canvas)`；`Bitmap.copyTo` 不存在，改用 `src.copy(Bitmap.Config.ARGB_8888, false)`；另外 Gradle 脚本缓存残留会让构建 16 秒内挂在「Could not move temporary workspace … groovy-dsl」，删掉 `D:\gradle-home\caches\8.13\groovy-dsl` 即恢复

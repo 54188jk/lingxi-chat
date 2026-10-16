@@ -36,9 +36,23 @@ android {
         applicationId "com.lingxi.chat"
         minSdk 24
         targetSdk 35
-        versionCode 53
-        versionName "1.185"
+        versionCode 54
+        versionName "1.186"
+        // 手指特效用的推理库只带手机上真会跑的两种架构，x86 那份只给模拟器用，别塞进安装包
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
         // 所有对外请求都是 HTTPS，不开明文流量（仅 debug 包为方便本地 mock 放开）
+    }
+
+    packagingOptions {
+        // 推理库里几个 jar 各自带一份法律文本，打进同一个包会撞名
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/*.kotlin_module'
     }
 
     buildTypes {
@@ -80,4 +94,6 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
     // 手机操控的 Shizuku 通道：只用 AIDL 客户端，库随 APK 内置，运行期不再联网
     implementation 'dev.rikka.shizuku:api:13.1.5'
+    // 手指特效的手部关键点推理：库随 APK 内置，识别用的模型文件不进包，首次用到时下到本机目录（见 data/EffectModel.kt）
+    implementation 'com.google.mediapipe:tasks-vision:0.10.35'
 }
