@@ -45,7 +45,7 @@
 |---|---|
 | GitHub | https://github.com/54188jk/lingxi-chat/releases/download/v1.191/lingxi-v1.191.apk |
 | Gitee | https://gitee.com/wuzhuf/lingxi-chat/releases/download/v1.191/糯叽-v1.191-release.apk |
-| CNB 镜像 | https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/v1.190/lingxi-v1.190.apk |
+| CNB 镜像 | https://cnb.cool/tuui.rrj/lingxi-chat-release/-/releases/download/v1.191/lingxi-v1.191.apk |
 
 
 应用内「设置 → 检查更新」会同时试这几处地址和几个加速站，谁先把完整包下下来就用谁。
