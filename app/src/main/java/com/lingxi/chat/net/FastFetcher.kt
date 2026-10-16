@@ -42,11 +42,8 @@ object FastFetcher {
     ): File {
         if (sources.isEmpty()) throw Fail("没有可用的下载地址")
         dst.parentFile?.mkdirs()
-        val probes = probe(sources, client, isCancelled)
-        var total = expectedSize
-        if (total <= 0) total = probes.map { it.size }.filter { it > 0 }.maxOrNull() ?: 0L
-        val ranged = probes.filter { it.acceptRanges && it.size > 0 }
-        val plain = probes.filter { !(it.acceptRanges && it.size > 0) }
+        // 整包这条腿不问结果、不等探测，拿到线路列表就先开跑——探测慢或失败都不能把下载卡在「正在连接」上
+        val immediate = sources.map { Probe(it.first, it.second, -1, false) }
 
         val claimed = AtomicBoolean(false)
         val done = AtomicBoolean(false)
@@ -72,42 +69,43 @@ object FastFetcher {
         }
 
         val engines = ArrayList<Thread>()
-        if (ranged.isNotEmpty() && total > MIN_CHUNK) {
+        val oneFile = File(dst.parentFile, dst.name + ".one.dl")
+        engines.add(Thread {
+            try {
+                wholeRace(immediate, oneFile, expectedSize, client,
+                    { got, t, lb -> report(got, t, 0, lb) },
+                    { isCancelled() || stopOther.get() })
+                claimWin(oneFile)
+            } catch (e: Throwable) {
+                runCatching { oneFile.delete() }
+                errs.add(e.message ?: "整包线路失败")
+            }
+        })
+        // 分段这条腿要在后台先探一下哪条线肯给 Range：探到了才上场，探不到就安静退出
+        engines.add(Thread {
+            val found = probe(sources, client) { isCancelled() || stopOther.get() }
+            val ranged = found.filter { it.acceptRanges && it.size > 0 }
+            if (ranged.isEmpty() || stopOther.get()) return@Thread
+            val size = if (expectedSize > 0) expectedSize else ranged.maxOf { it.size }
+            if (size <= MIN_CHUNK) return@Thread
             val segFile = File(dst.parentFile, dst.name + ".seg.dl")
-            engines.add(Thread {
-                try {
-                    segmented(ranged, segFile, total, client, connections,
-                        { got, t, sp, lb -> report(got, t, sp, lb) },
-                        { isCancelled() || stopOther.get() })
-                    claimWin(segFile)
-                } catch (e: Throwable) {
-                    runCatching { segFile.delete() }
-                    errs.add(e.message ?: "分段线路失败")
-                }
-            })
-        }
-        val single = if (plain.isNotEmpty()) plain else ranged
-        if (single.isNotEmpty()) {
-            val oneFile = File(dst.parentFile, dst.name + ".one.dl")
-            engines.add(Thread {
-                try {
-                    wholeRace(single, oneFile, total, client,
-                        { got, t, lb -> report(got, t, 0, lb) },
-                        { isCancelled() || stopOther.get() })
-                    claimWin(oneFile)
-                } catch (e: Throwable) {
-                    runCatching { oneFile.delete() }
-                    errs.add(e.message ?: "整包线路失败")
-                }
-            })
-        }
+            try {
+                segmented(ranged, segFile, size, client, connections,
+                    { got, t, sp, lb -> report(got, t, sp, lb) },
+                    { isCancelled() || stopOther.get() })
+                claimWin(segFile)
+            } catch (e: Throwable) {
+                runCatching { segFile.delete() }
+                errs.add(e.message ?: "分段线路失败")
+            }
+        })
         engines.forEach { it.isDaemon = true; it.start() }
         while (engines.any { it.isAlive } && !isCancelled()) Thread.sleep(200)
         stopOther.set(true)
         engines.forEach { runCatching { it.interrupt() } }
 
         if (isCancelled()) { cleanup(dst); throw Fail("已取消") }
-        if (!done.get() || !dst.isFile || (total > 0 && dst.length() != total)) {
+        if (!done.get() || !dst.isFile || (expectedSize > 0 && dst.length() != expectedSize)) {
             cleanup(dst)
             throw Fail(errs.joinToString("；").ifBlank { "几条线路都没下成" })
         }
@@ -159,10 +157,11 @@ object FastFetcher {
                         }
                     }
                 }
-                if (p.size > 0) out.add(p)
+                out.add(p)   // 探不到也算一条可用线路：整包照样能下
             }.apply { isDaemon = true; start() }
         }
-        threads.forEach { runCatching { it.join(8_000) } }
+        val until = System.currentTimeMillis() + 5_000
+        while (System.currentTimeMillis() < until && out.size < sources.size) Thread.sleep(100)
         // 探测回来的顺序是乱的，按传进来的期望优先级重排
         val order = sources.withIndex().associate { (i, s) -> s.first to i }
         return out.sortedBy { order[it.url] ?: Int.MAX_VALUE }
@@ -305,7 +304,9 @@ object FastFetcher {
                     call.execute().use { r ->
                         if (!r.isSuccessful) return@Thread
                         val input = r.body?.byteStream() ?: return@Thread
-                        val declared = if (total > 0) total else r.body?.contentLength() ?: 0L
+                        // 以这条线路自己声明的长度为准：服务器给的总大小偶尔会缺或不对，不能因此把好的包判死
+                        val ownLen = r.body?.contentLength() ?: -1L
+                        val declared = if (ownLen > 0) ownLen else total
                         FileOutputStream(mine).use { out ->
                             val buf = ByteArray(128 * 1024)
                             while (!taken.get() && !isCancelled()) {
@@ -318,6 +319,7 @@ object FastFetcher {
                             }
                         }
                         if (declared > 0 && mine.length() != declared) return@Thread
+                        if (ownLen <= 0 && total > 0 && mine.length() != total) return@Thread
                         if (taken.compareAndSet(false, true)) winnerIdx.set(idx)
                     }
                 } catch (_: Throwable) {

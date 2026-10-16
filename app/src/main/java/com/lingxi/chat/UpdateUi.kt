@@ -292,6 +292,9 @@ object UpdateUi {
                     dialog.dismiss()
                     onDownloaded(activity, info, archive = false)
                 } else if (msg != null) {
+                    // 失败原因要留在页面上：一闪而过的提示条很容易被没看见，用户就只剩一句「卡在正在连接」
+                    progressBox.visibility = View.VISIBLE
+                    status.text = msg
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -505,6 +508,9 @@ object UpdateUi {
                     dialog.dismiss()
                     onDownloaded(activity, info, archive = true)
                 } else if (msg != null) {
+                    // 失败原因要留在页面上：一闪而过的提示条很容易被没看见，用户就只剩一句「卡在正在连接」
+                    progressBox.visibility = View.VISIBLE
+                    status.text = msg
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
                 }
             }
