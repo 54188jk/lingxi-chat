@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.193**（支持 Android 7.0 及以上手机）
+当前版本：**v1.194**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -56,6 +56,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.194 | 发布：2026-10-17 17:25:03。手指特效修好了：这个功能此前在所有手机上都会卡在「这份文件读不起来 / 带不动」，点进去没有画面也没有特效；提示也不再冤枉人，只有真是系统带不动才那么说 |
 | v1.193 | 发布：2026-10-17 12:06:10。手指特效在 Android 9 以前的手机上也能用了（之前点进去只会提示「这份文件读不起来」）；特效页出错时会把机型和系统版本写进提示，长按可复制发回；安装包约 32.1MB |
 | v1.192 | 发布：2026-10-17 11:17:37。手指特效页新增「拍一张」；修复特效偶尔让应用突然退出、录出来的片段颜色发灰偏绿；特效跟手更顺，不再拖慢整个应用 |
 | v1.191 | 发布：2026-10-16 23:51:17。手指特效页的顶栏和底栏换成真玻璃，透出相机里的画面，手移动时里面的光影跟着动 |
@@ -149,6 +150,9 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
+- v1.194 手指特效「一直用不了」的**真根因（已由用户手机回报的现场 + 本机 JVM 复现确认）**：MediaPipe 的 `com.google.mediapipe.framework.Graph` 在 `<clinit>` 里调 `FluentLogger.forEnclosingClass()`，flogger 靠「栈里有没有自己那一帧」反查调用者；R8 full mode 把 flogger 改名（`FluentLogger` → `F1.d`）并内联掉该调用，运行时就抛 `ExceptionInInitializerError: no caller found on the stack for: F1.d`，被 `explain()` 归进「运行库加载不起来」这一档，所以 v1.186~v1.193 一路被误判成文件/系统问题。用户机型实测为 **OPPO PDYT20 / Android 12（API 31）**，说明 v1.193 那次降 MediaPipe 版本对他这台机器并没有用上（那是给 Android 7/8 准备的），但那条 `aligned_alloc` 结论仍成立、保留
+- v1.194 修法**在本机验证过而不是猜**：下载 r8 8.7.18，用同样的 keep 规则把「一个 kept 类在 `<clinit>` 里调 `FluentLogger.forEnclosingClass()`」这个模式打成 jar 在 JVM 上跑，原样复现 `no caller found on the stack for: a.d`；试 5 个方案——只加 `-keep class com.google.common.flogger.** { *; }` 立刻恢复，`--pg-compat`（等价于 `android.enableR8.fullMode=false`）与 `-assumenosideeffects` 都无效。成品包复验：`mapping.txt` 里 `com.google.common.flogger.FluentLogger -> 同名`（不再改名），`classes.dex` 里 `Graph/AssetCache/AssetCacheDbHelper/GraphTextureFrame/PacketGetter` 各有一条真实的 `invoke-static ... FluentLogger;.forEnclosingClass()`（v1.193 包里为 0 条，因为被内联掉了）
+- v1.194 成品 32,092,762 字节（比 v1.193 只多约 32KB：flogger 不再被改名压缩），特效页提示分类改准：仅 `UnsatisfiedLinkError` 说「这台手机的系统带不动这个特效」，`NoClassDefFoundError`/`ExceptionInInitializerError` 改说「特效没能启动 … 这不是这台手机的问题」，两者都不再重放 8MB 识别文件；长按复制诊断保留
 - v1.193 找到「手指特效一直用不了」的真正根因：**不是模型文件**。`libmediapipe_tasks_jni.so`（0.10.35）用 pyelftools 逐架构扫 `.dynsym` 的 `SHN_UNDEF`，确认引用 `aligned_alloc`（Android 9 / API 28 起才有）与 `AHardwareBuffer_*`（Android 8 / API 26），而 `System.loadLibrary` 以 `RTLD_NOW` 加载，符号缺失会在 dlopen 当场抛 `UnsatisfiedLinkError` → Android 8.x 及以下永远进不了特效页（用户看到的就是「这份文件读不起来」，因为 `explain()` 把三类错误都归到同一句文案）。模型侧排除：包内 `assets/hand_landmarker.task` 与 Google 官方直链逐字节一致（7,819,105 字节，sha256 `fbc2a300…cde1`），R8 keep 规则齐、`.so` 未压缩且 4096/16KB 双对齐，都不是问题。
 - v1.193 依赖钉到 **0.10.26.1**：0.10.21 / 0.10.26.1 的原生库扫出 post-24 引用为 0，0.10.28 起重新引用 `aligned_alloc` 且额外捆 `libopencv_java4.so`（+13MB），0.10.33 起 `.so` 从 tasks-vision 挪回 tasks-core，故取「最新的干净版」。接口逐项 `javap` 核对：`BaseOptions.Builder.setModelAssetBuffer/setModelAssetPath`、`HandLandmarker.createFromOptions`、`HandLandmarkerOptions.Builder.setNumHands/setMinHandDetectionConfidence/setRunningMode`、`HandLandmarkerResult.landmarks()`、`BitmapImageBuilder(Bitmap)` 全部存在，`detectForVideo` 未变；`.so` 名从 `mediapipe_tasks_jni` 变为 `mediapipe_tasks_vision_jni`，成品包 `classes.dex` 里保留该字符串（1 处，R8 合并了 12 个重复）与 `HandLandmarker` 类。成品 32,059,994 字节（+4.78MB，arm64 `.so` 14,389,600 + v7a 8,320,740），`aapt dump badging` 确认 versionCode 61 / versionName 1.193 / minSdk 24 / native-code arm64-v8a+armeabi-v7a。
 - v1.193 加载路径改为两段兜底：先用直接内存 `setModelAssetBuffer`，抛错再用 `setModelAssetPath` 重试，两次都失败才报第一次的错；运行库类失败（`UnsatisfiedLinkError`/`NoClassDefFoundError`/`ExceptionInInitializerError`）不再触发「删掉重放识别文件」，状态卡改成带机型 + Android 版本 + 根因异常（走 cause 链取最里层 message），并支持长按复制到剪贴板

@@ -203,11 +203,12 @@ class HandFxActivity : BaseActivity() {
             }
             val err = outcome.exceptionOrNull()
             val why = explain(err)
-            // 运行库压根没加载起来时，重放识别文件是没用的功课，别让用户白等一次复制
-            val libDead = err is UnsatisfiedLinkError || err is NoClassDefFoundError || err is ExceptionInInitializerError
-            if (libDead) {
+            // 运行库压根没加载起来时，重放识别文件是没用的功课
+            val noRetryCopy = err is UnsatisfiedLinkError || err is NoClassDefFoundError || err is ExceptionInInitializerError
+            if (noRetryCopy) {
                 reloadOnly = true
-                showState("这台手机的系统带不动这个特效", why + "\n\n长按下面这行说明可以复制，发给作者就能定位。", "再试一次")
+                val title = if (err is UnsatisfiedLinkError) "这台手机的系统带不动这个特效" else "特效没能启动"
+                showState(title, why + "\n\n长按下面这行说明可以复制，发给作者就能定位。", "再试一次")
             } else if (!retriedModel) {
                 // 第一次读不起来，先当作那份文件坏了：删掉自动重放一次，别再麻烦用户点
                 retriedModel = true
@@ -266,10 +267,12 @@ class HandFxActivity : BaseActivity() {
     private fun explain(e: Throwable?): String {
         if (e == null) return "不清楚卡在哪一步"
         val root = generateSequence(e) { it.cause }.last()
+        val detail = root.message?.take(200).orEmpty().ifBlank { root.javaClass.simpleName }
         return when (e) {
-            is UnsatisfiedLinkError, is NoClassDefFoundError, is ExceptionInInitializerError ->
-                "特效要用的那颗运行库没能装进这个系统。\n${deviceLine()}\n" +
-                    (root.message?.take(200).orEmpty().ifBlank { root.javaClass.simpleName })
+            is UnsatisfiedLinkError ->
+                "特效要用的那颗运行库没能装进这个系统。\n${deviceLine()}\n$detail"
+            is NoClassDefFoundError, is ExceptionInInitializerError ->
+                "特效初始化到一半停住了，这不是这台手机的问题。\n${deviceLine()}\n$detail"
             else -> "文件没能读全：" + root.javaClass.simpleName + " " + root.message?.take(120).orEmpty() +
                     "\n" + deviceLine()
         }

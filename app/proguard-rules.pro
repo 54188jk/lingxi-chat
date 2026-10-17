@@ -43,6 +43,12 @@
 -keep interface com.google.mediapipe.** { *; }
 -keep class org.tensorflow.lite.** { *; }
 -keep class com.google.protobuf.** { *; }
+# 这条不能删：MediaPipe 的 Graph 在静态初始化里用 FluentLogger.forEnclosingClass()，
+# 而 flogger 靠「栈里有没有自己这一帧」找调用者。R8 把 flogger 改名后它找不到，
+# 进特效页就抛 ExceptionInInitializerError（用户看到的是一句「这份文件读不起来」）。
+# 本机用 r8 8.7.18 在 JVM 上复现并验证：加这条立即恢复，关掉 full mode 或 assumenosideeffects 都无效。
+-keep class com.google.common.flogger.** { *; }
+-keep class com.google.common.flogger.backend.system.** { *; }
 -dontwarn com.google.mediapipe.**
 -dontwarn com.google.common.**
 -dontwarn com.google.protobuf.**
