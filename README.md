@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.195**（支持 Android 7.0 及以上手机）
+当前版本：**v1.196**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -22,8 +22,7 @@
 - **打字机输出 + 随时停止**：回答逐字上屏，生成中点发送键即可打断
 - **多版本回答**：同一条问题可重新生成多次，气泡下方左右切换查看不同版本
 - **一打开就是聊天页**：启动直接进主界面，不需要多走一步
-- **液态玻璃**：聊天页顶栏、输入栏，以及手指特效页的上下两条栏，都是真正的玻璃——把身后正在滚的聊天记录模糊一层贴进面板，靠边一圈折射般的放大带、上缘镜面高光、下沿一抹内阴影；列表滚动或回答逐字输出时倒影实时跟上，焦点落到输入框会亮起主色描边，按住鼓起、高光跟手指、松手过冲回弹；设置里可整体关掉，轻量档机器自动只画半透明底
-- **手指特效**：输入栏下方一条玻璃切换条，「AI」与「手指特效」两格切换（选中那格有一块会滑的染色胶囊）。进特效先要摄像头权限，把手伸到镜头前：五指张开时指间浮出一条流动的星河、指尖各一颗亮星跟手走；握拳整只手石化（灰白石面 + 裂纹 + 指缝落灰），再张开又流回星河。底栏「录一段」最多 20 秒，「拍一张」把当前这一帧连特效存成照片，都落在相册（Movies/糯叽、Pictures/糯叽）；顶栏与底栏透出并模糊身后的相机画面。识别全部在手机本机完成，画面不联网、不上传；所需识别文件已随安装包内置，第一次进特效时自动放到内部储存「特效模型」文件夹，之后一直从那儿读，设置 → 手指特效的识别文件 可看状态或删除
+- **液态玻璃**：聊天页顶栏、输入栏都是真正的玻璃——把身后正在滚的聊天记录模糊一层贴进面板，靠边一圈折射般的放大带、上缘镜面高光、下沿一抹内阴影；列表滚动或回答逐字输出时倒影实时跟上，焦点落到输入框会亮起主色描边，按住鼓起、高光跟手指、松手过冲回弹；设置里可整体关掉，轻量档机器自动只画半透明底
 - **应用商店与侧载**（设置 → 应用商店与已装应用）：可把你信任的安装包直链添加进来下载，带实时进度，装前先校验大小、包结构与关键文件，不合格的包直接扔掉不交安装；也能扫内部储存里已有的安装包一键交给系统安装；还会列出手机上已装的应用并一键启动（卸载请到系统设置）
 - **会话管理**：会话历史列表 + 标题/正文全文搜索（命中处标黄）、草稿自动保存、跨天日期分隔
 - **多种导出**：Markdown 文本 / .md 文件 / 长图 PNG / 复制全文
@@ -36,7 +35,7 @@
 - **操控台**：现场实测「现在能不能动手、走的是哪条路」，一键试读屏幕自检，八件常见的事点一下就走，随时紧急停止，还能让糯叽直接整理手机文件
 - **改名说明**：v1.175 起「灵犀AI」更名为「糯叽」，桌面图标与列表里以新名字出现；包名、下载地址与已存配置保持不变，老版本可以直接覆盖升级
 - **深浅双主题 + 字号缩放**，全部设置项可导出/导入备份
-- **安装包大小**：26.0MB——手部特效的推理库两份架构约 17.1MB、内置识别文件打包后 5.6MB，其余才是聊天本体；嫌大可以说明，只留 64 位能小约 7MB
+- **安装包大小**：2.8MB（v1.196 起手指特效下线后回到聊天本体的重量）
 - **动画**：新消息上浮淡入、流式光标闪烁、头像呼吸、页面滑动转场、发送触觉反馈（尊重系统「关闭动画」设置）
 
 ## 下载
@@ -56,6 +55,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.196 | 发布：2026-10-17 20:38:17。修复了一些功能；手指特效下线（那条玻璃切换、录一段、拍一张都撤掉，摄像头权限也不再申请）；安装包从约 32.1MB 降到 2,800,698 字节 |
 | v1.195 | 发布：2026-10-17 19:58:45。修复了一些功能；手指特效新增前置／后置切换（那块小胶囊是液态玻璃，手对着屏幕也能玩）；指间星河更浓更亮、光点会绕手旋；录制片段与「拍一张」和屏幕上看到的一致 |
 | v1.194 | 发布：2026-10-17 17:25:03。手指特效修好了：这个功能此前在所有手机上都会卡在「这份文件读不起来 / 带不动」，点进去没有画面也没有特效；提示也不再冤枉人，只有真是系统带不动才那么说 |
 | v1.193 | 发布：2026-10-17 12:06:10。手指特效在 Android 9 以前的手机上也能用了（之前点进去只会提示「这份文件读不起来」）；特效页出错时会把机型和系统版本写进提示，长按可复制发回；安装包约 32.1MB |
@@ -124,7 +124,6 @@
 - 手机操控：仅在用户点亮操控开关后才读屏；**前台模式**的屏幕文字（以及开启截图时的画面）会发送给用户自己配置的模型服务商，**后台模式**完全不读屏；密码输入框内容一律不回传，支付类按钮默认拦截
 - 安装包在三个平台各挂一份（Gitee / GitHub / 只放附件的 CNB 镜像仓），应用内更新会把它们和几个加速站一起竞速，任一家的地址抽风都不影响下载
 - 安装包下载完成后自动做完整性校验（大小比对 + 包结构检查），损坏文件不会交给系统安装
-- 手指特效：摄像头画面只在手机本机显示、本机识别、本机录制，不上传也不作为任何网络请求发出去；摄像头权限只在点进那一格时才申请，不进去就不会工作；识别文件下载后留在本机，可随时在设置里删掉
 
 ## 构建方法
 
@@ -143,13 +142,16 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 # 产物：D:\nuoji-build\_app\outputs\apk\release\app-release.apk
 ```
 
-手指特效（v1.186 起）新增依赖与约束：`com.google.mediapipe:tasks-vision:0.10.26.1`。**版本必须钉在 0.10.26.1，不要顺手升到最新**：v1.192 之前用的 0.10.35，其 `libmediapipe_tasks_jni.so` 引用了 `aligned_alloc`（Android 9 起才有）和 `AHardwareBuffer_*`（Android 8 起才有），而 `System.loadLibrary` 走 `RTLD_NOW`，符号缺失会在加载当场抛 `UnsatisfiedLinkError`——Android 8.x 及以下无论如何都进不了特效页（这正是用户手机上一直报「这份文件读不起来 / 运行库加载不起来」的真正原因，与模型文件无关：官方 `hand_landmarker.task` 逐字节核过，包内那份与 Google 直链的 sha256 一致）。本机用 pyelftools 逐架构扫过：0.10.26.1 与 0.10.21 的原生库没有任何 API>24 符号，0.10.28 起重新引用 `aligned_alloc`，0.10.33 起 `.so` 挪回 tasks-core；所以取「最新的干净版」0.10.26.1（`libmediapipe_tasks_vision_jni.so` 在 tasks-vision 的 `jni/`，只带 arm64-v8a + armeabi-v7a，成品包约 32MB，比 0.10.35 重约 4.7MB）。`defaultConfig.ndk.abiFilters` 仍只留这两个架构；`proguard-rules.pro` 对 `com.google.mediapipe.**` / `org.tensorflow.lite.**` / `com.google.protobuf.**` 整包 keep（C++ 侧按类名反射回调 Java，改名即挂），并对 guava / protobuf / flogger / transport / opentelemetry 补 `dontwarn`。手部识别模型 `hand_landmarker.task`（7,819,105 字节，sha256 `fbc2a300…cde1`，官方直链 `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`）**从 v1.188 起内置在 `app/src/main/assets/`**，`data/EffectModel.kt` 在首次进入特效时从包里放一份到永久目录（有「所有文件访问」落 `/sdcard/特效模型/`，否则落 `getExternalFilesDir(null)/特效模型/`），放完对内容做 sha256 核对，对不上就删掉重放；校验值与 `SIZE` 写在 `EffectModel` 常量里，换模型时两处一起改，且不写进面向用户的文案。`EffectModel` 已无网络下载分支；v1.186 那次挂在 Release 上的模型附件仍不能删（已装 v1.186/v1.187 的手机会去那里下）。
 
 技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json + MediaPipe Tasks Vision，无第三方 UI 框架。仓库里的 Gradle 使用阿里云镜像加速。
 
 聊天界面异步约定：`lifecycleScope` 管理搜索、语音转写和定时任务；相关阻塞网络请求运行于 `Dispatchers.IO`；流式对话通过 `callbackFlow` 返回，取消收集即中断请求。其他模块仍保留原有异步实现。
 
 ## 自测结果
+
+- v1.196 手指特效整条下线（按作者要求）：删 `HandFxActivity.kt` / `AuraOverlayView.kt`(含 `AuraField`) / `ClipRecorder.kt` / `FxFraming.java` / `SegmentBar.kt` / `data/EffectModel.kt` / `activity_hand_fx.xml` / `assets/hand_landmarker.task`；同时清掉聊天页的 `segMode` 装配与每 240ms 的 `segMode.invalidateGlass()`、设置页「手指特效的识别文件」那一行与两个函数、manifest 里 `.HandFxActivity` 注册 + `CAMERA` 权限 + `uses-feature camera`、`colors.xml` 的 `camera_bg`、`build.gradle` 的 `tasks-vision:0.10.26.1` 与 `ndk.abiFilters`、`proguard-rules.pro` 整段 MediaPipe/flogger/protobuf keep 与对应 dontwarn
+- v1.196 成品验收（`aapt dump badging` + 直接读 APK）：versionCode 64 / versionName 1.196 / minSdk 24；**包内已无 `lib/` 任何 .so、无 `assets/hand_landmarker.task`**；dex 内 `mediapipe` / `flogger` / `HandFx` / `Aura` / `EffectModel` / `SegmentBar` / `hand_landmarker` 出现次数全为 0；权限表里不再有 `android.permission.CAMERA`；2,800,698 字节（v1.195 的 32,093,034 → 约 1/11）；未发现内置凭据
+- v1.195 的取景修复与这一轮的下架代码没有对外发布过（只有 Gitee 上 v1.195 的 Release 存在），因此那两条技术结论只留在这份「自测结果」里：`TextureView.getBitmap()` 拿的是纹理内容而非屏幕显示（不含 `setTransform`），以及 R8 full mode 会破坏 flogger 的调用栈定位——将来再碰摄像头或带反射的库时先看这两条
 
 - v1.195 特效与画面错位的**结构性原因**：AOSP `TextureView.getBitmap()` 的注释与实现都是「把**纹理内容**缩放到刚好填满传入的位图」，`setTransform` 那次旋转不在里面（`applyTransformMatrix()` 只是把纹理推进图层，不参与拷贝）。之前直接按视图比例 `getBitmap(480, vh*480/vw)` 取图，等于把横向原始帧压扁成竖图喂给识别库，关键点还落在**未旋转**的纹理空间里，再乘视图宽高画出来就既偏 90° 又拉伸；录制片段和「拍一张」吃的是同一张图，所以视频也变形。依据：`frameworks/base/core/java/android/view/TextureView.java`（android14-release）第 644-693 行，本机经代理从 aosp-mirror 取回原文核对
 - v1.195 改法：**屏幕上那块 Matrix 是唯一的取景定义**。`applyTransform()` 里 `postScale(还原拉伸)→postRotate(sensorDeg)→前置补 postScale(-1,1)→postScale(铺满)` 同时存一份 `dispMatrix`；抓帧 `compose()` 新建画布先按 `target/view` 缩放、再 `concat(dispMatrix)`、再把按**纹理自身比例**取的原始图（`FxFraming.captureSize`，不会被压扁）贴满视图矩形——识别库看到的与屏幕显示的是同一次变换，归一化关键点直接乘画布宽高就落在手上。目标尺寸 `FxFraming.targetSize` 与视图同比例且高度取偶数（编码器要求）；识别用 360 宽、两块缓冲轮换（`inflying` 保证只有一张在后台，复用的画布不再 recycle），录影 720 宽、拍照 1080 宽各自由 `compose()` 合成。`FxFraming.java` 只留纯算数（朝向、铺满系数、尺寸），因此可完全脱离 Android 单独验证

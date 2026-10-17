@@ -38,26 +38,8 @@
 # ---- 无障碍服务：系统按类名绑定，方法由框架回调 ----
 -keep class com.lingxi.chat.control.ControlService { *; }
 
-# ---- MediaPipe 手部推理：C++ 侧按类名/方法名反射回调 Java，整包不能改名 ----
--keep class com.google.mediapipe.** { *; }
--keep interface com.google.mediapipe.** { *; }
--keep class org.tensorflow.lite.** { *; }
--keep class com.google.protobuf.** { *; }
-# 这条不能删：MediaPipe 的 Graph 在静态初始化里用 FluentLogger.forEnclosingClass()，
-# 而 flogger 靠「栈里有没有自己这一帧」找调用者。R8 把 flogger 改名后它找不到，
-# 进特效页就抛 ExceptionInInitializerError（用户看到的是一句「这份文件读不起来」）。
-# 本机用 r8 8.7.18 在 JVM 上复现并验证：加这条立即恢复，关掉 full mode 或 assumenosideeffects 都无效。
--keep class com.google.common.flogger.** { *; }
--keep class com.google.common.flogger.backend.system.** { *; }
--dontwarn com.google.mediapipe.**
--dontwarn com.google.common.**
--dontwarn com.google.protobuf.**
--dontwarn com.google.ar.**
--dontwarn org.checkerframework.**
--dontwarn com.google.errorprone.annotations.**
 -dontwarn javax.annotation.**
 # 传递依赖里一堆只在服务端用的可选实现，Android 上没有，别让 R8 因为找不到而停住
--dontwarn io.opentelemetry.**
 -dontwarn io.perfmark.**
 -dontwarn net.jodah.typetools.**
 -dontwarn com.google.api.**

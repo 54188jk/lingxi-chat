@@ -442,16 +442,4 @@
             android:src="@drawable/ic_send" />
     </com.lingxi.chat.GlassSurfaceView>
 
-    <!-- 模式切换：AI 聊天 / 手指特效。同一块玻璃，选中那格用会滑的染色胶囊标出来 -->
-    <com.lingxi.chat.SegmentBar
-        android:id="@+id/segMode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="10dp"
-        app:glassBlur="14dp"
-        app:glassRadius="18dp"
-        app:glassRim="0.8" />
-
 </LinearLayout>

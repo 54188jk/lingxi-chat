@@ -273,15 +273,6 @@ class MainActivity : BaseActivity() {
             b.llInputBar.setGlassFocused(hasFocus)
         }
 
-        // 输入栏下面那条玻璃切换：第一段是聊天的 AI，第二段是手指特效
-        b.segMode.setItems(listOf("AI", "手指特效"))
-        b.segMode.select(0, animate = false)
-        b.segMode.onPick = { i ->
-            if (i == 1) {
-                b.segMode.select(0, animate = false)
-                startActivity(android.content.Intent(this, HandFxActivity::class.java))
-            }
-        }
         b.btnSend.setOnTouchListener { v, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN ->
@@ -494,7 +485,6 @@ class MainActivity : BaseActivity() {
                 GlassBackdrop.refresh(this@MainActivity, force = true)
                 b.glassHeader.invalidateGlass()
                 b.llInputBar.invalidateGlass()
-                b.segMode.invalidateGlass()
             }
             b.root.postDelayed(this, 240L)
         }

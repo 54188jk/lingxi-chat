@@ -107,9 +107,6 @@ class SettingsActivity : BaseActivity() {
             toast(if (checked) "已打开液态玻璃" else "已关掉液态玻璃，面板退回纯色底")
         }
 
-        refreshEffectInfo()
-        b.rowEffect.setOnClickListener { askEffectModel() }
-
         b.btnFreeModel.setOnClickListener {
             startActivity(android.content.Intent(this, FreeModelActivity::class.java))
         }
@@ -582,31 +579,6 @@ class SettingsActivity : BaseActivity() {
     }
 
     // ---------------- 历史安装包 ----------------
-
-    /** 手指特效那个识别文件：在不在本机、占多大、能不能删 */
-    private fun refreshEffectInfo() {
-        b.tvEffectDesc.text = com.lingxi.chat.data.EffectModel.statusText(this)
-    }
-
-    private fun askEffectModel() {
-        val has = com.lingxi.chat.data.EffectModel.find(this) != null
-        if (!has) {
-            toast("还没放好：进「手指特效」那一格会自动放好，不用下载")
-            return
-        }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("手指特效的识别文件")
-            .setMessage(
-                "已经在本机：" + com.lingxi.chat.data.EffectModel.statusText(this) +
-                    "。只给这个功能认手用，删掉后下次进特效会从安装包里再放一份。"
-            )
-            .setPositiveButton("删掉") { _, _ ->
-                if (com.lingxi.chat.data.EffectModel.remove(this)) toast("已删掉") else toast("没删掉，可能被别的应用占着")
-                refreshEffectInfo()
-            }
-            .setNegativeButton("留着", null)
-            .show()
-    }
 
     /** 设置页顶部那块「历史安装包」说明文字 */
     private fun refreshArchiveInfo() {
