@@ -37,11 +37,16 @@ class AuraField(context: Context) {
     private val stone = Paint(Paint.ANTI_ALIAS_FLAG)
     private val crack = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val dust = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val sp = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val seam = Path()
 
     private val hull = ArrayList<FloatArray>()
     private val shape = Path()
     private val band = Path()
     private val box = RectF()
+    private val hullIn = ArrayList<FloatArray>(21)
+    private val px = FloatArray(21)
+    private val py = FloatArray(21)
 
     /** 21 个关键点，归一化到画面（x 右、y 下）；没有手时为 null */
     private var marks: FloatArray? = null
@@ -64,6 +69,7 @@ class AuraField(context: Context) {
 
     /** 手指张合程度：指尖到腕的距离，除以指根到腕的距离。张开约 1.7-2.0，握紧约 0.7-0.9 */
     fun openness(m: FloatArray): Float {
+        if (m.size < 42) return 0f
         val wx = m[0]; val wy = m[1]
         var sum = 0f
         var n = 0
@@ -80,10 +86,10 @@ class AuraField(context: Context) {
     fun draw(canvas: Canvas, w: Int, h: Int, nowMs: Long) {
         if (shown <= 0.01f) return
         val m = marks ?: return
+        if (m.size < 42) return
         val t = nowMs / 1000f
         val tips = intArrayOf(4, 8, 12, 16, 20)
-        val px = FloatArray(21) { m[it * 2] * w }
-        val py = FloatArray(21) { m[it * 2 + 1] * h }
+        for (i in 0 until 21) { px[i] = m[i * 2] * w; py[i] = m[i * 2 + 1] * h }
         val scale = hypot(px[9] - px[5], py[9] - py[5]).coerceAtLeast(1f)
         val open = shown * spread
         val closed = shown * (1f - spread)
@@ -126,15 +132,18 @@ class AuraField(context: Context) {
         // 补给粒子：数量按档位收，低机器少放
         val want = (maxParticles * 0.6f * power).toInt()
         while (pool.size < want) pool.add(spawn(px, py, tips, scale))
-        val it = pool.iterator()
         val dt = 1f / 60f
-        while (it.hasNext()) {
-            val p = it.next()
+        // 按下标走：边遍历边往列表尾部塞新粒子会让 ArrayList 抛并发修改异常，一帧就闪退
+        var idx = 0
+        while (idx < pool.size) {
+            val p = pool[idx]
             p.life -= dt / (1.4f + p.size / 6f)
             if (p.life <= 0f) {
-                if (pool.size > want) { it.remove(); continue }
-                it.remove(); pool.add(spawn(px, py, tips, scale)); continue
+                if (pool.size > want) { pool.removeAt(idx); continue }
+                pool[idx] = spawn(px, py, tips, scale)
+                continue
             }
+            idx++
             p.x += p.vx * dt
             p.y += p.vy * dt + 6f * density * dt * power
             p.vx *= 0.985f
@@ -190,10 +199,10 @@ class AuraField(context: Context) {
 
     /** 握拳：把手的轮廓糊成一块石头，加深灰渐变、裂纹和边缘的碎屑 */
     private fun drawStone(canvas: Canvas, px: FloatArray, py: FloatArray, power: Float, scale: Float, t: Float, h: Int) {
-        val pts2 = ArrayList<FloatArray>(21)
-        for (i in 0 until 21) pts2.add(floatArrayOf(px[i], py[i]))
+        while (hullIn.size < 21) hullIn.add(FloatArray(2))
+        for (i in 0 until 21) { hullIn[i][0] = px[i]; hullIn[i][1] = py[i] }
         hull.clear()
-        hull.addAll(convexHull(pts2))
+        hull.addAll(convexHull(hullIn))
         if (hull.size < 3) return
         shape.reset()
         shape.moveTo(hull[0][0], hull[0][1])
@@ -212,7 +221,6 @@ class AuraField(context: Context) {
         canvas.drawPath(shape, stone)
         stone.shader = null
         // 石面上的浅斑：几团半透的椭圆，比纯色像石头得多
-        val sp = Paint(Paint.ANTI_ALIAS_FLAG)
         for (i in 0 until 6) {
             val fx = box.left + box.width() * (0.18f + 0.13f * i)
             val fy = box.top + box.height() * (0.25f + 0.11f * (i % 3))
@@ -234,7 +242,8 @@ class AuraField(context: Context) {
             val ey = cy + sin(ang) * box.height() * 0.45f
             val mx = (cx + ex) / 2f + sin(ang) * scale * 0.05f
             val my = (cy + ey) / 2f - cos(ang) * scale * 0.05f
-            val p = Path()
+            val p = seam
+            p.reset()
             p.moveTo(cx, cy); p.quadTo(mx, my, ex, ey)
             p.moveTo(mx, my)
             p.lineTo(mx + cos(ang + 1.1f) * scale * 0.12f, my + sin(ang + 1.1f) * scale * 0.12f)

@@ -63,6 +63,9 @@ class HandFxActivity : BaseActivity() {
     private var glassFeed = false
     private var recording = false
     private var retriedModel = false
+    @Volatile private var inflying = false
+    private val inferThread = HandlerThread("handfx-infer").apply { start() }
+    private val inferHandler = Handler(inferThread.looper)
     @Volatile private var recorder: ClipRecorder? = null
     @Volatile private var recField: AuraField? = null
     @Volatile private var lastMarks: FloatArray? = null
@@ -70,6 +73,8 @@ class HandFxActivity : BaseActivity() {
     private var recOut: File? = null
     private var recStart = 0L
     private var recFrames = 0
+    @Volatile private var lastTs = 0L
+    @Volatile private var inferFails = 0
 
     private val REQ_CAM = 7121
 
@@ -77,10 +82,8 @@ class HandFxActivity : BaseActivity() {
     private val tick = object : Runnable {
         override fun run() {
             if (!analyzing || isFinishing) return
-            val t0 = SystemClock.uptimeMillis()
             analyzeOnce()
-            val cost = SystemClock.uptimeMillis() - t0
-            b.root.postDelayed(this, max(20L, 60L - cost))
+            b.root.postDelayed(this, 60L)
         }
     }
 
@@ -90,6 +93,7 @@ class HandFxActivity : BaseActivity() {
         setContentView(b.root)
         b.btnBack.setOnClickListener { finish() }
         b.btnRec.setOnClickListener { toggleRecord() }
+        b.btnShoot.setOnClickListener { shoot() }
         b.btnModel.setOnClickListener { onModelButton() }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -171,8 +175,10 @@ class HandFxActivity : BaseActivity() {
             val outcome: Result<HandLandmarker> = withContext(Dispatchers.IO) { runCatching { build(f) } }
             val lm = outcome.getOrNull()
             if (lm != null) {
-                landmarker?.close()
+                // 旧实例排在识别线程队尾关：直接在这条线程关会和正在跑的那一帧撞车
+                val prev = landmarker
                 landmarker = lm
+                if (prev != null) inferHandler.post { runCatching { prev.close() } }
                 // 顶栏和底栏要透出相机画面：把相机那块视图交给玻璃，之后每一帧喂它一张
                 glassFeed = !com.lingxi.chat.data.DevicePerf.lowEnd(this@HandFxActivity) &&
                     com.lingxi.chat.data.ConfigStore(this@HandFxActivity).liquidGlass
@@ -338,50 +344,77 @@ class HandFxActivity : BaseActivity() {
 
     // ---------------- 识别与特效 ----------------
 
+    /**
+     * 抓帧只能在界面线程做，识别整块挪到专用线程：一次推理几十毫秒，
+     * 放在界面线程上会把手势反馈拖成一卡一卡，严重了系统还会弹「应用无响应」。
+     * 上一帧没算完就跳过这一帧，永远只有一张位图在后台，算完由后台回收。
+     */
     private fun analyzeOnce() {
         val lm = landmarker ?: return
+        if (!analyzing || inflying || isFinishing) return
         if (!b.texCam.isAvailable || b.texCam.width == 0) return
         val vw = b.texCam.width
         val vh = b.texCam.height
         val w = 480
         val h = max(2, (vh * w.toFloat() / vw).toInt())
         val bmp = runCatching { b.texCam.getBitmap(w, h) }.getOrNull() ?: return
-        val marks: FloatArray?
-        try {
-            val img = BitmapImageBuilder(bmp).build()
-            val res = lm.detectForVideo(img, SystemClock.uptimeMillis())
-            val list = res.landmarks().firstOrNull()
-            if (list == null || list.size < 21) {
-                marks = null
-            } else {
-                val arr = FloatArray(42)
-                for (i in 0 until 21) {
-                    arr[i * 2] = list[i].x()
-                    arr[i * 2 + 1] = list[i].y()
-                }
-                marks = arr
-            }
-        } catch (t: Throwable) {
-            bmp.recycle()
-            return
-        }
-        bmp.recycle()
+        // 玻璃要的就是这一张：趁它还没交给后台，先糊进背景（frameFrom 只读，不持有）
         if (glassFeed) {
             GlassBackdrop.frameFrom(this, bmp)
             b.glassTop.invalidateGlass()
             b.glassBottom.invalidateGlass()
         }
-        openness = if (marks == null) 0f else b.aura.field.openness(marks)
-        lastMarks = marks
-        lastOpen = openness
-        b.aura.feed(marks, openness)
-        val hint = when {
-            marks == null -> "把手伸到镜头前，张开五指定住一下"
-            openness > 0.55f -> "张开：指间星河"
-            openness < 0.18f -> "握紧：石化"
-            else -> "正在跟着你的手"
+        inflying = true
+        inferHandler.post {
+            var marks: FloatArray? = null
+            val ts = max(lastTs + 1, SystemClock.uptimeMillis())
+            lastTs = ts
+            try {
+                val res = lm.detectForVideo(BitmapImageBuilder(bmp).build(), ts)
+                val list = res.landmarks().firstOrNull()
+                if (list != null && list.size >= 21) {
+                    val arr = FloatArray(42)
+                    for (i in 0 until 21) {
+                        arr[i * 2] = list[i].x()
+                        arr[i * 2 + 1] = list[i].y()
+                    }
+                    marks = arr
+                    inferFails = 0
+                } else {
+                    // 画面里没有手是正常状态，不能算失败；只数真正抛异常的次数
+                    inferFails = 0
+                }
+            } catch (_: Throwable) {
+                inferFails++
+            }
+            runCatching { bmp.recycle() }
+            inflying = false
+            val got = marks
+            if (inferFails > 60) {
+                inferFails = 0
+                runOnUiThread {
+                    if (isFinishing) return@runOnUiThread
+                    analyzing = false
+                    b.aura.stop()
+                    showState("识别跑不动了", "这台机器带不动这个特效，休息一会儿再进来试试。", "再试一次")
+                }
+                return@post
+            }
+            b.root.post {
+                if (!analyzing || isFinishing) return@post
+                openness = if (got == null) 0f else b.aura.field.openness(got)
+                lastMarks = got
+                lastOpen = openness
+                b.aura.feed(got, openness)
+                val hint = when {
+                    got == null -> "把手伸到镜头前，张开五指定住一下"
+                    openness > 0.55f -> "张开：指间星河"
+                    openness < 0.18f -> "握紧：石化"
+                    else -> "正在跟着你的手"
+                }
+                if (b.tvHint.text != hint) b.tvHint.text = hint
+            }
         }
-        if (b.tvHint.text != hint) b.tvHint.text = hint
     }
 
     // ---------------- 录一段 ----------------
@@ -412,6 +445,7 @@ class HandFxActivity : BaseActivity() {
         recorder = r
         recField = AuraField(this)
         recording = true
+        b.btnShoot.isEnabled = false
         recStart = System.currentTimeMillis()
         recFrames = 0
         b.btnRec.text = "停下"
@@ -448,7 +482,7 @@ class HandFxActivity : BaseActivity() {
         val c = Canvas(bmp)
         f.update(lastMarks?.copyOf(), lastOpen, System.currentTimeMillis())
         f.draw(c, bmp.width, bmp.height, System.currentTimeMillis())
-        r.push(bmp, recFrames * 50_000L)
+        runCatching { r.push(bmp) }
         recFrames++
         bmp.recycle()
     }
@@ -457,21 +491,113 @@ class HandFxActivity : BaseActivity() {
         recording = false
         b.root.removeCallbacks(grabTick)
         b.btnRec.text = "录一段"
-        recField = null
+        b.btnShoot.isEnabled = true
         // 编码器只能在还在往里送帧的那条线程上收尾，否则会和最后一帧撞车
         recHandler.post {
+            recField = null
             val r = recorder
             val src = recOut
             recorder = null
             recOut = null
             val saved = if (r != null && src != null) {
-                runCatching { r.stop() }
-                publish(src)
+                val done = runCatching { r.stop() }.getOrDefault(false)
+                if (done && src.isFile && src.length() > 2048) publish(src) else {
+                    runCatching { src.delete() }; null
+                }
             } else null
             runCatching { MediaActionSound().play(MediaActionSound.STOP_VIDEO_RECORDING) }
             runOnUiThread { toast(if (saved == null) "这段没录上" else "已存好：$saved") }
         }
     }
+    /**
+     * 拍一张：把屏幕上这一帧连特效一起存进相册。
+     * 特效强度是逐帧缓动出来的，临时那份得先空跑几帧才到满强度，否则拍出来比看见的淡一大截。
+     */
+    private fun shoot() {
+        if (recording) { toast("录的时候先停下再拍"); return }
+        if (landmarker == null || !b.texCam.isAvailable) { toast("等画面出来再拍"); return }
+        val vw = b.texCam.width
+        val vh = b.texCam.height
+        if (vw == 0 || vh == 0) return
+        val w = 1080
+        val h = ((vh * w.toFloat() / vw).toInt() / 2) * 2
+        val bmp = runCatching { b.texCam.getBitmap(w, h) }.getOrNull()
+        if (bmp == null) { toast("这一下没抓到画面"); return }
+        val f = AuraField(this)
+        val m = lastMarks?.copyOf()
+        val o = lastOpen
+        repeat(8) { f.update(m?.copyOf(), o, System.currentTimeMillis()) }
+        runCatching { f.draw(Canvas(bmp), w, h, System.currentTimeMillis()) }
+        runCatching { MediaActionSound().play(MediaActionSound.SHUTTER_CLICK) }
+        b.btnShoot.isEnabled = false
+        scope.launch {
+            val where = withContext(Dispatchers.IO) {
+                val name = "糯叽-手指特效-" +
+                    android.text.format.DateFormat.format("yyyyMMdd-HHmmss", System.currentTimeMillis()) + ".jpg"
+                val saved = runCatching { writeImage(bmp, name) }.getOrNull()
+                bmp.recycle()
+                saved
+            }
+            b.btnShoot.isEnabled = true
+            toast(if (where == null) "这张没能存下" else "已存好：$where")
+        }
+    }
+
+    /** 存图：能进相册就进相册，进不去就落在应用自己的图片目录并把位置说清楚 */
+    private fun writeImage(bmp: android.graphics.Bitmap, name: String): String? {
+        val tmp = File(cacheDir, name)
+        val written = runCatching {
+            tmp.outputStream().use { out ->
+                bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out) && tmp.length() > 1024
+            }
+        }.getOrDefault(false)
+        if (!written) {
+            runCatching { tmp.delete() }
+            return null
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val ok = runCatching {
+                val v = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, name)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/糯叽")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v)
+                    ?: return@runCatching false
+                contentResolver.openOutputStream(uri)?.use { out -> FileInputStream(tmp).use { it.copyTo(out) } }
+                contentResolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
+                true
+            }.getOrDefault(false)
+            runCatching { tmp.delete() }
+            return if (ok) "相册里的 $name" else null
+        }
+        val pub = runCatching {
+            val dir = File(
+                android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_PICTURES
+                ), "糯叽"
+            )
+            dir.mkdirs()
+            val dst = File(dir, name)
+            FileInputStream(tmp).use { a -> dst.outputStream().use { sink -> a.copyTo(sink) } }
+            android.media.MediaScannerConnection.scanFile(this, arrayOf(dst.absolutePath), arrayOf("image/jpeg"), null)
+            dst.absolutePath
+        }.getOrNull()
+        if (pub != null) { runCatching { tmp.delete() }; return pub }
+        val own = runCatching {
+            val base = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                ?: return@runCatching null
+            val dir = File(base, "糯叽")
+            dir.mkdirs()
+            val dst = File(dir, name)
+            FileInputStream(tmp).use { a -> dst.outputStream().use { b -> a.copyTo(b) } }
+            dst.absolutePath
+        }.getOrNull()
+        runCatching { tmp.delete() }
+        return own?.let { "本机 $it" }
+    }
+
     /** 把临时文件挪进用户能在相册里翻到的位置 */
     private fun publish(src: File): String? {
         val name = "糯叽-手指特效-" + android.text.format.DateFormat.format("yyyyMMdd-HHmmss", System.currentTimeMillis()) + ".mp4"
@@ -502,7 +628,6 @@ class HandFxActivity : BaseActivity() {
                 true
             }.getOrDefault(false)
         }
-        val shown = if (ok) name else null
         runCatching { src.delete() }
         return if (ok) "相册里的 $name" else null
     }
@@ -525,19 +650,27 @@ class HandFxActivity : BaseActivity() {
 
     override fun onDestroy() {
         analyzing = false
+        recording = false
         GlassBackdrop.detach(this)
         b.root.removeCallbacks(tick)
-        recHandler.removeCallbacksAndMessages(null)
-        runCatching { recField = null }
+        b.root.removeCallbacks(grabTick)
+        // 编码器收尾、识别实例释放都要排在各自那条线程的队尾跑完，再让线程退出：
+        // 从界面线程直接关会和正在送的最后一帧撞车，还会留下一个没写完的坏文件
+        recHandler.post {
+            runCatching { recorder?.stop() }
+            recOut?.let { runCatching { it.delete() } }
+            recField = null; recorder = null; recOut = null
+        }
+        recThread.quitSafely()
+        inferHandler.post {
+            runCatching { landmarker?.close() }
+            landmarker = null
+        }
+        inferThread.quitSafely()
         runCatching { session?.close() }
         runCatching { device?.close() }
         session = null; device = null
-        runCatching { recorder?.stop() }
-        recorder = null
-        runCatching { landmarker?.close() }
-        landmarker = null
         bg.quitSafely()
-        recThread.quitSafely()
         scope.cancel()
         super.onDestroy()
     }

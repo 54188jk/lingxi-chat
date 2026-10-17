@@ -18,6 +18,7 @@ class ClipRecorder {
     private var muxer: MediaMuxer? = null
     private var track = -1
     private var plane = ByteArray(0)
+    private var rgba = IntArray(0)
     private var started = false
     private var frames = 0
     private var w = 0
@@ -46,29 +47,36 @@ class ClipRecorder {
         }
         muxer = MediaMuxer(dst.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         plane = ByteArray(w * h * 3 / 2)
+        rgba = IntArray(w * h)
         started = true
         frames = 0
     }
 
-    /** 收一帧 RGBA 合成图，转换后交给编码器 */
-    fun push(src: Bitmap, ptsUs: Long) {
+    /**
+     * 收一帧 RGBA 合成图，转换后交给编码器。
+     * 时间戳按「真正送进去的第几帧」自己算：抓帧偶尔会丢几帧（编码器满了），
+     * 让外面按墙上时钟给的戳会让片子忽快忽慢，丢的帧还会把时间轴撑出空洞。
+     */
+    fun push(src: Bitmap) {
         val c = codec ?: return
         if (!started) return
         val bmp = if (src.width == w && src.height == h) src
         else Bitmap.createScaledBitmap(src, w, h, true)
         toYuv(bmp, plane)
+        if (bmp !== src) runCatching { bmp.recycle() }
         val idx = c.dequeueInputBuffer(4_000)
         if (idx >= 0) {
             val ib = c.getInputBuffer(idx) ?: return
             ib.clear()
             ib.put(plane)
-            c.queueInputBuffer(idx, 0, plane.size, ptsUs, 0)
+            c.queueInputBuffer(idx, 0, plane.size, frames * 1_000_000L / max(1, fps), 0)
             frames++
         }
         drain(false)
     }
 
-    fun stop() {
+    /** 收尾；返回 false 表示这份文件压根没写成（没拿到轨道或没进过一帧），调用方别把它当成品交付 */
+    fun stop(): Boolean {
         val c = codec
         if (c != null && started) {
             val idx = c.dequeueInputBuffer(2_000)
@@ -76,23 +84,28 @@ class ClipRecorder {
             drain(true)
             runCatching { c.stop() }
         }
+        val wrote = track >= 0 && frames > 0
         val m = muxer
         if (m != null) {
-            runCatching { if (track >= 0) m.stop() }
+            runCatching { if (track >= 0) m.stop() }.onFailure { return false }
             runCatching { m.release() }
         }
         runCatching { c?.release() }
         codec = null; muxer = null; track = -1; started = false; frames = 0
+        return wrote && m != null
     }
 
     fun busy() = started
 
     private fun drain(final: Boolean) {
         val c = codec ?: return
+        var emptySpins = 0
         while (true) {
             val idx = c.dequeueOutputBuffer(info, 2_000)
             if (idx == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 if (!final) return
+                // 收尾时编码器迟迟不给最后一包（低端机上有这种），空转 0.5 秒就撤，别把录影线程钉死
+                if (++emptySpins > 250) return
             } else if (idx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 if (track >= 0) return
                 muxer?.let { track = it.addTrack(c.outputFormat) }
@@ -112,15 +125,20 @@ class ClipRecorder {
     }
 
     /**
-     * RGBA → YUV420P（BT.601 全量程）。只处理偶数行偶数列，剩下的边直接裁掉，
-     * 编码器本来也要求宽高成双，画面右下一像素的偏差肉眼看不见。
+     * RGBA → YUV420P（BT.601 有限量程，和编码器默认协商的色彩范围一致）。
+     * 三个平面是分开的：Y 占满前 w*h 字节，U 从 w*h 开始排 (w/2)*(h/2) 字节，V 再往后同样大小一块。
+     * 只处理偶数行偶数列，画面右下一像素的偏差肉眼看不见。
      */
     private fun toYuv(bmp: Bitmap, bytes: ByteArray) {
-        val px = IntArray(w * h)
-        bmp.getPixels(px, 0, w, 0, 0, w, h)
+        if (rgba.size < w * h) return
+        bmp.getPixels(rgba, 0, w, 0, 0, w, h)
+        val px = rgba
+        val cw = w / 2
+        val vBase = w * h + cw * (h / 2)
         for (j in 0 until h step 2) {
             val row = j * w
             val row2 = (j + 1) * w
+            val cRow = w * h + (j / 2) * cw
             for (i in 0 until w step 2) {
                 val c0 = px[row + i]
                 val c1 = px[row + i + 1]
@@ -132,9 +150,8 @@ class ClipRecorder {
                 bytes[row2 + i + 1] = y(c3)
                 val u: Int = (-0.148f * r(c0) - 0.289f * r(c1) - 0.419f * r(c2) + 0.856f * r(c3) + 128f).toInt()
                 val v: Int = (0.856f * r(c0) - 0.726f * r(c1) - 0.130f * r(c2) - 0.099f * r(c3) + 128f).toInt()
-                val uvRow = w * h + (j / 2) * (w / 2)
-                bytes[uvRow + i / 2] = u.coerceIn(0, 255).toByte()
-                bytes[uvRow + (w / 2) + i / 2] = v.coerceIn(0, 255).toByte()
+                bytes[cRow + i / 2] = u.coerceIn(0, 255).toByte()
+                bytes[vBase + (j / 2) * cw + i / 2] = v.coerceIn(0, 255).toByte()
             }
         }
     }

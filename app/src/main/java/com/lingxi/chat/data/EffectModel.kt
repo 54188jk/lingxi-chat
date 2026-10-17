@@ -47,24 +47,29 @@ object EffectModel {
         md.digest().joinToString("") { "%02x".format(it) }
     }.getOrNull()
 
+    /** 应用自己的外部目录；外部储存整个不可用（比如还没解锁、被禁用）时退回内部目录，绝不返回空 */
+    private fun ownDir(context: Context): File {
+        val ext = runCatching { context.getExternalFilesDir(null) }.getOrNull()
+        return ext ?: context.filesDir
+    }
+
     /** 用户能直接打开看的那个目录（需要「所有文件访问」），拿不到就用应用自己的外部目录 */
     private fun writableDir(context: Context): File {
         val preferred = File(Environment.getExternalStorageDirectory(), FOLDER)
-        val target = if (HistoryStore.canUseRoot(context)) preferred
-        else File(context.getExternalFilesDir(null), FOLDER)
+        val target = if (HistoryStore.canUseRoot(context)) preferred else File(ownDir(context), FOLDER)
         runCatching { if (!target.isDirectory) target.mkdirs() }
-        return if (target.isDirectory) target else context.getExternalFilesDir(null)!!
+        return if (target.isDirectory) target else ownDir(context)
     }
 
     /** 两处都找一遍：用户自己拷进去的那份也算数 */
-    fun find(context: Context): File? {
-        val list = listOf(
-            File(writableDir(context), FILE_NAME),
-            File(File(Environment.getExternalStorageDirectory(), FOLDER), FILE_NAME),
-            File(File(context.getExternalFilesDir(null), FOLDER), FILE_NAME)
-        )
-        return list.firstOrNull { runCatching { sizeOk(it) }.getOrDefault(false) }
-    }
+    private fun candidates(context: Context): List<File> = listOf(
+        File(writableDir(context), FILE_NAME),
+        File(File(Environment.getExternalStorageDirectory(), FOLDER), FILE_NAME),
+        File(File(ownDir(context), FOLDER), FILE_NAME)
+    )
+
+    fun find(context: Context): File? =
+        candidates(context).firstOrNull { runCatching { sizeOk(it) }.getOrDefault(false) }
 
     /** 这份文件能不能真拿来用：字节数 + 内容核对，读之前先过这一关 */
     fun isReady(f: File): Boolean = usable(f)
@@ -75,9 +80,15 @@ object EffectModel {
         else "本机那份不对，下次进特效会自动重放一份"
     }
 
+    /** 清掉本机上所有份：只删找到的那一份，另一处那份坏副本下次还会被当成现成的读走 */
     fun remove(context: Context): Boolean {
-        val f = find(context) ?: return false
-        return runCatching { f.delete() }.getOrDefault(false)
+        var any = false
+        candidates(context).forEach {
+            if (runCatching { it.isFile }.getOrDefault(false)) {
+                if (runCatching { it.delete() }.getOrDefault(false)) any = true
+            }
+        }
+        return any
     }
 
     /**
