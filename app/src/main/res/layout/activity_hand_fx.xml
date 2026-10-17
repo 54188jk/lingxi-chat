@@ -139,6 +139,37 @@
             android:textSize="14sp" />
     </LinearLayout>
 
+    <!-- 前置／后置切换：单独成一块玻璃浮在相机画面上，折射才读得出来；不嵌进底栏，免得玻璃套玻璃 -->
+    <com.lingxi.chat.GlassSurfaceView
+        android:id="@+id/btnFace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="78dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="9dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="9dp"
+        app:glassBlur="14dp"
+        app:glassRadius="19dp"
+        app:glassRim="0.85">
+
+        <TextView
+            android:id="@+id/tvFace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:text="已用后置"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:letterSpacing="-0.01" />
+    </com.lingxi.chat.GlassSurfaceView>
+
     <!-- 底栏：识别状态 + 录一段 -->
     <com.lingxi.chat.GlassSurfaceView
         android:id="@+id/glassBottom"

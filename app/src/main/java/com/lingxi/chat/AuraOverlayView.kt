@@ -14,6 +14,7 @@ import com.lingxi.chat.data.DevicePerf
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -29,16 +30,26 @@ class AuraField(context: Context) {
 
     private val density = context.resources.displayMetrics.density
     private val cheap = DevicePerf.lowEnd(context)
-    private val maxParticles = if (cheap) 90 else 240
+    private val maxParticles = if (cheap) 150 else 460
+    private val dustCount = if (cheap) 16 else 44
 
     private val pts = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val ptsAdd = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        // 发光要叠加不要互相遮挡：粒子这层用加法混合，密处才会亮成一团而不是一片糊
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.ADD)
+    }
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val core = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val stone = Paint(Paint.ANTI_ALIAS_FLAG)
     private val crack = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val dust = Paint(Paint.ANTI_ALIAS_FLAG)
     private val sp = Paint(Paint.ANTI_ALIAS_FLAG)
     private val seam = Path()
+    private val measure = android.graphics.PathMeasure()
+    private val pos = FloatArray(2)
+    private val tan = FloatArray(2)
 
     private val hull = ArrayList<FloatArray>()
     private val shape = Path()
@@ -98,7 +109,7 @@ class AuraField(context: Context) {
         drawDust(canvas, px, py, closed, h, nowMs)
     }
 
-    /** 指间的星河：沿指尖连成的弧线铺粒子，再叠一条会起伏的光带和几团星芒 */
+    /** 指间的星河：宽晕 + 中段 + 亮芯三层叠出厚度，再撒一层沿光带流动的星尘，最后指尖各一颗星芒 */
     private fun drawSea(
         canvas: Canvas, px: FloatArray, py: FloatArray, tips: IntArray,
         scale: Float, power: Float, t: Float, w: Int, h: Int
@@ -114,20 +125,60 @@ class AuraField(context: Context) {
         for (i in 0 until ptsX.size - 1) {
             val ax = ptsX[i]; val ay = ptsY[i]
             val bx = ptsX[i + 1]; val by = ptsY[i + 1]
-            val sag = scale * (0.34f + 0.10f * sin(t * 1.7f + i))
+            val sag = scale * (0.30f + 0.12f * sin(t * 1.7f + i))
             val mx = (ax + bx) / 2f
             val my = (ay + by) / 2f + sag
             band.quadTo(mx, my, bx, by)
         }
-        line.strokeWidth = scale * 0.055f
+        val pal = intArrayOf(argb(0x8FD4FF, 0f), argb(0xFFE6F4, 0.62f * power), argb(0xFFC9E8, 0.5f * power), argb(0xFFE2AE, 0f))
+        // 最外一圈是晕，负责「亮到周围空气里」
+        halo.strokeWidth = scale * 0.20f
+        halo.shader = LinearGradient(px[4], py[4], px[20], py[20], pal, null, Shader.TileMode.CLAMP)
+        halo.alpha = (70 * power).toInt().coerceIn(0, 255)
+        canvas.drawPath(band, halo)
+        // 中段是主体，饱和度略高，读起来才是一条河而不是一团雾
+        line.strokeWidth = scale * 0.075f
         line.shader = LinearGradient(
             px[4], py[4], px[20], py[20],
-            intArrayOf(argb(0x000000, 0f), argb(0xFFD9E2, 0.55f * power), argb(0xFF7FA6, 0f)),
-            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP
+            intArrayOf(argb(0x9BE0FF, 0.15f), argb(0xFFFFFF, 0.85f * power), argb(0xFFB8E6, 0.7f * power), argb(0xFFD9A8, 0.15f)),
+            floatArrayOf(0f, 0.35f, 0.7f, 1f), Shader.TileMode.CLAMP
         )
-        line.alpha = (180 * power).toInt().coerceIn(0, 255)
+        line.alpha = (225 * power).toInt().coerceIn(0, 255)
         canvas.drawPath(band, line)
+        halo.shader = null
         line.shader = null
+        // 最里一圈白芯，加法混合：叠到星尘上会真的过曝，这才是「亮」
+        core.strokeWidth = scale * 0.024f
+        core.color = argb(0xFFFFFF, 0.8f * power)
+        canvas.drawPath(band, core)
+
+        // 星尘：沿光带等距打点，按序号取伪随机，尺寸明暗各异，整体缓慢流动
+        measure.setPath(band, false)
+        val len = measure.length
+        if (len > 8f) {
+            val step = len / dustCount
+            val flow = (t * scale * 0.35f) % step
+            var i = 0
+            while (i < dustCount) {
+                val d = i * step + flow
+                if (d >= len) break
+                measure.getPosTan(d, pos, tan)
+                val r1 = hash(i * 7 + 3)
+                val r2 = hash(i * 13 + 11)
+                val rr = scale * (0.008f + 0.026f * r1)
+                val aa = (255 * power * (0.30f + 0.62f * r2)).toInt().coerceIn(0, 255)
+                val tone = intArrayOf(0xFFFFFF, 0xBFE8FF, 0xFFD6EC, 0xFFE9BE)[(i and 3)]
+                ptsAdd.color = (aa shl 24) or (tone and 0x00FFFFFF)
+                canvas.drawCircle(pos[0], pos[1], rr, ptsAdd)
+                // 一小半星尘带十字光刺，星河里那些「特别亮的」就是这么来的
+                if (r2 > 0.78f) {
+                    val arm = rr * 3.4f
+                    canvas.drawLine(pos[0] - arm, pos[1], pos[0] + arm, pos[1], core)
+                    canvas.drawLine(pos[0], pos[1] - arm, pos[0], pos[1] + arm, core)
+                }
+                i++
+            }
+        }
 
         // 补给粒子：数量按档位收，低机器少放
         val want = (maxParticles * 0.6f * power).toInt()
@@ -137,35 +188,48 @@ class AuraField(context: Context) {
         var idx = 0
         while (idx < pool.size) {
             val p = pool[idx]
-            p.life -= dt / (1.4f + p.size / 6f)
+            p.life -= dt / (2.2f + p.size / 6f)
             if (p.life <= 0f) {
                 if (pool.size > want) { pool.removeAt(idx); continue }
                 pool[idx] = spawn(px, py, tips, scale)
                 continue
             }
             idx++
+            // 一点绕手感：光点不是直往下掉，而是被指缝的气流带着旋
+            p.vx += -p.vy * 0.012f
+            p.vy += p.vx * 0.012f
             p.x += p.vx * dt
-            p.y += p.vy * dt + 6f * density * dt * power
-            p.vx *= 0.985f
-            p.vy = p.vy * 0.985f + 3f * density * dt
-            val a = (255 * power * min(1f, p.life * 1.6f)).toInt().coerceIn(0, 255)
+            p.y += p.vy * dt + 5f * density * dt * power
+            p.vx *= 0.988f
+            p.vy = p.vy * 0.988f + 2.4f * density * dt
+            val a = (255 * power * min(1f, p.life * 1.5f)).toInt().coerceIn(0, 255)
             if (a <= 6) continue
-            pts.color = (a shl 24) or (p.tone and 0x00FFFFFF)
-            canvas.drawCircle(p.x, p.y, p.size * density * (0.5f + 0.5f * p.life), pts)
+            ptsAdd.color = (a shl 24) or (p.tone and 0x00FFFFFF)
+            canvas.drawCircle(p.x, p.y, p.size * density * (0.5f + 0.5f * p.life), ptsAdd)
+            pts.color = ((a / 2) shl 24) or (0xFFFFFF and 0x00FFFFFF)
+            canvas.drawCircle(p.x, p.y, p.size * density * 0.30f, pts)
         }
 
-        // 指尖星芒：五个亮点带一圈柔光，像星星落在指尖上
+        // 指尖星芒：一圈大柔光 + 一圈暖内核 + 四道会转的光刺
         for (k in tips) {
-            val r = scale * 0.13f
+            val r = scale * 0.22f
             glow.shader = RadialGradient(
                 px[k], py[k], r,
-                intArrayOf(argb(0xFFFFFF, 0.9f * power), argb(0xFFC2D6, 0.35f * power), Color.TRANSPARENT),
-                floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP
+                intArrayOf(argb(0xFFFFFF, 0.95f * power), argb(0xFFD8EE, 0.45f * power), argb(0x9BD8FF, 0.18f * power), Color.TRANSPARENT),
+                floatArrayOf(0f, 0.28f, 0.6f, 1f), Shader.TileMode.CLAMP
             )
             canvas.drawCircle(px[k], py[k], r, glow)
             glow.shader = null
-            star(canvas, px[k], py[k], scale * 0.09f, power, t + k)
+            glow.color = argb(0xFFF6FF, 0.85f * power)
+            canvas.drawCircle(px[k], py[k], scale * 0.035f, glow)
+            star(canvas, px[k], py[k], scale * 0.15f, power, t + k)
         }
+    }
+
+    /** 稳定伪随机：同一个序号每次给同一个数，星尘才不会每帧乱跳 */
+    private fun hash(seed: Int): Float {
+        val v = sin(seed * 12.9898f) * 43758.5453f
+        return v - floor(v)
     }
 
     private fun spawn(px: FloatArray, py: FloatArray, tips: IntArray, scale: Float): P {
@@ -174,27 +238,39 @@ class AuraField(context: Context) {
         val f = Random.nextFloat()
         val x = px[k1] + (px[k2] - px[k1]) * f
         val y = py[k1] + (py[k2] - py[k1]) * f + scale * 0.16f * sin(f * Math.PI.toFloat())
-        val tones = intArrayOf(0xF2F7FF, 0xFFD6E4, 0xFFE9C6, 0xBFF2E4)
+        // 偏冷的一档加偏暖的一档混着来，纯白纯蓝都会显得薄
+        val tones = intArrayOf(0xFFFFFF, 0xDFF2FF, 0xFFE1F2, 0xFFEFC4, 0xA8E4FF, 0xFFC9E0)
         return P(
             x, y,
-            (Random.nextFloat() - 0.5f) * scale * 0.9f,
-            (Random.nextFloat() - 0.7f) * scale * 0.7f,
-            0.6f + Random.nextFloat() * 1.1f,
-            1.1f + Random.nextFloat() * 2.4f,
+            (Random.nextFloat() - 0.5f) * scale * 1.15f,
+            (Random.nextFloat() - 0.72f) * scale * 0.85f,
+            0.9f + Random.nextFloat() * 1.5f,
+            1.2f + Random.nextFloat() * 3.1f,
             tones[Random.nextInt(tones.size)]
         )
     }
 
     private fun star(canvas: Canvas, cx: Float, cy: Float, r: Float, power: Float, t: Float) {
         val spin = t * 0.6f
-        line.strokeWidth = max(1f, r * 0.16f)
-        line.alpha = (210 * power).toInt().coerceIn(0, 255)
-        line.color = argb(0xFFFFFF, 0.9f * power)
+        // 光刺用加法混合，压在本芯上才会「过曝」，用普通混合就只是画了四道白线
+        line.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.ADD)
+        line.strokeWidth = max(1f, r * 0.14f)
+        line.alpha = (240 * power).toInt().coerceIn(0, 255)
+        line.color = argb(0xFFFFFF, 0.95f * power)
         for (a in 0 until 4) {
             val ang = spin + a * Math.PI.toFloat() / 2f
             val len = r * (if (a % 2 == 0) 1f else 0.55f)
             canvas.drawLine(cx, cy, cx + cos(ang) * len, cy + sin(ang) * len, line)
         }
+        // 斜着再来四道短的，星芒才不呆
+        line.strokeWidth = max(1f, r * 0.09f)
+        line.alpha = (150 * power).toInt().coerceIn(0, 255)
+        for (a in 0 until 4) {
+            val ang = spin + Math.PI.toFloat() / 4f + a * Math.PI.toFloat() / 2f
+            val len = r * 0.44f
+            canvas.drawLine(cx, cy, cx + cos(ang) * len, cy + sin(ang) * len, line)
+        }
+        line.xfermode = null
     }
 
     /** 握拳：把手的轮廓糊成一块石头，加深灰渐变、裂纹和边缘的碎屑 */

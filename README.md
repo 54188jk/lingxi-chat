@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.194**（支持 Android 7.0 及以上手机）
+当前版本：**v1.195**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -56,6 +56,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.195 | 发布：2026-10-17 19:58:45。修复了一些功能；手指特效新增前置／后置切换（那块小胶囊是液态玻璃，手对着屏幕也能玩）；指间星河更浓更亮、光点会绕手旋；录制片段与「拍一张」和屏幕上看到的一致 |
 | v1.194 | 发布：2026-10-17 17:25:03。手指特效修好了：这个功能此前在所有手机上都会卡在「这份文件读不起来 / 带不动」，点进去没有画面也没有特效；提示也不再冤枉人，只有真是系统带不动才那么说 |
 | v1.193 | 发布：2026-10-17 12:06:10。手指特效在 Android 9 以前的手机上也能用了（之前点进去只会提示「这份文件读不起来」）；特效页出错时会把机型和系统版本写进提示，长按可复制发回；安装包约 32.1MB |
 | v1.192 | 发布：2026-10-17 11:17:37。手指特效页新增「拍一张」；修复特效偶尔让应用突然退出、录出来的片段颜色发灰偏绿；特效跟手更顺，不再拖慢整个应用 |
@@ -150,6 +151,10 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
+- v1.195 特效与画面错位的**结构性原因**：AOSP `TextureView.getBitmap()` 的注释与实现都是「把**纹理内容**缩放到刚好填满传入的位图」，`setTransform` 那次旋转不在里面（`applyTransformMatrix()` 只是把纹理推进图层，不参与拷贝）。之前直接按视图比例 `getBitmap(480, vh*480/vw)` 取图，等于把横向原始帧压扁成竖图喂给识别库，关键点还落在**未旋转**的纹理空间里，再乘视图宽高画出来就既偏 90° 又拉伸；录制片段和「拍一张」吃的是同一张图，所以视频也变形。依据：`frameworks/base/core/java/android/view/TextureView.java`（android14-release）第 644-693 行，本机经代理从 aosp-mirror 取回原文核对
+- v1.195 改法：**屏幕上那块 Matrix 是唯一的取景定义**。`applyTransform()` 里 `postScale(还原拉伸)→postRotate(sensorDeg)→前置补 postScale(-1,1)→postScale(铺满)` 同时存一份 `dispMatrix`；抓帧 `compose()` 新建画布先按 `target/view` 缩放、再 `concat(dispMatrix)`、再把按**纹理自身比例**取的原始图（`FxFraming.captureSize`，不会被压扁）贴满视图矩形——识别库看到的与屏幕显示的是同一次变换，归一化关键点直接乘画布宽高就落在手上。目标尺寸 `FxFraming.targetSize` 与视图同比例且高度取偶数（编码器要求）；识别用 360 宽、两块缓冲轮换（`inflying` 保证只有一张在后台，复用的画布不再 recycle），录影 720 宽、拍照 1080 宽各自由 `compose()` 合成。`FxFraming.java` 只留纯算数（朝向、铺满系数、尺寸），因此可完全脱离 Android 单独验证
+- v1.195 新增前置／后置切换：`toggleFacing()` 关掉旧 device/session 后按新朝向重开，`pickCamera` 按 `LENS_FACING` 选；前置时取景矩阵补一次水平镜像（自拍要像照镜子），而合成复用同一块矩阵，镜像后的画面与镜像后的关键点天然一致；触感只在真换朝向时给 `CLOCK_TICK`。按钮是这一屏第三块玻璃（`GlassSurfaceView`，blur 14dp / radius 19dp / rim 0.85），**独立浮在相机画面上而不嵌进底栏**：玻璃套玻璃会让内层采不到背景，相机画面才是能让折射读出来的结构化内容；每屏玻璃层数仍在 4 层预算内
+- v1.195 星河加浓：粒子 240→460（轻量档 90→150），光带改为宽晕 0.20 + 中段 0.075 + 白芯 0.024 三层并用 `PorterDuff.Mode.ADD` 叠加（密处真的过曝）；新增 44 个沿光带等距流动的星尘（`PathMeasure.getPosTan` + 按序号的 `hash()` 伪随机，不会每帧乱跳，约 1/5 带十字光刺），指尖星芒改成四层径向柔光 + 内核 + 8 道旋转光刺，粒子寿命 1.4s→2.2s 并加绕手感（vx/vy 互为旋度项）；仍保留「按下标遍历 `pool`」这条防 `ConcurrentModificationException` 的纪律，轻量档自动降量
 - v1.194 手指特效「一直用不了」的**真根因（已由用户手机回报的现场 + 本机 JVM 复现确认）**：MediaPipe 的 `com.google.mediapipe.framework.Graph` 在 `<clinit>` 里调 `FluentLogger.forEnclosingClass()`，flogger 靠「栈里有没有自己那一帧」反查调用者；R8 full mode 把 flogger 改名（`FluentLogger` → `F1.d`）并内联掉该调用，运行时就抛 `ExceptionInInitializerError: no caller found on the stack for: F1.d`，被 `explain()` 归进「运行库加载不起来」这一档，所以 v1.186~v1.193 一路被误判成文件/系统问题。用户机型实测为 **OPPO PDYT20 / Android 12（API 31）**，说明 v1.193 那次降 MediaPipe 版本对他这台机器并没有用上（那是给 Android 7/8 准备的），但那条 `aligned_alloc` 结论仍成立、保留
 - v1.194 修法**在本机验证过而不是猜**：下载 r8 8.7.18，用同样的 keep 规则把「一个 kept 类在 `<clinit>` 里调 `FluentLogger.forEnclosingClass()`」这个模式打成 jar 在 JVM 上跑，原样复现 `no caller found on the stack for: a.d`；试 5 个方案——只加 `-keep class com.google.common.flogger.** { *; }` 立刻恢复，`--pg-compat`（等价于 `android.enableR8.fullMode=false`）与 `-assumenosideeffects` 都无效。成品包复验：`mapping.txt` 里 `com.google.common.flogger.FluentLogger -> 同名`（不再改名），`classes.dex` 里 `Graph/AssetCache/AssetCacheDbHelper/GraphTextureFrame/PacketGetter` 各有一条真实的 `invoke-static ... FluentLogger;.forEnclosingClass()`（v1.193 包里为 0 条，因为被内联掉了）
 - v1.194 成品 32,092,762 字节（比 v1.193 只多约 32KB：flogger 不再被改名压缩），特效页提示分类改准：仅 `UnsatisfiedLinkError` 说「这台手机的系统带不动这个特效」，`NoClassDefFoundError`/`ExceptionInInitializerError` 改说「特效没能启动 … 这不是这台手机的问题」，两者都不再重放 8MB 识别文件；长按复制诊断保留

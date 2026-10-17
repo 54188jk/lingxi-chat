@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -57,6 +58,11 @@ class HandFxActivity : BaseActivity() {
     private var sensorDeg = 90
     private var previewW = 0
     private var previewH = 0
+    private var facingFront = false
+    /** 屏幕上那块变换，抓帧合成时直接复用它：看到的和喂给识别库的必须是同一次变换 */
+    private var dispMatrix: Matrix? = null
+    private val capPool = arrayOfNulls<Bitmap>(2)
+    private var capParity = 0
     private var landmarker: HandLandmarker? = null
     private var openness = 0f
     private var analyzing = false
@@ -96,6 +102,7 @@ class HandFxActivity : BaseActivity() {
         b.btnRec.setOnClickListener { toggleRecord() }
         b.btnShoot.setOnClickListener { shoot() }
         b.btnModel.setOnClickListener { onModelButton() }
+        b.btnFace.setOnClickListener { toggleFacing() }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -340,12 +347,30 @@ class HandFxActivity : BaseActivity() {
     }
 
     private fun pickCamera(mgr: CameraManager): String {
-        // 后置最稳：不用镜像，手指和画面对得上
+        val want = if (facingFront) CameraCharacteristics.LENS_FACING_FRONT
+        else CameraCharacteristics.LENS_FACING_BACK
         val ids = mgr.cameraIdList
         return ids.firstOrNull {
-            mgr.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
-                CameraCharacteristics.LENS_FACING_BACK
+            mgr.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == want
         } ?: ids.first()
+    }
+
+    /** 前置／后置切换：先关旧的那路，再按新朝向重新开一遍；只有真换了朝向才震一下 */
+    private fun toggleFacing() {
+        if (landmarker == null || isFinishing) return
+        facingFront = !facingFront
+        b.tvFace.text = if (facingFront) "已用前置" else "已用后置"
+        runCatching {
+            b.btnFace.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+        }
+        runCatching { session?.close() }
+        runCatching { device?.close() }
+        session = null; device = null
+        b.aura.stop()
+        analyzing = false
+        b.root.removeCallbacks(tick)
+        toast(if (facingFront) "换成前置摄像头，手对着屏幕就能玩" else "换成后置摄像头")
+        startCamera()
     }
 
     private fun buildSession(req: android.hardware.camera2.CaptureRequest.Builder) {
@@ -369,25 +394,58 @@ class HandFxActivity : BaseActivity() {
         }
     }
 
-    /** 画面按「铺满」摆放：先还原摄像头原始比例，再转感应器角度，最后放大到盖住整块屏 */
+    /**
+     * 画面按「铺满」摆放：先把纹理内容还原成摄像头自己的比例，转感应器角度，
+     * 前置再左右翻一下（自拍要照镜子那样），最后放大到盖住整块屏。
+     * 这块矩阵同时存起来，抓帧合成时复用同一份，避免「显示是一套、识别是另一套」。
+     */
     private fun applyTransform(texture: SurfaceTexture) {
         val vw = b.texCam.width.toFloat().takeIf { it > 0f } ?: return
         val vh = b.texCam.height.toFloat()
         val cx = vw / 2f; val cy = vh / 2f
+        val fw = FxFraming.frameW(previewW, previewH, sensorDeg).toFloat()
+        val fh = FxFraming.frameH(previewW, previewH, sensorDeg).toFloat()
         val m = Matrix()
         m.postScale(previewW / vw, previewH / vh, cx, cy)
         m.postRotate(sensorDeg.toFloat(), cx, cy)
-        val swap = abs(sin90(sensorDeg)) > 0.5f
-        val effW = if (swap) previewH.toFloat() else previewW.toFloat()
-        val effH = if (swap) previewW.toFloat() else previewH.toFloat()
-        val k = max(vw / effW, vh / effH)
-        m.postScale(k, k, cx, cy)
+        if (facingFront) m.postScale(-1f, 1f, cx, cy)
+        m.postScale(FxFraming.fillScale(vw, vh, fw, fh), FxFraming.fillScale(vw, vh, fw, fh), cx, cy)
         b.texCam.setTransform(m)
+        dispMatrix = Matrix(m)
     }
 
-    private fun sin90(deg: Int): Float {
-        val r = deg % 180
-        return if (r == 90 || r == -90) 1f else 0f
+    /**
+     * 抓一帧「屏幕上这一屏」：getBitmap 拿到的是纹理内容（不含视图变换），
+     * 所以先按纹理自己的比例取（不会被压扁），再套屏幕上那块矩阵贴到目标画布。
+     * 目标纵横比与视图一致，识别库给出的归一化关键点可以直接乘画布宽高。
+     */
+    private fun compose(target: Bitmap): Boolean {
+        val vw = b.texCam.width
+        val vh = b.texCam.height
+        val m = dispMatrix ?: return false
+        if (vw <= 0 || vh <= 0 || previewW <= 0) return false
+        val cs = FxFraming.captureSize(480, previewW, previewH)
+        val raw = runCatching { b.texCam.getBitmap(cs[0], cs[1]) }.getOrNull() ?: return false
+        val c = Canvas(target)
+        c.scale(target.width / vw.toFloat(), target.height / vh.toFloat())
+        c.concat(m)
+        runCatching { c.drawBitmap(raw, null, RectF(0f, 0f, vw.toFloat(), vh.toFloat()), null) }
+        raw.recycle()
+        return true
+    }
+
+    /** 给识别库用的小图：两块轮换，后台那张还在算就不去动它 */
+    private fun frameForModel(): Bitmap? {
+        val ts = FxFraming.targetSize(360, b.texCam.width.toFloat(), b.texCam.height.toFloat())
+        val idx = 1 - capParity
+        var bmp = capPool[idx]
+        if (bmp == null || bmp.width != ts[0] || bmp.height != ts[1] || bmp.isRecycled) {
+            if (!inflying) runCatching { capPool[idx]?.recycle() }
+            bmp = Bitmap.createBitmap(ts[0], ts[1], Bitmap.Config.ARGB_8888)
+            capPool[idx] = bmp
+        }
+        capParity = idx
+        return if (compose(bmp)) bmp else null
     }
 
     // ---------------- 识别与特效 ----------------
@@ -401,11 +459,8 @@ class HandFxActivity : BaseActivity() {
         val lm = landmarker ?: return
         if (!analyzing || inflying || isFinishing) return
         if (!b.texCam.isAvailable || b.texCam.width == 0) return
-        val vw = b.texCam.width
-        val vh = b.texCam.height
-        val w = 480
-        val h = max(2, (vh * w.toFloat() / vw).toInt())
-        val bmp = runCatching { b.texCam.getBitmap(w, h) }.getOrNull() ?: return
+        // 这一张和屏幕上那一屏同一次变换出来的，识别库给的关键点可以直接乘画布宽高
+        val bmp = frameForModel() ?: return
         // 玻璃要的就是这一张：趁它还没交给后台，先糊进背景（frameFrom 只读，不持有）
         if (glassFeed) {
             GlassBackdrop.frameFrom(this, bmp)
@@ -435,7 +490,7 @@ class HandFxActivity : BaseActivity() {
             } catch (_: Throwable) {
                 inferFails++
             }
-            runCatching { bmp.recycle() }
+            // 这块画布是轮换复用的，不能回收；下一次写它之前会先等这一帧算完
             inflying = false
             val got = marks
             if (inferFails > 60) {
@@ -508,9 +563,10 @@ class HandFxActivity : BaseActivity() {
             val vw = b.texCam.width
             val vh = b.texCam.height
             if (vw > 0 && vh > 0) {
-                val h = ((vh * 720f / vw).toInt() / 2) * 2
-                val bmp = runCatching { b.texCam.getBitmap(720, h) }.getOrNull()
-                if (bmp != null) recHandler.post { encodeFrame(bmp) }
+                val ts = FxFraming.targetSize(720, vw.toFloat(), vh.toFloat())
+                val bmp = Bitmap.createBitmap(ts[0], ts[1], Bitmap.Config.ARGB_8888)
+                // 和屏幕同一次变换出来的图，编码线程画完自己回收
+                if (compose(bmp)) recHandler.post { encodeFrame(bmp) } else runCatching { bmp.recycle() }
             }
             if (System.currentTimeMillis() - recStart > 20_000L) {
                 stopRecord()
@@ -567,15 +623,14 @@ class HandFxActivity : BaseActivity() {
         val vw = b.texCam.width
         val vh = b.texCam.height
         if (vw == 0 || vh == 0) return
-        val w = 1080
-        val h = ((vh * w.toFloat() / vw).toInt() / 2) * 2
-        val bmp = runCatching { b.texCam.getBitmap(w, h) }.getOrNull()
-        if (bmp == null) { toast("这一下没抓到画面"); return }
+        val ts = FxFraming.targetSize(1080, vw.toFloat(), vh.toFloat())
+        val bmp = Bitmap.createBitmap(ts[0], ts[1], Bitmap.Config.ARGB_8888)
+        if (!compose(bmp)) { bmp.recycle(); toast("这一下没抓到画面"); return }
         val f = AuraField(this)
         val m = lastMarks?.copyOf()
         val o = lastOpen
         repeat(8) { f.update(m?.copyOf(), o, System.currentTimeMillis()) }
-        runCatching { f.draw(Canvas(bmp), w, h, System.currentTimeMillis()) }
+        runCatching { f.draw(Canvas(bmp), ts[0], ts[1], System.currentTimeMillis()) }
         runCatching { MediaActionSound().play(MediaActionSound.SHUTTER_CLICK) }
         b.btnShoot.isEnabled = false
         scope.launch {
@@ -695,12 +750,15 @@ class HandFxActivity : BaseActivity() {
         }
         b.btnModel.text = button ?: "知道了"
         b.btnModel.visibility = if (button == null) View.GONE else View.VISIBLE
+        // 状态牌出现时把切换胶囊收起来，别压在牌子上面
+        b.btnFace.visibility = View.GONE
     }
 
     private fun hideState() {
         b.llState.visibility = View.GONE
         b.pbModel.visibility = View.GONE
         b.tvModelPct.visibility = View.GONE
+        b.btnFace.visibility = View.VISIBLE
     }
 
     override fun onDestroy() {
@@ -725,6 +783,9 @@ class HandFxActivity : BaseActivity() {
         runCatching { session?.close() }
         runCatching { device?.close() }
         session = null; device = null
+        capPool.forEach { runCatching { it?.recycle() } }
+        capPool[0] = null; capPool[1] = null
+        dispMatrix = null
         bg.quitSafely()
         scope.cancel()
         super.onDestroy()
