@@ -2,7 +2,7 @@
 
 > Android 端 AI 对话助手 · 大模型随你选 · 不用注册账号 · 没有广告
 
-当前版本：**v1.192**（支持 Android 7.0 及以上手机）
+当前版本：**v1.193**（支持 Android 7.0 及以上手机）
 
 ## 项目简介
 
@@ -56,6 +56,7 @@
 
 | 版本 | 更新内容 |
 |---|---|
+| v1.193 | 发布：2026-10-17 12:06:10。手指特效在 Android 9 以前的手机上也能用了（之前点进去只会提示「这份文件读不起来」）；特效页出错时会把机型和系统版本写进提示，长按可复制发回；安装包约 32.1MB |
 | v1.192 | 发布：2026-10-17 11:17:37。手指特效页新增「拍一张」；修复特效偶尔让应用突然退出、录出来的片段颜色发灰偏绿；特效跟手更顺，不再拖慢整个应用 |
 | v1.191 | 发布：2026-10-16 23:51:17。手指特效页的顶栏和底栏换成真玻璃，透出相机里的画面，手移动时里面的光影跟着动 |
 | v1.190 | 发布：2026-10-16 23:09:00。安装包多挂一个国内镜像（只放发布版附件的镜像仓），更新时与其它线路一起竞速；下载线路清单合并成一处统一维护，加速站由 6 个扩到 7 个；应用商店里填 GitHub 发布直链的安装包也会自动走这几条加速线路 |
@@ -140,7 +141,7 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 # 产物：D:\nuoji-build\_app\outputs\apk\release\app-release.apk
 ```
 
-手指特效（v1.186 起）新增依赖与约束：`com.google.mediapipe:tasks-vision:0.10.35`（POM 只声明 tasks-vision → tasks-core，`libmediapipe_tasks_jni.so` 在 tasks-core 的 `jni/` 里，四架构合计约 45MB，所以 `defaultConfig.ndk.abiFilters` 只留 `arm64-v8a` + `armeabi-v7a`，成品包 21,423,579 字节 ≈ 20.4MB）；`proguard-rules.pro` 对 `com.google.mediapipe.**` / `org.tensorflow.lite.**` / `com.google.protobuf.**` 整包 keep（C++ 侧按类名反射回调 Java，改名即挂），并对 guava / protobuf / flogger / transport / opentelemetry 补 `dontwarn`；手部识别模型 `hand_landmarker.task`（7,819,105 字节，校验值记在 `EffectModel` 的注释与本机构建记录里，不写进面向用户的文案；官方直链 `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`）**不进 APK**，由 `data/EffectModel.kt` 在首次进入特效时按需下到内部储存「特效模型」目录（有「所有文件访问」落 `/sdcard/特效模型/`，否则落 `getExternalFilesDir(null)/特效模型/`），下载源为 Gitee/GitHub 的 Release 附件 + 两个 GitHub 代理 + 官方直链；`EffectModel.RELEASE_TAG` 必须等于发布模型的那一版 tag，改版本时两处一起改。
+手指特效（v1.186 起）新增依赖与约束：`com.google.mediapipe:tasks-vision:0.10.26.1`。**版本必须钉在 0.10.26.1，不要顺手升到最新**：v1.192 之前用的 0.10.35，其 `libmediapipe_tasks_jni.so` 引用了 `aligned_alloc`（Android 9 起才有）和 `AHardwareBuffer_*`（Android 8 起才有），而 `System.loadLibrary` 走 `RTLD_NOW`，符号缺失会在加载当场抛 `UnsatisfiedLinkError`——Android 8.x 及以下无论如何都进不了特效页（这正是用户手机上一直报「这份文件读不起来 / 运行库加载不起来」的真正原因，与模型文件无关：官方 `hand_landmarker.task` 逐字节核过，包内那份与 Google 直链的 sha256 一致）。本机用 pyelftools 逐架构扫过：0.10.26.1 与 0.10.21 的原生库没有任何 API>24 符号，0.10.28 起重新引用 `aligned_alloc`，0.10.33 起 `.so` 挪回 tasks-core；所以取「最新的干净版」0.10.26.1（`libmediapipe_tasks_vision_jni.so` 在 tasks-vision 的 `jni/`，只带 arm64-v8a + armeabi-v7a，成品包约 32MB，比 0.10.35 重约 4.7MB）。`defaultConfig.ndk.abiFilters` 仍只留这两个架构；`proguard-rules.pro` 对 `com.google.mediapipe.**` / `org.tensorflow.lite.**` / `com.google.protobuf.**` 整包 keep（C++ 侧按类名反射回调 Java，改名即挂），并对 guava / protobuf / flogger / transport / opentelemetry 补 `dontwarn`。手部识别模型 `hand_landmarker.task`（7,819,105 字节，sha256 `fbc2a300…cde1`，官方直链 `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`）**从 v1.188 起内置在 `app/src/main/assets/`**，`data/EffectModel.kt` 在首次进入特效时从包里放一份到永久目录（有「所有文件访问」落 `/sdcard/特效模型/`，否则落 `getExternalFilesDir(null)/特效模型/`），放完对内容做 sha256 核对，对不上就删掉重放；校验值与 `SIZE` 写在 `EffectModel` 常量里，换模型时两处一起改，且不写进面向用户的文案。`EffectModel` 已无网络下载分支；v1.186 那次挂在 Release 上的模型附件仍不能删（已装 v1.186/v1.187 的手机会去那里下）。
 
 技术栈：Kotlin + Android View（ViewBinding）+ Kotlin 协程 + OkHttp + org.json + MediaPipe Tasks Vision，无第三方 UI 框架。仓库里的 Gradle 使用阿里云镜像加速。
 
@@ -148,6 +149,10 @@ GRADLE_USER_HOME='D:\gradle-home' /d/gradle-8.13/bin/gradle.bat :app:assembleRel
 
 ## 自测结果
 
+- v1.193 找到「手指特效一直用不了」的真正根因：**不是模型文件**。`libmediapipe_tasks_jni.so`（0.10.35）用 pyelftools 逐架构扫 `.dynsym` 的 `SHN_UNDEF`，确认引用 `aligned_alloc`（Android 9 / API 28 起才有）与 `AHardwareBuffer_*`（Android 8 / API 26），而 `System.loadLibrary` 以 `RTLD_NOW` 加载，符号缺失会在 dlopen 当场抛 `UnsatisfiedLinkError` → Android 8.x 及以下永远进不了特效页（用户看到的就是「这份文件读不起来」，因为 `explain()` 把三类错误都归到同一句文案）。模型侧排除：包内 `assets/hand_landmarker.task` 与 Google 官方直链逐字节一致（7,819,105 字节，sha256 `fbc2a300…cde1`），R8 keep 规则齐、`.so` 未压缩且 4096/16KB 双对齐，都不是问题。
+- v1.193 依赖钉到 **0.10.26.1**：0.10.21 / 0.10.26.1 的原生库扫出 post-24 引用为 0，0.10.28 起重新引用 `aligned_alloc` 且额外捆 `libopencv_java4.so`（+13MB），0.10.33 起 `.so` 从 tasks-vision 挪回 tasks-core，故取「最新的干净版」。接口逐项 `javap` 核对：`BaseOptions.Builder.setModelAssetBuffer/setModelAssetPath`、`HandLandmarker.createFromOptions`、`HandLandmarkerOptions.Builder.setNumHands/setMinHandDetectionConfidence/setRunningMode`、`HandLandmarkerResult.landmarks()`、`BitmapImageBuilder(Bitmap)` 全部存在，`detectForVideo` 未变；`.so` 名从 `mediapipe_tasks_jni` 变为 `mediapipe_tasks_vision_jni`，成品包 `classes.dex` 里保留该字符串（1 处，R8 合并了 12 个重复）与 `HandLandmarker` 类。成品 32,059,994 字节（+4.78MB，arm64 `.so` 14,389,600 + v7a 8,320,740），`aapt dump badging` 确认 versionCode 61 / versionName 1.193 / minSdk 24 / native-code arm64-v8a+armeabi-v7a。
+- v1.193 加载路径改为两段兜底：先用直接内存 `setModelAssetBuffer`，抛错再用 `setModelAssetPath` 重试，两次都失败才报第一次的错；运行库类失败（`UnsatisfiedLinkError`/`NoClassDefFoundError`/`ExceptionInInitializerError`）不再触发「删掉重放识别文件」，状态卡改成带机型 + Android 版本 + 根因异常（走 cause 链取最里层 message），并支持长按复制到剪贴板
+- v1.193 **尚未真机验证**：Android 7/8 需要确认进得去这一页、画面与特效都出来；`hand_landmarker.task`（float16/1）与 0.10.26.1 的图描述兼容性只有真机能证——若仍失败，长按状态卡那行说明复制发回，里面有机型、系统版本和最里层异常
 - v1.192 已通过正式签名校验（APK Signature Scheme v2，证书 CN=LingxiAI），release 构建开启代码与资源压缩
 - v1.187 成品包 21,423,579 字节（与 v1.186 同尺寸，只换代码）；`aapt2 dump badging` 确认 `launchable-activity = com.lingxi.chat.MainActivity`、label 糯叽、versionCode 54；包内构成：`lib/arm64-v8a/libmediapipe_tasks_jni.so` 10.05MB + `lib/armeabi-v7a/…` 7.06MB（不压缩存储）+ `classes.dex` 1.76MB + `resources.arsc` 0.78MB
 - v1.192 安装包扫描未发现内置仓库凭据（成品 27,277,640 字节）（命中项仅为「sk- 开头」这类说明文字与请求头字面量）；`Bearer` 是请求头构造所需的字面量

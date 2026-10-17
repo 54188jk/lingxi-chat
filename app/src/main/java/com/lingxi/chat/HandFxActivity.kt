@@ -63,6 +63,7 @@ class HandFxActivity : BaseActivity() {
     private var glassFeed = false
     private var recording = false
     private var retriedModel = false
+    private var reloadOnly = false
     @Volatile private var inflying = false
     private val inferThread = HandlerThread("handfx-infer").apply { start() }
     private val inferHandler = Handler(inferThread.looper)
@@ -142,6 +143,16 @@ class HandFxActivity : BaseActivity() {
     }
 
     private fun onModelButton() {
+        if (reloadOnly) {
+            // 运行库没起来时重放文件是白费劲，直接拿现有那份再试一次加载
+            val cur = EffectModel.find(this)
+            if (cur != null) {
+                hideState()
+                load(cur)
+                return
+            }
+            reloadOnly = false
+        }
         b.btnModel.isEnabled = false
         b.btnModel.alpha = 0.5f
         b.pbModel.visibility = View.VISIBLE
@@ -190,8 +201,14 @@ class HandFxActivity : BaseActivity() {
                 b.root.postDelayed(tick, 240L)
                 return@launch
             }
-            val why = explain(outcome.exceptionOrNull())
-            if (!retriedModel) {
+            val err = outcome.exceptionOrNull()
+            val why = explain(err)
+            // 运行库压根没加载起来时，重放识别文件是没用的功课，别让用户白等一次复制
+            val libDead = err is UnsatisfiedLinkError || err is NoClassDefFoundError || err is ExceptionInInitializerError
+            if (libDead) {
+                reloadOnly = true
+                showState("这台手机的系统带不动这个特效", why + "\n\n长按下面这行说明可以复制，发给作者就能定位。", "再试一次")
+            } else if (!retriedModel) {
                 // 第一次读不起来，先当作那份文件坏了：删掉自动重放一次，别再麻烦用户点
                 retriedModel = true
                 runCatching { f.delete() }
@@ -203,9 +220,32 @@ class HandFxActivity : BaseActivity() {
         }
     }
 
-    /** 把本机那份文件读进直接内存并交给推理库；读不满就直接报错，别拿半份去初始化 */
+    /**
+     * 把本机那份文件交给推理库。
+     * 先按整块内存喂（不碰文件路径，权限最省事），某些 ROM 上这条路会失手，就换文件路径再试一次；
+     * 两次都不行才把第一次的错报出去，因为那才是用户真正撞上的那道坎。
+     */
     private fun build(f: File): HandLandmarker {
         if (!EffectModel.isReady(f)) throw java.io.IOException("内容校验没过")
+        val buf = readIntoBuffer(f)
+        return runCatching { HandLandmarker.createFromOptions(this, landmarkerOptions(BaseOptions.builder().setModelAssetBuffer(buf))) }
+            .getOrElse { first ->
+                runCatching {
+                    HandLandmarker.createFromOptions(this, landmarkerOptions(BaseOptions.builder().setModelAssetPath(f.absolutePath)))
+                }.getOrElse { throw first }
+            }
+    }
+
+    private fun landmarkerOptions(base: BaseOptions.Builder) =
+        HandLandmarker.HandLandmarkerOptions.builder()
+            .setBaseOptions(base.build())
+            .setRunningMode(RunningMode.VIDEO)
+            .setNumHands(1)
+            .setMinHandDetectionConfidence(0.5f)
+            .build()
+
+    /** 读进直接内存；读不满就直接报错，别拿半份去初始化 */
+    private fun readIntoBuffer(f: File): ByteBuffer {
         val size = f.length().toInt()
         val buf = ByteBuffer.allocateDirect(size)
         java.io.FileInputStream(f).channel.use { ch ->
@@ -219,21 +259,26 @@ class HandFxActivity : BaseActivity() {
             }
         }
         buf.rewind()
-        val opts = HandLandmarker.HandLandmarkerOptions.builder()
-            .setBaseOptions(BaseOptions.builder().setModelAssetBuffer(buf).build())
-            .setRunningMode(RunningMode.VIDEO)
-            .setNumHands(1)
-            .setMinHandDetectionConfidence(0.5f)
-            .build()
-        return HandLandmarker.createFromOptions(this, opts)
+        return buf
     }
-    /** 把异常换成一句人话，同时留一点线索给用户报回来 */
-    private fun explain(e: Throwable?): String = when (e) {
-        null -> "不清楚卡在哪一步"
-        is UnsatisfiedLinkError, is NoClassDefFoundError, is ExceptionInInitializerError ->
-            "这台机器的运行库加载不起来（多为系统位数或 ROM 精简所致）：" + e.message?.take(90).orEmpty()
-        else -> "文件没能读全：" + e.javaClass.simpleName + " " + e.message?.take(90).orEmpty()
+
+    /** 把异常换成一句人话，并附上这台机器的情况，用户长按就能复制整段报回来 */
+    private fun explain(e: Throwable?): String {
+        if (e == null) return "不清楚卡在哪一步"
+        val root = generateSequence(e) { it.cause }.last()
+        return when (e) {
+            is UnsatisfiedLinkError, is NoClassDefFoundError, is ExceptionInInitializerError ->
+                "特效要用的那颗运行库没能装进这个系统。\n${deviceLine()}\n" +
+                    (root.message?.take(200).orEmpty().ifBlank { root.javaClass.simpleName })
+            else -> "文件没能读全：" + root.javaClass.simpleName + " " + root.message?.take(120).orEmpty() +
+                    "\n" + deviceLine()
+        }
     }
+
+    private fun deviceLine(): String =
+        Build.MANUFACTURER + " " + Build.MODEL + " · Android " + Build.VERSION.RELEASE +
+            "（API " + Build.VERSION.SDK_INT + "）"
+
     // ---------------- 摄像头 ----------------
 
     private fun startCamera() {
@@ -638,6 +683,13 @@ class HandFxActivity : BaseActivity() {
         b.llState.visibility = View.VISIBLE
         b.tvStateTitle.text = title
         b.tvStateDesc.text = desc
+        // 出不了这一屏的时候，唯一能把现场说清楚的办法就是让用户一行字都不用打
+        b.tvStateDesc.setOnLongClickListener {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            cm?.setPrimaryClip(android.content.ClipData.newPlainText("糯叽特效", title + "\n" + desc))
+            toast("说明已复制，直接粘贴发给我就行")
+            true
+        }
         b.btnModel.text = button ?: "知道了"
         b.btnModel.visibility = if (button == null) View.GONE else View.VISIBLE
     }
